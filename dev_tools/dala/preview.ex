@@ -1,30 +1,33 @@
 defmodule Dala.Preview do
   @moduledoc """
-  Interactive HTML preview for Dala UI components.
+  Interactive HTML preview and design tool for Dala UI components.
 
-  This module generates static HTML with CSS that mimics Dala's styling,
-  allowing you to preview UI trees in a browser without a simulator.
+  Two modes:
 
-  ## Features
+  1. **Static preview** — generates a standalone HTML file with CSS that
+     mimics Dala's styling. No server needed.
 
-  - Renders all major Dala UI components (column, row, text, button, etc.)
-  - Interactive simulation (tap, drag, swipe handlers shown visually)
-  - Event logging panel to see interactions
-  - Component tree inspector (toggleable with Alpine.js)
-  - No LiveView dependency - pure static HTML
+  2. **Live designer** — starts a Phoenix LiveView server with a
+     drag-and-drop component palette, property editor, live phone-frame
+     preview, and code generation (sigil or DSL style).
 
-  ## Usage
+  ## Static preview
 
-      # In IEx (dev environment)
       Dala.Preview.preview(MyApp.HomeScreen)
       Dala.Preview.preview_to_file(MyApp.HomeScreen, "preview.html")
       Dala.Preview.preview_and_open(MyApp.HomeScreen)
 
-      # With a UI tree directly
-      ui_tree = %{type: :column, props: %{padding: :md}, children: [...]}
-      Dala.Preview.preview(ui_tree)
+  ## Live designer
 
-  ## Options
+      Dala.Preview.start_designer()
+      Dala.Preview.start_designer(port: 4200, module_name: "MyApp.HomeScreen")
+
+  ## Code generation
+
+      Dala.Preview.generate_code(ui_tree, :sigil, "MyApp.HomeScreen")
+      Dala.Preview.generate_code(ui_tree, :dsl, "MyApp.HomeScreen")
+
+  ## Options (static preview)
 
     * `:show_tree` - Show component tree inspector (default: true)
     * `:title` - Custom title for the preview page
@@ -65,6 +68,40 @@ defmodule Dala.Preview do
     path
     |> Path.expand()
     |> System.cmd("open", [])
+  end
+
+  @doc """
+  Start the live designer server with drag-and-drop UI builder.
+
+  Options:
+    - `:port` - Port to run on (default: 4200)
+    - `:ui_tree` - Initial UI tree map
+    - `:module_name` - Default module name (default: "MyApp.HomeScreen")
+    - `:open` - Open browser after start (default: true)
+  """
+  def start_designer(opts \\ []) do
+    Dala.Preview.Live.start_server(opts)
+  end
+
+  @doc """
+  Generate Elixir screen module source code from a UI tree.
+
+  `style` is `:sigil` for `~dala` templates or `:dsl` for Spark DSL.
+  `module_name` is a string like `"MyApp.HomeScreen"`.
+
+  ## Examples
+
+      iex> Dala.Preview.generate_code(tree, :sigil, "MyApp.HomeScreen")
+      "defmodule MyApp.HomeScreen do\n  use Dala.Screen\n  ..."
+
+      iex> Dala.Preview.generate_code(tree, :dsl, "MyApp.HomeScreen")
+      "defmodule MyApp.HomeScreen do\n  use Dala.Spark.Dsl\n  ..."
+  """
+  def generate_code(ui_tree, style, module_name) when style in [:sigil, :dsl] do
+    case style do
+      :sigil -> Dala.Preview.Codegen.generate_sigil(module_name, ui_tree)
+      :dsl -> Dala.Preview.Codegen.generate_dsl(module_name, ui_tree)
+    end
   end
 
   defp resolve_ui_tree(module) when is_atom(module) do
@@ -150,6 +187,7 @@ defmodule Dala.Preview do
 
   defp render_component(:column, props, children) do
     style = build_style(props)
+
     """
     <div class="dala-column" style="#{style}">
       #{render_children(children)}
@@ -159,6 +197,7 @@ defmodule Dala.Preview do
 
   defp render_component(:row, props, children) do
     style = build_style(props)
+
     """
     <div class="dala-row" style="#{style}">
       #{render_children(children)}
@@ -187,10 +226,20 @@ defmodule Dala.Preview do
     on_swipe = props[:on_swipe]
 
     extra_attrs = ""
-    extra_attrs = if draggable, do: extra_attrs <> ~s(data-draggable="#{draggable}"), else: extra_attrs
-    extra_attrs = if droppable, do: extra_attrs <> ~s(data-droppable="#{droppable}"), else: extra_attrs
-    extra_attrs = if on_long_press, do: extra_attrs <> ~s(data-on-long-press="#{on_long_press}"), else: extra_attrs
-    extra_attrs = if on_swipe, do: extra_attrs <> ~s(data-on-swipe="#{on_swipe}"), else: extra_attrs
+
+    extra_attrs =
+      if draggable, do: extra_attrs <> ~s(data-draggable="#{draggable}"), else: extra_attrs
+
+    extra_attrs =
+      if droppable, do: extra_attrs <> ~s(data-droppable="#{droppable}"), else: extra_attrs
+
+    extra_attrs =
+      if on_long_press,
+        do: extra_attrs <> ~s(data-on-long-press="#{on_long_press}"),
+        else: extra_attrs
+
+    extra_attrs =
+      if on_swipe, do: extra_attrs <> ~s(data-on-swipe="#{on_swipe}"), else: extra_attrs
 
     ~s(<div class="dala-box" style="#{style}" #{extra_attrs}>#{render_children(children)}</div>)
   end
@@ -211,12 +260,14 @@ defmodule Dala.Preview do
   defp render_component(:toggle, props, _children) do
     on_tap = props[:on_tap]
     data_attr = if on_tap, do: ~s(data-toggle="#{on_tap}"), else: ""
+
     ~s(<div class="dala-toggle" #{data_attr} data-state="off" style="cursor: pointer;">Toggle</div>)
   end
 
   defp render_component(:switch, props, _children) do
     on_tap = props[:on_tap]
     data_attr = if on_tap, do: ~s(data-toggle="#{on_tap}"), else: ""
+
     ~s(<div class="dala-switch" #{data_attr} data-state="off" style="cursor: pointer;">Switch</div>)
   end
 
@@ -224,6 +275,7 @@ defmodule Dala.Preview do
     value = props[:value] || 50
     on_change = props[:on_change]
     data_attr = if on_change, do: ~s(data-slider="#{on_change}"), else: ""
+
     ~s(<input type="range" class="dala-slider" min="0" max="100" value="#{value}" #{data_attr} /><span class="slider-value">#{value}%</span>)
   end
 
@@ -237,6 +289,7 @@ defmodule Dala.Preview do
     value = props[:value] || ""
     on_change = props[:on_change]
     data_attr = if on_change, do: ~s(data-text-input="#{on_change}"), else: ""
+
     ~s(<input type="text" class="dala-text-field" placeholder="#{placeholder}" value="#{value}" #{data_attr} />)
   end
 
@@ -248,6 +301,7 @@ defmodule Dala.Preview do
   defp render_component(:list_item, props, children) do
     on_tap = props[:on_tap]
     data_attr = if on_tap, do: ~s(data-on-tap="#{on_tap}"), else: ""
+
     ~s(<div class="dala-list-item" #{data_attr} style="cursor: pointer;">#{render_children(children)}</div>)
   end
 
@@ -258,12 +312,23 @@ defmodule Dala.Preview do
     on_swipe = props[:on_swipe]
 
     extra_attrs = ""
-    extra_attrs = if draggable, do: extra_attrs <> ~s(data-draggable="#{draggable}"), else: extra_attrs
-    extra_attrs = if droppable, do: extra_attrs <> ~s(data-droppable="#{droppable}"), else: extra_attrs
-    extra_attrs = if on_long_press, do: extra_attrs <> ~s(data-on-long-press="#{on_long_press}"), else: extra_attrs
-    extra_attrs = if on_swipe, do: extra_attrs <> ~s(data-on-swipe="#{on_swipe}"), else: extra_attrs
+
+    extra_attrs =
+      if draggable, do: extra_attrs <> ~s(data-draggable="#{draggable}"), else: extra_attrs
+
+    extra_attrs =
+      if droppable, do: extra_attrs <> ~s(data-droppable="#{droppable}"), else: extra_attrs
+
+    extra_attrs =
+      if on_long_press,
+        do: extra_attrs <> ~s(data-on-long-press="#{on_long_press}"),
+        else: extra_attrs
+
+    extra_attrs =
+      if on_swipe, do: extra_attrs <> ~s(data-on-swipe="#{on_swipe}"), else: extra_attrs
 
     style = build_style(props)
+
     ~s(<div class="dala-unknown dala-#{type}" #{extra_attrs} style="#{style}">#{render_children(children)}<small>Unknown: #{type}</small></div>)
   end
 
@@ -275,15 +340,39 @@ defmodule Dala.Preview do
 
   defp build_style(props) do
     props
-    |> Enum.filter(fn {k, _} -> k in [:padding, :padding_top, :padding_right, :padding_bottom, :padding_left, :gap, :background, :border_color, :border_width, :corner_radius, :width, :height] end)
+    |> Enum.filter(fn {k, _} ->
+      k in [
+        :padding,
+        :padding_top,
+        :padding_right,
+        :padding_bottom,
+        :padding_left,
+        :gap,
+        :background,
+        :border_color,
+        :border_width,
+        :corner_radius,
+        :width,
+        :height
+      ]
+    end)
     |> Enum.map(fn {k, v} -> "#{css_property(k)}: #{css_value(v)};" end)
     |> Enum.join(" ")
   end
 
   defp build_text_style(props) do
     styles = []
-    styles = if props[:text_size], do: ["font-size: #{text_size_to_px(props[:text_size])}px" | styles], else: styles
-    styles = if props[:text_color], do: ["color: #{color_to_css(props[:text_color])}" | styles], else: styles
+
+    styles =
+      if props[:text_size],
+        do: ["font-size: #{text_size_to_px(props[:text_size])}px" | styles],
+        else: styles
+
+    styles =
+      if props[:text_color],
+        do: ["color: #{color_to_css(props[:text_color])}" | styles],
+        else: styles
+
     Enum.join(styles, "; ")
   end
 

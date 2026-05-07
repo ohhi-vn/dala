@@ -48,8 +48,48 @@ defmodule Dala.PreviewTest do
       assert content =~ "Test"
       assert content =~ "<!DOCTYPE html>"
 
-      # Cleanup
       File.rm!(path)
+    end
+  end
+
+  describe "generate_code/3" do
+    test "generates sigil-style code" do
+      ui_tree = %{
+        type: :column,
+        props: %{padding: :space_md, gap: :space_sm},
+        children: [
+          %{type: :text, props: %{text: "Hello"}, children: []},
+          %{type: :button, props: %{text: "Tap", on_tap: :tapped}, children: []}
+        ]
+      }
+
+      code = Dala.Preview.generate_code(ui_tree, :sigil, "MyApp.HomeScreen")
+      assert code =~ "defmodule MyApp.HomeScreen do"
+      assert code =~ "use Dala.Screen"
+      assert code =~ "~dala"
+      assert code =~ "<Column"
+      assert code =~ "<Text"
+      assert code =~ "<Button"
+      assert code =~ "handle_event(:tapped"
+    end
+
+    test "generates DSL-style code" do
+      ui_tree = %{
+        type: :column,
+        props: %{padding: :space_md, gap: :space_sm},
+        children: [
+          %{type: :text, props: %{text: "Hello"}, children: []},
+          %{type: :button, props: %{text: "Tap", on_tap: :tapped}, children: []}
+        ]
+      }
+
+      code = Dala.Preview.generate_code(ui_tree, :dsl, "MyApp.HomeScreen")
+      assert code =~ "defmodule MyApp.HomeScreen do"
+      assert code =~ "use Dala.Spark.Dsl"
+      assert code =~ "column"
+      assert code =~ "text"
+      assert code =~ "button"
+      assert code =~ "handle_event(:tapped"
     end
   end
 
@@ -119,7 +159,6 @@ defmodule Dala.PreviewTest do
       assert html =~ "dala-spacer"
     end
 
-    # Interactive feature tests
     test "renders button with tap handler" do
       ui_tree = %{
         type: :button,
@@ -192,8 +231,16 @@ defmodule Dala.PreviewTest do
         type: :list,
         props: %{},
         children: [
-          %{type: :list_item, props: %{on_tap: :item1}, children: [%{type: :text, props: %{text: "Item 1"}, children: []}]},
-          %{type: :list_item, props: %{on_tap: :item2}, children: [%{type: :text, props: %{text: "Item 2"}, children: []}]}
+          %{
+            type: :list_item,
+            props: %{on_tap: :item1},
+            children: [%{type: :text, props: %{text: "Item 1"}, children: []}]
+          },
+          %{
+            type: :list_item,
+            props: %{on_tap: :item2},
+            children: [%{type: :text, props: %{text: "Item 2"}, children: []}]
+          }
         ]
       }
 
@@ -329,6 +376,201 @@ defmodule Dala.PreviewTest do
 
       html = Dala.Preview.preview(ui_tree, show_tree: true)
       assert html =~ "&lt;b&gt;bold&lt;/b&gt;"
+    end
+  end
+end
+
+defmodule Dala.Preview.CodegenTest do
+  use ExUnit.Case, async: true
+
+  describe "generate_sigil/3" do
+    test "generates basic sigil module" do
+      tree = %{
+        type: :column,
+        props: %{padding: :space_md},
+        children: [
+          %{type: :text, props: %{text: "Hello"}, children: []}
+        ]
+      }
+
+      code = Dala.Preview.Codegen.generate_sigil("MyApp.HomeScreen", tree)
+
+      assert code =~ "defmodule MyApp.HomeScreen do"
+      assert code =~ "use Dala.Screen"
+      assert code =~ "def mount(_params, _session, socket) do"
+      assert code =~ "~dala"
+      assert code =~ "<Column"
+      assert code =~ "<Text"
+      assert code =~ "padding={:space_md}"
+      assert code =~ ~s(text="Hello")
+    end
+
+    test "generates event handler stubs from on_tap" do
+      tree = %{
+        type: :button,
+        props: %{text: "Go", on_tap: :go_pressed},
+        children: []
+      }
+
+      code = Dala.Preview.Codegen.generate_sigil("MyApp.Screen", tree)
+      assert code =~ "handle_event(:go_pressed"
+    end
+
+    test "generates nested container with children" do
+      tree = %{
+        type: :column,
+        props: %{gap: :space_sm},
+        children: [
+          %{
+            type: :row,
+            props: %{},
+            children: [
+              %{type: :text, props: %{text: "A"}, children: []},
+              %{type: :text, props: %{text: "B"}, children: []}
+            ]
+          }
+        ]
+      }
+
+      code = Dala.Preview.Codegen.generate_sigil("MyApp.Screen", tree)
+      assert code =~ "<Column"
+      assert code =~ "<Row"
+      assert code =~ "</Row>"
+      assert code =~ "</Column>"
+    end
+
+    test "self-closing tags for leaf nodes" do
+      tree = %{type: :text, props: %{text: "Hi"}, children: []}
+      code = Dala.Preview.Codegen.generate_sigil("MyApp.Screen", tree)
+      assert code =~ "<Text"
+      assert code =~ "/>"
+    end
+
+    test "handles list of root nodes by wrapping in Column" do
+      tree = [
+        %{type: :text, props: %{text: "First"}, children: []},
+        %{type: :text, props: %{text: "Second"}, children: []}
+      ]
+
+      code = Dala.Preview.Codegen.generate_sigil("MyApp.Screen", tree)
+      assert code =~ "<Column"
+      assert code =~ "First"
+      assert code =~ "Second"
+    end
+  end
+
+  describe "generate_dsl/3" do
+    test "generates basic DSL module" do
+      tree = %{
+        type: :column,
+        props: %{padding: :space_md},
+        children: [
+          %{type: :text, props: %{text: "Hello"}, children: []}
+        ]
+      }
+
+      code = Dala.Preview.Codegen.generate_dsl("MyApp.HomeScreen", tree)
+
+      assert code =~ "defmodule MyApp.HomeScreen do"
+      assert code =~ "use Dala.Spark.Dsl"
+      assert code =~ "screen name: :home_screen"
+      assert code =~ "column"
+      assert code =~ "text"
+    end
+
+    test "generates event handler stubs" do
+      tree = %{
+        type: :button,
+        props: %{text: "Go", on_tap: :go_pressed},
+        children: []
+      }
+
+      code = Dala.Preview.Codegen.generate_dsl("MyApp.Screen", tree)
+      assert code =~ "handle_event(:go_pressed"
+    end
+
+    test "generates attribute declarations" do
+      tree = %{type: :text, props: %{text: "Hi"}, children: []}
+
+      code =
+        Dala.Preview.Codegen.generate_dsl("MyApp.Screen", tree,
+          attributes: [{:count, :integer, 0}, {:name, :string, nil}]
+        )
+
+      assert code =~ "attribute :count, :integer, default: 0"
+      assert code =~ "attribute :name, :string"
+    end
+
+    test "text and button use positional string arg" do
+      tree = %{
+        type: :column,
+        props: %{},
+        children: [
+          %{type: :text, props: %{text: "Title", text_size: :xl}, children: []},
+          %{type: :button, props: %{text: "Go", on_tap: :go}, children: []}
+        ]
+      }
+
+      code = Dala.Preview.Codegen.generate_dsl("MyApp.Screen", tree)
+      assert code =~ ~s(text "Title")
+      assert code =~ ~s(button "Go")
+    end
+  end
+
+  describe "extract_handlers/1" do
+    test "extracts on_tap handlers" do
+      tree = %{
+        type: :column,
+        props: %{},
+        children: [
+          %{type: :button, props: %{on_tap: :pressed}, children: []}
+        ]
+      }
+
+      assert :pressed in Dala.Preview.Codegen.extract_handlers(tree)
+    end
+
+    test "extracts handlers from {self(), :tag} tuples" do
+      tree = %{
+        type: :button,
+        props: %{on_tap: {self(), :submit}},
+        children: []
+      }
+
+      assert :submit in Dala.Preview.Codegen.extract_handlers(tree)
+    end
+
+    test "deduplicates handlers" do
+      tree = %{
+        type: :column,
+        props: %{},
+        children: [
+          %{type: :button, props: %{on_tap: :go}, children: []},
+          %{type: :button, props: %{on_tap: :go}, children: []}
+        ]
+      }
+
+      handlers = Dala.Preview.Codegen.extract_handlers(tree)
+      assert Enum.count(handlers, &(&1 == :go)) == 1
+    end
+
+    test "extracts various event types" do
+      tree = %{
+        type: :column,
+        props: %{},
+        children: [
+          %{type: :button, props: %{on_tap: :tapped, on_long_press: :held}, children: []},
+          %{type: :text_field, props: %{on_change: :changed, on_focus: :focused}, children: []},
+          %{type: :slider, props: %{on_change: :slid}, children: []}
+        ]
+      }
+
+      handlers = Dala.Preview.Codegen.extract_handlers(tree)
+      assert :tapped in handlers
+      assert :held in handlers
+      assert :changed in handlers
+      assert :focused in handlers
+      assert :slid in handlers
     end
   end
 end
