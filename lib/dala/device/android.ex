@@ -1,6 +1,6 @@
 defmodule Dala.Device.Android do
   @moduledoc """
-  Android-specific device events. Symmetrical with `Dala.Device.IOS`.
+  Android-specific device events. Symmetrical with `Dala.Device.Ios`.
 
   Messages are tagged `:dala_device_android`:
 

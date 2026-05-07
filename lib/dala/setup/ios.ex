@@ -1,4 +1,4 @@
-defmodule Dala.Setup.IOS do
+defmodule Dala.Setup.Ios do
   @moduledoc """
   iOS Bluetooth/WiFi setup automation for Dala.
 

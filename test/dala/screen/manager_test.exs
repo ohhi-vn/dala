@@ -193,13 +193,13 @@ defmodule Dala.Screen.ManagerTest do
       assert Dala.Screen.Manager.list() == []
     end
 
-    test "Dala.Screen.dispatch/2 sends message to screen" do
-      {:ok, pid} = Dala.Screen.start_link(TestScreen, %{})
+    test "Dala.Screen.Screen.dispatch/2 sends message to screen" do
+      {:ok, pid} = Dala.Screen.Screen.start_link(TestScreen, %{})
 
       Process.sleep(50)
 
       # Send message to screen
-      assert :ok = Dala.Screen.dispatch(pid, {:test, :message})
+      assert :ok = Dala.Screen.Screen.dispatch(pid, {:test, :message})
 
       # Give screen time to process
       Process.sleep(50)

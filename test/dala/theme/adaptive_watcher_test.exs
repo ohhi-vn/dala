@@ -7,15 +7,15 @@ defmodule Dala.Theme.AdaptiveWatcherTest do
     # Dala.Device + its platform fan-outs need to be alive for the watcher's
     # init/1 to subscribe successfully. Re-use the same start-fresh pattern
     # as Dala.DeviceTest.
-    start_supervised!({Dala.Device.IOS, []})
+    start_supervised!({Dala.Device.Ios, []})
     start_supervised!({Dala.Device.Android, []})
-    start_supervised!({Dala.Device, []})
+    start_supervised!({Dala.Device.Device, []})
 
     on_exit(fn ->
       Application.delete_env(:dala, :theme)
     end)
 
-    {:ok, dispatcher: Process.whereis(Dala.Device)}
+    {:ok, dispatcher: Process.whereis(Dala.Device.Device)}
   end
 
   describe "start_link/1" do
@@ -53,7 +53,7 @@ defmodule Dala.Theme.AdaptiveWatcherTest do
       # Records calls so the test can assert the watcher hit theme/0 again.
       def theme do
         Process.put({__MODULE__, :calls}, (Process.get({__MODULE__, :calls}) || 0) + 1)
-        Dala.Theme.build(primary: 0xFF445566)
+        Dala.Theme.Theme.build(primary: 0xFF445566)
       end
 
       def call_count, do: Process.get({__MODULE__, :calls}) || 0
@@ -67,7 +67,7 @@ defmodule Dala.Theme.AdaptiveWatcherTest do
       # Set the active theme to whatever TrackingAdaptive resolves to right
       # now. After the appearance event, the watcher should re-call
       # TrackingAdaptive.theme/0 (i.e. call count > 0).
-      Dala.Theme.set(TrackingAdaptive)
+      Dala.Theme.Theme.set(TrackingAdaptive)
       :ok = GenServer.call(d, {:subscribe, AdaptiveWatcher, [:appearance]})
 
       send(pid, {:dala_device, :color_scheme_changed, :dark})
@@ -87,11 +87,11 @@ defmodule Dala.Theme.AdaptiveWatcherTest do
       # User explicitly picked a fixed theme — adaptive watcher must
       # not clobber it on OS toggle.
       fixed = Dala.Theme.Light.theme()
-      Dala.Theme.set(fixed)
+      Dala.Theme.Theme.set(fixed)
       send(pid, {:dala_device, :color_scheme_changed, :dark})
       _ = :sys.get_state(pid)
 
-      assert Dala.Theme.current() == fixed
+      assert Dala.Theme.Theme.current() == fixed
       GenServer.stop(pid)
     end
 

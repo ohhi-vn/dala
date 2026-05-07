@@ -1,4 +1,4 @@
-defmodule Dala.ML.Example do
+defmodule Dala.Ml.Example do
   @compile {:nowarn_undefined, [:Nx]}
   @moduledoc """
   Simple example of using ML in a Dala app.

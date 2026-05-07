@@ -121,12 +121,12 @@ def handle_info(_message, socket), do: {:noreply, socket}
   {:noreply, Dala.Socket.t()} | {:reply, map(), socket :: Dala.Socket.t()}
 ```
 
-Dispatched programmatically via `Dala.Screen.dispatch/3` — used in tests to send string-keyed events to a screen process. Not called for normal UI interactions (those go through `handle_info/2`).
+Dispatched programmatically via `Dala.Screen.Screen.dispatch/3` — used in tests to send string-keyed events to a screen process. Not called for normal UI interactions (those go through `handle_info/2`).
 
 ```elixir
 # In tests:
-Dala.Screen.dispatch(pid, "increment", %{})
-Dala.Screen.dispatch(pid, "tap", %{"tag" => "save"})
+Dala.Screen.Screen.dispatch(pid, "increment", %{})
+Dala.Screen.Screen.dispatch(pid, "tap", %{"tag" => "save"})
 
 # In the screen:
 def handle_event("increment", _params, socket) do
@@ -183,11 +183,11 @@ end
 
 ### `handle_event/3` — Programmatic dispatch
 
-Called only via `Dala.Screen.dispatch/3` — used in tests to send string-keyed events. Not invoked for normal UI interactions (those go through `handle_info/2`).
+Called only via `Dala.Screen.Screen.dispatch/3` — used in tests to send string-keyed events. Not invoked for normal UI interactions (those go through `handle_info/2`).
 
 ```elixir
 # In tests:
-Dala.Screen.dispatch(pid, "tap", %{"tag" => "save"})
+Dala.Screen.Screen.dispatch(pid, "tap", %{"tag" => "save"})
 
 # In the screen:
 def handle_event("tap", %{"tag" => tag}, socket) do

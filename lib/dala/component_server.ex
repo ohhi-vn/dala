@@ -1,124 +1,40 @@
 defmodule Dala.ComponentServer do
-  @compile {:nowarn_undefined, [:Nx]}
-  @moduledoc false
-  # GenServer wrapping a Dala.Component module. Each native_view instance on a
-  # screen gets its own process. Started unlinked (isolated from the screen).
+  @moduledoc """
+  Public API for component server operations.
 
-  use GenServer
+  This module delegates to `Dala.Ui.ComponentServer` for managing
+  component processes.
+  """
 
-  @doc "Start a component process (not linked to the caller)."
+  alias Dala.Ui.ComponentServer
+
+  @doc """
+  Start a component process.
+  """
   @spec start(keyword()) :: {:ok, pid()} | {:error, term()}
-  def start(opts) do
-    GenServer.start(__MODULE__, opts)
-  end
+  defdelegate start(opts), to: ComponentServer
 
-  @doc "Get the current rendered props from the component."
+  @doc """
+  Get the current rendered props from the component.
+  """
   @spec render_props(pid()) :: map()
-  def render_props(pid), do: GenServer.call(pid, :render_props)
+  defdelegate render_props(pid), to: ComponentServer
 
-  @doc "Get the persistent NIF handle allocated at mount time."
+  @doc """
+  Get the persistent NIF handle allocated at mount time.
+  """
   @spec get_handle(pid()) :: integer()
-  def get_handle(pid), do: GenServer.call(pid, :get_handle)
+  defdelegate get_handle(pid), to: ComponentServer
 
-  @doc "Update the component with new props from the parent screen re-render."
+  @doc """
+  Update the component with new props from the parent screen re-render.
+  """
   @spec update(pid(), map()) :: :ok
-  def update(pid, props), do: GenServer.cast(pid, {:update, props})
+  defdelegate update(pid, props), to: ComponentServer
 
-  @doc "Deliver a native event to the component (called from the NIF callback path)."
+  @doc """
+  Deliver a native event to the component.
+  """
   @spec dispatch(pid(), String.t(), map()) :: :ok
-  def dispatch(pid, event, payload), do: GenServer.cast(pid, {:event, event, payload})
-
-  # ── GenServer ──────────────────────────────────────────────────────────────
-
-  @impl GenServer
-  def init(opts) do
-    module = opts[:module]
-    id = opts[:id]
-    screen_pid = opts[:screen_pid]
-    props = opts[:props]
-    platform = opts[:platform]
-
-    socket = Dala.Socket.new(module, platform: platform)
-
-    case module.mount(props, socket) do
-      {:ok, socket} ->
-        Dala.ComponentRegistry.register(screen_pid, id, module, self())
-
-        handle =
-          if platform != :no_render do
-            Dala.Native.register_component(self())
-          else
-            0
-          end
-
-        {:ok, %{module: module, socket: socket, screen_pid: screen_pid, id: id, handle: handle}}
-
-      {:error, reason} ->
-        {:stop, reason}
-    end
-  end
-
-  @impl GenServer
-  def handle_call(:render_props, _from, %{module: module, socket: socket} = state) do
-    {:reply, module.render(socket.assigns), state}
-  end
-
-  def handle_call(:get_handle, _from, %{handle: handle} = state) do
-    {:reply, handle, state}
-  end
-
-  @impl GenServer
-  def handle_cast({:update, new_props}, %{module: module, socket: socket} = state) do
-    case module.update(new_props, socket) do
-      {:ok, new_socket} -> {:noreply, %{state | socket: new_socket}}
-      _ -> {:noreply, state}
-    end
-  end
-
-  def handle_cast(
-        {:event, event, payload},
-        %{module: module, socket: socket, screen_pid: screen_pid, id: id} = state
-      ) do
-    {:noreply, new_socket} = module.handle_event(event, payload, socket)
-    send(screen_pid, {:component_changed, id, module})
-    {:noreply, %{state | socket: new_socket}}
-  end
-
-  @impl GenServer
-  def handle_info(
-        {:component_event, event, payload_json},
-        %{module: module, socket: socket, screen_pid: screen_pid, id: id} = state
-      ) do
-    payload =
-      case :json.decode(payload_json) do
-        map when is_map(map) -> map
-        _ -> %{}
-      end
-
-    {:noreply, new_socket} = module.handle_event(event, payload, socket)
-    send(screen_pid, {:component_changed, id, module})
-    {:noreply, %{state | socket: new_socket}}
-  end
-
-  def handle_info(
-        message,
-        %{module: module, socket: socket, screen_pid: screen_pid, id: id} = state
-      ) do
-    {:noreply, new_socket} = module.handle_info(message, socket)
-    send(screen_pid, {:component_changed, id, module})
-    {:noreply, %{state | socket: new_socket}}
-  end
-
-  @impl GenServer
-  def terminate(reason, %{
-        module: module,
-        socket: socket,
-        screen_pid: screen_pid,
-        id: id,
-        handle: handle
-      }) do
-    Dala.ComponentRegistry.deregister(screen_pid, id, module)
-    if handle != 0, do: Dala.Native.deregister_component(handle)
-    module.terminate(reason, socket)
-  end
+  defdelegate dispatch(pid, event, payload), to: ComponentServer
 end

@@ -1,4 +1,4 @@
-defmodule Dala.Spark.PubSub do
+defmodule Dala.Spark.Pubsub do
   @moduledoc """
   Spark DSL extension for declarative PubSub subscriptions in Dala screens.
 
@@ -26,7 +26,7 @@ defmodule Dala.Spark.PubSub do
 
         def handle_chat({:message, text}, socket) do
           messages = socket.assigns.messages ++ [text]
-          {:noreply, Dala.Socket.assign(socket, :messages, messages)}
+          {:noreply, Dala.Ui.Socket.assign(socket, :messages, messages)}
         end
       end
   """

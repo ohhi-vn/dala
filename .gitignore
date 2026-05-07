@@ -26,10 +26,6 @@ dala-*.tar
 android/**/*.o
 ios/*.o
 
-# Internal notes — not for public repo
-user_issues.md
-/docs
-
 .DS_Store
 .dexter.db*
 

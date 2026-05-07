@@ -18,7 +18,7 @@ void dala_deliver_webview_blocked(const char* url_utf8);
 void dala_send_component_event(int handle, const char* event, const char* payload_json);
 
 // Called from DalaRootView.swift's .onChange(of: colorScheme) modifier when
-// the OS appearance toggles (light/dark). Dispatches to Dala.Device subscribers.
+// the OS appearance toggles (light/dark). Dispatches to Dala.Device.Device subscribers.
 // `scheme` is "light" or "dark".
 void dala_notify_color_scheme(const char* scheme);
 

@@ -159,9 +159,9 @@ text ends up in `value` correctly. Only opt in when partial input matters.
 
 ```elixir
 # Subscribe in mount/2 (or anywhere — process is monitored, auto-cleaned):
-Dala.Device.subscribe()                  # default: :app, :display, :audio, :memory
-Dala.Device.subscribe(:all)              # all categories
-Dala.Device.subscribe([:thermal, :power])
+Dala.Device.Device.subscribe()                  # default: :app, :display, :audio, :memory
+Dala.Device.Device.subscribe(:all)              # all categories
+Dala.Device.Device.subscribe([:thermal, :power])
 
 # Receive events:
 def handle_info({:dala_device, :did_enter_background}, socket), do: ...

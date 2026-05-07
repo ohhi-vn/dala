@@ -1,4 +1,4 @@
-defmodule Dala.Device.IOS do
+defmodule Dala.Device.Ios do
   @moduledoc """
   iOS-specific device events. Subscribers receive events that either have no
   Android counterpart (e.g. `:protected_data_did_become_available`) or carry
@@ -11,7 +11,7 @@ defmodule Dala.Device.IOS do
 
   ## Subscribe
 
-      Dala.Device.IOS.subscribe()
+      Dala.Device.Ios.subscribe()
 
   ## Events
 
@@ -30,7 +30,7 @@ defmodule Dala.Device.IOS do
   When `Dala.Device` normalizes values (e.g. thermal `:nominal/:fair/...`),
   this module exposes the raw native values for diagnostics.
 
-      Dala.Device.IOS.raw_thermal_state()  # 0..3 (NSProcessInfoThermalState)
+      Dala.Device.Ios.raw_thermal_state()  # 0..3 (NSProcessInfoThermalState)
   """
 
   use GenServer
@@ -60,7 +60,7 @@ defmodule Dala.Device.IOS do
   """
   @spec raw_thermal_state() :: 0 | 1 | 2 | 3
   def raw_thermal_state do
-    case Dala.Device.thermal_state() do
+    case Dala.Device.Device.thermal_state() do
       :nominal -> 0
       :fair -> 1
       :serious -> 2

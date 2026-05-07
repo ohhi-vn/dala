@@ -5,7 +5,7 @@ Mobile framework for Elixir. OTP runs inside your iOS and Android apps — embed
 [![Hex.pm](https://img.shields.io/hexpm/v/dala.svg)](https://hex.pm/packages/dala)
 [![Docs](https://img.shields.io/badge/docs-hexdocs-blue.svg)](https://hexdocs.pm/dala)
 
-> **Status:** Early development. Android emulator and iOS simulator confirmed working. Not yet ready for production use.
+> **Status:** Early development. Not yet ready for production use.
 
 original repo [mob](https://github.com/GenericJam/mob)
 **Dual licensed under:**
@@ -161,8 +161,8 @@ Dala.Test.tap(:"my_app_ios@127.0.0.1", :increment)
 ```elixir
 test "increments count" do
   {:ok, pid} = Dala.Screen.start_link(MyApp.CounterScreen, %{})
-  :ok = Dala.Screen.dispatch(pid, "tap", %{"tag" => "increment"})
-  assert Dala.Screen.get_socket(pid).assigns.count == 1
+  :ok = Dala.Screen.Screen.dispatch(pid, "tap", %{"tag" => "increment"})
+  assert Dala.Screen.Screen.get_socket(pid).assigns.count == 1
 end
 ```
 
