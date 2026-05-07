@@ -1,17 +1,21 @@
 defmodule Dala.ML.ConfigHelper do
   @moduledoc """
-  Helper to configure EMLX dependencies and settings for Dala iOS apps.
+  Helper to configure ML dependencies and settings for Dala apps.
 
   ## Usage:
 
       # In your app's mix.exs:
       defp deps do
-        [\{:dala, github: "elixir-nx/dala"},
-         \{:nx, github: "elixir-nx/nx"},
-         \{:axon, "~> 0.6"},
-         \{:emlx, github: "elixir-nx/emlx", branch: "main"}
-        # Optional: for model loading/serialization
-        \{:axon_onnx, "~> 0.4", optional: true}
+        [
+          {:dala, "~> 0.3"},
+          {:nx, "~> 0.10"},
+          {:axon, "~> 0.8.0"},
+          {:scholar, "~> 0.4.0"},
+          {:nx_signal, "~> 0.3.0"},
+          {:polaris, "~> 0.1"}
+          # Optional: Apple Silicon GPU
+          {:emlx, github: "elixir-nx/emlx", branch: "main"}
+        ]
       end
 
   ## Quantized Models:
@@ -26,17 +30,22 @@ defmodule Dala.ML.ConfigHelper do
   """
 
   @doc """
-  Returns the recommended deps for EMLX on iOS.
+  Returns the recommended deps for ML on Dala.
 
   Add these to your app's mix.exs deps/0 function.
+
+  ## Optional deps
+
+  - `{:emlx, github: "elixir-nx/emlx", branch: "main"}` — Apple Silicon GPU (iOS/macOS)
+  - `{:axon_onnx, "~> 0.5"}` — ONNX model loading for Axon
   """
   def recommended_deps do
     [
-      {:nx, github: "elixir-nx/nx", sparse: "nx"},
-      {:axon, "~> 0.6"},
-      {:emlx, github: "elixir-nx/emlx", branch: "main"},
-      # Optional: for model loading/serialization
-      {:axon_onnx, "~> 0.4", optional: true}
+      {:nx, "~> 0.10"},
+      {:axon, "~> 0.8.0"},
+      {:scholar, "~> 0.4.0"},
+      {:nx_signal, "~> 0.3.0"},
+      {:polaris, "~> 0.1"}
     ]
   end
 

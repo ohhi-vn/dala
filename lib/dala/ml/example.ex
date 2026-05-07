@@ -1,32 +1,29 @@
 defmodule Dala.ML.Example do
   @compile {:nowarn_undefined, [:Nx]}
   @moduledoc """
-  Simple example of using EMLX in a Dala iOS app.
+  Simple example of using ML in a Dala app.
 
-  This module demonstrates basic ML operations using EMLX on iOS.
+  This module demonstrates basic ML operations using the
+  auto-configured backend (EMLX on iOS, BinaryBackend elsewhere).
   """
 
   @doc """
-  Simple tensor operations with EMLX backend.
+  Simple tensor operations with auto-configured backend.
 
-  Run this in an iOS Dala app after setting up EMLX.
+  Run this in a Dala app after calling `Dala.ML.setup/0`.
   """
   def basic_operations do
-    # Ensure EMLX is set up
-    Dala.ML.Nx.init_for_ios()
+    Dala.ML.Nx.init()
 
-    # Create tensors
-    a = Nx.tensor([[1.0, 2.0], [3.0, 4.0]], backend: EMLX.Backend)
-    b = Nx.tensor([[5.0], [6.0]], backend: EMLX.Backend)
-
-    # Matrix multiplication
+    a = Nx.tensor([[1.0, 2.0], [3.0, 4.0]])
+    b = Nx.tensor([[5.0], [6.0]])
     result = Nx.dot(a, b)
 
     %{
       input_a: Nx.to_flat_list(a),
       input_b: Nx.to_flat_list(b),
       result: Nx.to_flat_list(result),
-      backend: "EMLX"
+      backend: inspect(Nx.default_backend())
     }
   end
 
@@ -42,14 +39,13 @@ defmodule Dala.ML.Example do
       |> Nx.multiply(2.0)
       |> Nx.reshape({1, 224, 224, 3})
 
-    # Simulate inference with EMLX
     key = Nx.Random.key(42)
-    {output, _key} = Nx.Random.uniform(key, {1, 1000}, backend: EMLX.Backend)
+    {output, _key} = Nx.Random.uniform(key, {1, 1000})
 
     %{
       predicted_class: Nx.argmax(output) |> Nx.to_number(),
       confidence: Nx.reduce_max(output) |> Nx.to_number(),
-      backend: "EMLX",
+      backend: inspect(Nx.default_backend()),
       note: "Load actual quantized model for production"
     }
   end
@@ -64,13 +60,12 @@ defmodule Dala.ML.Example do
       |> Nx.divide(255.0)
       |> Nx.reshape({1, 416, 416, 3})
 
-    # Simulate YOLO output: [batch, grid, grid, 3 * (5 + classes)]
     detection_output =
-      Nx.Random.uniform(Nx.Random.key(42), {1, 13, 13, 18}, backend: EMLX.Backend)
+      Nx.Random.uniform(Nx.Random.key(42), {1, 13, 13, 18})
 
     %{
       output_shape: Nx.shape(detection_output),
-      backend: "EMLX",
+      backend: inspect(Nx.default_backend()),
       note: "Use real YOLO model for production detection"
     }
   end

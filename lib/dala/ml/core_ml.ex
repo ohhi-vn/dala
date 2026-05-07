@@ -62,7 +62,9 @@ defmodule Dala.ML.CoreML do
     try do
       case Dala.Native.coreml_load_model(model_path, identifier) do
         :ok -> :ok
-        error -> {:error, error}
+        {:error, reason} -> {:error, reason}
+        error when is_binary(error) -> {:error, error}
+        :not_supported -> :not_supported
       end
     rescue
       UndefinedFunctionError -> :not_supported
@@ -143,8 +145,13 @@ defmodule Dala.ML.CoreML do
   def predict(identifier, inputs) when is_binary(identifier) and is_map(inputs) do
     try do
       inputs_json = Jason.encode!(inputs)
-      Dala.Native.coreml_predict(identifier, inputs_json)
-      :ok
+
+      case Dala.Native.coreml_predict(identifier, inputs_json) do
+        {:ok, result_json} -> {:ok, result_json}
+        {:error, reason} -> {:error, reason}
+        :not_supported -> :not_supported
+        error -> {:error, error}
+      end
     rescue
       UndefinedFunctionError -> :not_supported
       e -> {:error, Exception.message(e)}

@@ -2,6 +2,7 @@
 name = "dala_onnx"
 version = "0.1.0"
 edition = "2021"
+description = "Cross-platform ONNX Runtime C ABI wrapper for Dala"
 
 [lib]
 crate-type = ["staticlib", "cdylib"]
@@ -10,20 +11,10 @@ crate-type = ["staticlib", "cdylib"]
 default = []
 ios = []
 android = []
-coreml = []
-nnapi = []
+coreml = []    # CoreML execution provider (iOS)
+nnapi = []     # NNAPI execution provider (Android)
 
 [dependencies]
-# ONNX Runtime C API - we'll link manually in build.rs.
-# CoreML support (iOS only, optional).
-# Note: coreml-sys doesn't exist on crates.io, we link manually.
-
-# Conditional compilation for platform-specific execution providers.
-[target.'cfg(target_os = "ios")'.dependencies]
-# We'll link CoreML framework manually.
-
-[target.'cfg(target_os = "android")'.dependencies]
-# NNAPI will be linked manually.
+# Future: onnxruntime-sys or similar crate for real ONNX Runtime bindings
 
 [build-dependencies]
-# Build script to handle ONNX Runtime linking.

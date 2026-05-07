@@ -78,8 +78,16 @@ defmodule Dala.ML do
   """
   def setup do
     cond do
-      ios?() -> Dala.ML.EMLX.setup()
-      true -> Dala.ML.Nx.init_for_ios()
+      ios?() ->
+        Dala.ML.EMLX.setup()
+
+      android?() ->
+        Nx.default_backend(Nx.BinaryBackend)
+        :ok
+
+      true ->
+        Nx.default_backend(Nx.BinaryBackend)
+        :ok
     end
   end
 
@@ -142,7 +150,9 @@ defmodule Dala.ML do
       platform: platform,
       backend: Dala.ML.Nx.default_backend(),
       emlx_available: Dala.ML.EMLX.available?(),
-      coreml_available: ios?(),
+      coreml_available:
+        ios?() and Code.ensure_loaded?(Dala.Native) and
+          function_exported?(Dala.Native, :coreml_load_model, 2),
       onnx_available: Dala.ML.ONNX.available?(),
       libraries: %{
         nx: Code.ensure_loaded?(Nx),
@@ -166,6 +176,96 @@ defmodule Dala.ML do
       %{status: :ok, sum: sum, backend: Dala.ML.Nx.default_backend()}
     rescue
       e -> %{status: :error, message: Exception.message(e)}
+    end
+  end
+
+  @doc """
+  Returns a list of available ML backends for the current platform.
+  """
+  def available_backends do
+    backends = [:nx]
+
+    backends = if Dala.ML.EMLX.available?(), do: [:emlx | backends], else: backends
+
+    backends =
+      if ios?() and Code.ensure_loaded?(Dala.Native) and
+           function_exported?(Dala.Native, :coreml_load_model, 2),
+         do: [:coreml | backends],
+         else: backends
+
+    backends = if Dala.ML.ONNX.available?(), do: [:onnx | backends], else: backends
+
+    Enum.reverse(backends)
+  end
+
+  @doc """
+  Benchmarks a simple ML operation on the current backend.
+
+  Returns `%{time_ms: float, backend: term, gflops: float}`.
+  """
+  def benchmark(opts \\ []) do
+    size = Keyword.get(opts, :size, 100)
+    iterations = Keyword.get(opts, :iterations, 10)
+
+    setup()
+
+    key = Nx.Random.key(42)
+    {a, _} = Nx.Random.uniform(key, {size, size})
+    {b, _} = Nx.Random.uniform(key, {size, size})
+
+    # Warmup
+    Nx.dot(a, b) |> Nx.to_binary()
+
+    {total_us, _} =
+      :timer.tc(fn ->
+        for _ <- 1..iterations do
+          Nx.dot(a, b) |> Nx.to_binary()
+        end
+      end)
+
+    avg_ms = total_us / iterations / 1000
+    ops = 2 * size * size * size
+    gflops = ops / (avg_ms / 1000) / 1.0e9
+
+    %{
+      time_ms: Float.round(avg_ms, 3),
+      backend: Nx.default_backend(),
+      gflops: Float.round(gflops, 3),
+      matrix_size: size,
+      iterations: iterations
+    }
+  end
+
+  @doc """
+  Runs inference using the best available backend.
+
+  For CoreML models (iOS): Uses CoreML with Neural Engine.
+  For ONNX models: Uses ONNX Runtime with platform EP.
+  For Nx/Axon models: Uses the configured Nx backend.
+
+  ## Parameters
+
+  - `model`: Model reference (session_id, identifier, or Axon model tuple)
+  - `input`: Input data (Nx tensor, binary, or map)
+
+  ## Returns
+
+  - `{:ok, output}` on success
+  - `{:error, reason}` on failure
+  """
+  def predict(model, input) do
+    cond do
+      is_binary(model) and ios?() ->
+        Dala.ML.CoreML.predict(model, input)
+
+      is_integer(model) ->
+        Dala.ML.ONNX.run(model, input)
+
+      is_tuple(model) ->
+        Dala.ML.Nx.inference(elem(model, 0), elem(model, 1), input)
+
+      true ->
+        {:error, "Unsupported model type: #{inspect(model)}"}
     end
   end
 end

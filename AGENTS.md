@@ -201,11 +201,15 @@ These are the things we've burned ourselves on. Following them isn't optional.
     Burned us in `Dala.Socket` where `:changed` was only set in `new/2`.
 
 ## 14. **Zero-config ML on iOS/Android.**
-    `Dala.ML.EMLX.setup/0` auto-configures EMLX for the platform:
-    - iOS device: Metal GPU, JIT disabled (W^X policy)
-    - iOS simulator: Metal GPU, JIT enabled
-    - Non-iOS: no-op, falls back to Nx.BinaryBackend
+    `Dala.ML.setup/0` auto-configures the ML stack for the platform:
+    - iOS device: EMLX with Metal GPU, JIT disabled (W^X policy)
+    - iOS simulator: EMLX with Metal GPU, JIT enabled
+    - Android: Nx.BinaryBackend
+    - Other: Nx.BinaryBackend
     No manual `config :nx, ...` or `config :emlx, ...` needed!
+    CoreML predictions are synchronous (NIF captures ObjC callback result via Mutex)
+    and run on the dirty CPU scheduler (`schedule = "DirtyCpu"`).
+    ONNX NIFs are also dirty CPU scheduled and available on both iOS and Android.
     See `examples/ml_app/` for a ready-to-run YOLO detection app.
 
 ## 15. **WebView interact API for programmatic control.**
@@ -340,7 +344,7 @@ These are the things we've burned ourselves on. Following them isn't optional.
 | Preview designer (drag-and-drop, code gen) | `dev_tools/INTERACTIVE_PREVIEW.md`, `dev_tools/dala/preview/` |
 | Architecture decisions (one ADR per cross-cutting decision) | `docs/decisions/` |
 | iOS device deployment (provisioning, build chain, gotchas) | `guides/ios_physical_device.md` |
-| iOS ML support (Nx, Axon, EMLX) | `guides/ios_ml_support.md`, `lib/dala/ml/` |
+| iOS ML support (Nx, Axon, EMLX, CoreML, ONNX) | `guides/ios_ml_support.md`, `lib/dala/ml/`, `dala/ML_INTEGRATION_SUMMARY.md` |
 | Bluetooth/WiFi setup and API | `docs/bluetooth_wifi_implementation.md`, `lib/dala/bluetooth.ex`, `lib/dala/wifi.ex` |
 | Bluetooth/WiFi setup scripts | `scripts/ios_setup.sh`, `scripts/android_setup.sh` |
 | iOS Bluetooth native code | `ios/DalaBluetoothManager.{h,m}`, `ios/DalaBluetoothCInterface.m` |
@@ -350,7 +354,7 @@ These are the things we've burned ourselves on. Following them isn't optional.
 
 ## iOS ML Support (Nx ecosystem + CoreML + ONNX)
 
-Dala supports machine learning on iOS via three paths:
+Dala supports machine learning via three paths:
 
 ### Nx Ecosystem (Pure Elixir, Cross-Platform)
 
@@ -358,40 +362,50 @@ Dala supports machine learning on iOS via three paths:
 - **Scholar**: Traditional ML (regression, clustering, SVM, etc.), pure Elixir ✅
 - **NxSignal**: DSP (digital signal processing) for audio/time series, pure Elixir ✅
 - **Axon**: Neural networks, pure Elixir ✅
-- **EMLX**: MLX backend for Apple Silicon — **recommended for iOS** ⚠️
+- **EMLX**: MLX backend for Apple Silicon — **recommended for iOS** ✅
 
 ### CoreML (iOS-Native, Hardware-Accelerated)
 
 - **CoreML**: Apple's native ML framework — **best performance on iOS** 🚀
   - Uses Apple Neural Engine (ANE) for hardware acceleration
   - Supports .mlmodel and .mlpackage formats
+  - Synchronous predictions via NIF (Mutex-captured ObjC callback)
+  - Runs on dirty CPU scheduler
   - Access via `Dala.ML.CoreML` module
 
-### ONNX Runtime (Cross-Platform, Production-Ready)
+### ONNX Runtime (Cross-Platform, Placeholder)
 
 - **ONNX Runtime**: Industry-standard ONNX inference engine
   - **iOS**: Uses CoreML EP (Execution Provider) for Neural Engine
   - **Android**: Uses NNAPI EP for hardware acceleration
-  - **Desktop**: Uses CPU/CUDA/ TensorRT EPs
+  - **Desktop**: Uses CPU/CUDA/TensorRT EPs
   - Access via `Dala.ML.ONNX` module
   - Rust core: `native/dala_onnx/` (C ABI)
+  - **Status**: Placeholder — thread-safe structure ready, actual inference not yet linked
 
 **Not supported on iOS:** Emily (macOS-only), NxIREE, EXLA/XLA, Torchx.
 
 **Newly integrated (v0.0.6+):**
 - Scholar, NxSignal, Axon are now direct dependencies
-- CoreML bridge for iOS-native inference
-- ONNX Runtime for cross-platform production inference
+- CoreML bridge for iOS-native inference (synchronous, dirty CPU scheduled)
+- ONNX Runtime for cross-platform production inference (placeholder)
+- `Dala.ML.setup/0` unified zero-config entry point
+- `Dala.ML.predict/2` unified predict dispatching to CoreML/ONNX/Axon
+- `Dala.ML.benchmark/1` for backend performance measurement
 
-Use `Dala.ML.setup/0` for Nx ecosystem zero-config setup.
+Use `Dala.ML.setup/0` for zero-config setup (replaces `Dala.ML.EMLX.setup/0`).
 
 Key constraints:
-1. **No JIT on iOS devices** — W^X policy blocks JIT. Set `LIBMLX_ENABLE_JIT=false`.
+1. **No JIT on iOS devices** — W^X policy blocks JIT. `Dala.ML.setup/0` handles this automatically.
 2. **Metal GPU available** — EMLX uses MLX with Metal on iOS devices and simulator.
 3. **Unified memory** — Apple Silicon's shared CPU/GPU memory makes EMLX efficient.
+4. **CoreML is synchronous** — NIF captures ObjC callback result via Mutex, returns `{:ok, result}` or `{:error, reason}`.
+5. **ONNX NIFs are dirty CPU scheduled** — won't block BEAM schedulers.
+6. **ONNX available on iOS + Android** — NIFs gated with `#[cfg(any(target_os = "ios", target_os = "android"))]`.
 
 Helper modules: `Dala.ML`, `Dala.ML.EMLX`, `Dala.ML.Nx`, `Dala.ML.CoreML`, `Dala.ML.ONNX` in `lib/dala/ml/`.
 Full guide: `guides/ios_ml_support.md`
+Summary: `dala/ML_INTEGRATION_SUMMARY.md`
 
 ## 21. **Dev-only UI preview and design tool.**
     `Dala.Preview` module (in `dev_tools/` directory) provides two modes:

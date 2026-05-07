@@ -4,54 +4,25 @@ This guide covers adding machine learning capabilities to Dala apps on iOS using
 
 ## Overview
 
-For iOS development, only these libraries are supported:
+For iOS development, these ML backends are supported:
 
 | Component | Status | Notes |
 |-----------|--------|-------|
 | **Nx** | ✅ Ready | Pure Elixir, works on any platform |
 | **Axon** | ✅ Ready | Neural networks, pure Elixir |
-| **EMLX** | ⚠️ Setup needed | MLX backend - **recommended for iOS** |
+| **Scholar** | ✅ Ready | Traditional ML (regression, clustering, SVM) |
+| **NxSignal** | ✅ Ready | Digital signal processing |
+| **EMLX** | ✅ Zero-config | MLX backend — **recommended for iOS** |
+| **CoreML** | ✅ Ready | Apple Neural Engine, iOS-native |
+| **ONNX Runtime** | ⚠️ Placeholder | Cross-platform, structure ready |
 
 **Not supported on iOS:** Emily (macOS-only), NxIREE, EXLA/XLA, Torchx.
 
-
-
 ## Quick Start
 
-### 1. Add Dependencies
+### 1. Zero-Config Setup (Recommended)
 
-In your Dala app's `mix.exs`:
-
-```elixir
-def deps do
-  [
-    {:nx, github: "elixir-nx/nx", sparse: "nx"},
-    {:axon, "~> 0.6"},
-    {:emlx, github: "elixir-nx/emlx", branch: "main"}
-  ]
-end
-```
-
-### 2. Configure for iOS
-
-Create or update `config/config.exs`:
-
-```elixir
-# Disable JIT for iOS devices (W^X policy)
-config :emlx, :jit_enabled, false
-
-# Use Metal GPU on iOS (unified memory architecture)
-config :nx, :default_backend, {EMLX.Backend, device: :gpu}
-
-# Or use CPU backend:
-# config :nx, :default_backend, {EMLX.Backend, device: :cpu}
-```
-
-### 3. Initialize in Your App
-
-#### Zero-config approach (recommended)
-
-`Dala.ML.EMLX.setup/0` auto-configures EMLX for the platform — no manual `config` needed:
+`Dala.ML.setup/0` auto-configures everything based on platform:
 
 ```elixir
 defmodule MyApp.App do
@@ -59,33 +30,56 @@ defmodule MyApp.App do
 
   def start(_type, _args) do
     # Auto-configures based on platform:
-    # - iOS device: Metal GPU, JIT disabled (W^X policy)
-    # - iOS simulator: Metal GPU, JIT enabled
-    # - Non-iOS: no-op, falls back to Nx.BinaryBackend
-    Dala.ML.EMLX.setup()
+    # - iOS device: EMLX with Metal GPU, JIT disabled (W^X policy)
+    # - iOS simulator: EMLX with Metal GPU, JIT enabled
+    # - Android: Nx.BinaryBackend
+    # - Other: Nx.BinaryBackend
+    Dala.ML.setup()
 
     # ... rest of your app startup
   end
 end
 ```
 
-This is the **recommended approach** — no manual `config :nx, ...` or `config :emlx, ...` needed!
+No manual `config :nx, ...` or `config :emlx, ...` needed!
 
-#### Manual configuration (advanced)
-
-If you need custom settings, initialize manually:
+### 2. Verify Setup
 
 ```elixir
-defmodule MyApp.App do
-  use Dala.App
+# Check ML stack status
+Dala.ML.status()
+# %{platform: :ios_device, backend: {EMLX.Backend, [device: :gpu]}, ...}
 
-  def start(_type, _args) do
-    # Initialize ML backend for iOS
-    Dala.ML.Nx.init_for_ios()
+# Quick verification
+Dala.ML.verify()
+# %{status: :ok, sum: 6.0, backend: {EMLX.Backend, [device: :gpu]}}
 
-    # ... rest of your app startup
-  end
-end
+# Available backends
+Dala.ML.available_backends()
+# [:nx, :emlx, :coreml, :onnx]
+
+# Benchmark
+Dala.ML.benchmark(size: 100, iterations: 10)
+# %{time_ms: 1.234, gflops: 0.857, ...}
+```
+
+### 3. Use ML Libraries
+
+```elixir
+# Nx tensors (auto-configured backend)
+tensor = Nx.tensor([1.0, 2.0, 3.0])
+Nx.sum(tensor)
+
+# Axon neural networks
+model = Axon.input("input", shape: {nil, 784})
+       |> Axon.dense(128, activation: :relu)
+       |> Axon.dense(10, activation: :softmax)
+
+# Scholar traditional ML
+model = Scholar.LinearRegression.fit(features, targets)
+
+# NxSignal DSP
+filtered = NxSignal.butterworth(signal, cutoff: 0.2)
 ```
 
 ## EMLX on iOS
@@ -122,6 +116,103 @@ Dala.ML.EMLX.ios_simulator?() # true for simulator
 # Get platform-appropriate config
 Dala.ML.EMLX.platform_config()
 # Returns %{device: :gpu, jit_enabled: false, metal_jit: false} for device
+```
+
+## CoreML on iOS
+
+### Loading and Running Models
+
+```elixir
+# Load a CoreML model
+:ok = Dala.ML.CoreML.load_model("/path/to/model.mlmodel", "my_model")
+
+# Check if loaded
+true = Dala.ML.CoreML.loaded?("my_model")
+
+# Make prediction (synchronous, runs on dirty CPU scheduler)
+{:ok, result_json} = Dala.ML.CoreML.predict("my_model", %{
+  "input1" => 1.0,
+  "input2" => [1.0, 2.0, 3.0]
+})
+
+# Parse result
+result = Jason.decode!(result_json)
+
+# Unload when done
+:ok = Dala.ML.CoreML.unload_model("my_model")
+```
+
+### Converting Models to CoreML
+
+1. **Axon → ONNX → CoreML**:
+   ```elixir
+   # Train with Axon
+   model = Axon.input("input", shape: {nil, 784}) |> Axon.dense(10, activation: :softmax)
+   {init_fn, predict_fn} = Axon.build(model)
+   params = init_fn.(Nx.template({1, 784}, :f32), %{})
+
+   # Export to ONNX (requires ortonx or onnx package)
+   # Then convert ONNX to CoreML using Apple's coremltools (Python)
+   ```
+
+2. **Use pre-trained CoreML models** from Apple or third parties.
+
+### Input Types
+
+CoreML supports these input types in the `inputs` map:
+
+| Type | Example | CoreML Mapping |
+|------|---------|---------------|
+| Number | `1.0` | `MLFeatureValue(double:)` |
+| String | `"hello"` | `MLFeatureValue(string:)` |
+| List | `[1.0, 2.0, 3.0]` | `MLMultiArray` |
+| Binary | `<<...>>` | `MLFeatureValue(data:)` |
+
+## ONNX Runtime (Cross-Platform)
+
+### Status
+
+ONNX Runtime integration is currently a **placeholder**. The Rust NIF layer and
+`dala_onnx` crate have correct structure and thread-safe session management, but
+actual ONNX Runtime linking and inference is not yet implemented.
+
+### Setup (When Available)
+
+```bash
+# Download ONNX Runtime for iOS
+cd native/onnxruntime-ios/
+# See native/ONNX_RUNTIME_SETUP.md for download instructions
+```
+
+### Usage (When Available)
+
+```elixir
+# Create session from ONNX model data
+{:ok, session_id} = Dala.ML.ONNX.create_session(model_data)
+
+# Or load from file
+{:ok, session_id} = Dala.ML.ONNX.load_model_from_file("model.onnx")
+
+# Run inference
+{:ok, output} = Dala.ML.ONNX.run(session_id, input_binary)
+
+# Clean up
+:ok = Dala.ML.ONNX.destroy_session(session_id)
+```
+
+## Unified API
+
+`Dala.ML.predict/2` dispatches to the right backend based on model type:
+
+```elixir
+# CoreML model (string identifier on iOS)
+Dala.ML.predict("my_model", %{"input" => [1.0, 2.0, 3.0]})
+
+# ONNX session (integer session ID)
+Dala.ML.predict(session_id, input_binary)
+
+# Axon model ({model, params} tuple)
+Dala.ML.predict({axon_model, params}, input_tensor)
 ```
 
 ## Example: Simple Neural Network
@@ -181,10 +272,13 @@ export LIBMLX_CACHE=~/.cache/libmlx
    - Using pre-trained models
    - Quantization for smaller models (EMLX supports 4-bit quantization)
 
+3. **ONNX Runtime**: Currently placeholder only. Real inference requires linking the ONNX Runtime C library.
+
 ## Troubleshooting
 
 ### "JIT not allowed" errors
 Ensure `LIBMLX_ENABLE_JIT=false` and OTP is built with `--disable-jit`.
+`Dala.ML.EMLX.setup/0` handles this automatically.
 
 ### "MLX not found" errors
 Check that MLX binaries are available for iOS arm64. You may need to:
@@ -194,9 +288,20 @@ Check that MLX binaries are available for iOS arm64. You may need to:
 ### Memory issues
 Use `EMLX.clear_cache/0` and `EMLX.set_memory_limit/1` to manage GPU memory.
 
+### CoreML returns `:not_supported`
+- CoreML is only available on iOS
+- Ensure model file exists at the specified path
+- Check model format (.mlmodel or .mlpackage)
+
+### ONNX `available?/0` returns `false`
+- ONNX Runtime NIF must be compiled for the target platform
+- Verify ONNX Runtime libraries are in `native/onnxruntime-ios/`
+
 ## See Also
 
 - [EMLX Documentation](https://hexdocs.pm/emlx)
 - [Nx Documentation](https://hexdocs.pm/nx)
 - [Axon Documentation](https://hexdocs.pm/axon)
 - [MLX GitHub](https://github.com/ml-explore/mlx)
+- [ONNX Runtime Setup](../native/ONNX_RUNTIME_SETUP.md)
+- [ML Integration Summary](../dala/ML_INTEGRATION_SUMMARY.md)

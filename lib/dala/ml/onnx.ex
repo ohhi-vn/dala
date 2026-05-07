@@ -125,11 +125,9 @@ defmodule Dala.ML.ONNX do
   """
   def available? do
     try do
-      # Try a dummy call to check if NIF is loaded
-      Dala.Native.onnx_create_session(<<>>)
-      true
+      Code.ensure_loaded?(Dala.Native) and
+        function_exported?(Dala.Native, :onnx_create_session, 1)
     rescue
-      UndefinedFunctionError -> false
       _ -> false
     end
   end

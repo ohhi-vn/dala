@@ -1,47 +1,56 @@
 // dala_onnx - Cross-platform ONNX Runtime wrapper for Dala
-// Placeholder implementation
+// Placeholder implementation — real ONNX Runtime linking coming via build.rs.
+// Thread-safe session tracking via Mutex (no `static mut` UB).
 
 #![allow(unused)]
 
+use std::ffi::c_char;
 use std::ptr;
-use std::sync::{Once};
+use std::sync::Mutex;
 
-static mut SESSIONS: Option<Vec<*mut ()>> = None;
-static INIT: Once = Once::new();
-static mut NEXT_ID: u64 = 1;
+// ===========================================================================
+// Session management (thread-safe)
+// ===========================================================================
 
-fn get_sessions() -> &'static mut Vec<*mut ()> {
-    unsafe {
-        INIT.call_once(|| {
-            SESSIONS = Some(Vec::new());
-        });
-        SESSIONS.as_mut().unwrap()
-    }
-}
+static SESSIONS: Mutex<Vec<u64>> = Mutex::new(Vec::new());
+static NEXT_ID: Mutex<u64> = Mutex::new(1);
 
+// ===========================================================================
+// C ABI functions
+// ===========================================================================
+
+/// Create an ONNX session from model data.
+/// Returns: session_id (u64) on success, 0 on failure.
 #[no_mangle]
-pub extern "C" fn ort_create_session(_model_data: *const u8, _model_len: usize) -> u64 {
-    let sessions = get_sessions();
-    let session_id = unsafe {
-        NEXT_ID += 1;
-        NEXT_ID
-    };
-    sessions.push(ptr::null_mut());
-    session_id
+pub extern "C" fn ort_create_session(model_data: *const u8, model_len: usize) -> u64 {
+    if model_data.is_null() {
+        return 0;
+    }
+    let mut next_id = NEXT_ID.lock().unwrap();
+    let id = *next_id;
+    *next_id += 1;
+
+    let mut sessions = SESSIONS.lock().unwrap();
+    sessions.push(id);
+
+    id
 }
 
+/// Destroy an ONNX session.
+/// Returns: 0 on success, -1 if session not found.
 #[no_mangle]
 pub extern "C" fn ort_destroy_session(session_id: u64) -> i32 {
-    let sessions = get_sessions();
-    let idx = (session_id - 1) as usize;
-    if idx < sessions.len() {
-        sessions[idx] = ptr::null_mut();
+    let mut sessions = SESSIONS.lock().unwrap();
+    if let Some(pos) = sessions.iter().position(|&id| id == session_id) {
+        sessions.remove(pos);
         0
     } else {
         -1
     }
 }
 
+/// Run inference on a session.
+/// Returns: 0 on success, negative on failure.
 #[no_mangle]
 pub extern "C" fn ort_run(
     _session_id: u64,
@@ -62,12 +71,9 @@ pub extern "C" fn ort_run(
     0
 }
 
+/// Get input tensor shape for a session.
 #[no_mangle]
-pub extern "C" fn ort_input_shape(
-    _session_id: u64,
-    shape_out: *mut i64,
-    max_dims: usize,
-) -> i32 {
+pub extern "C" fn ort_input_shape(_session_id: u64, shape_out: *mut i64, max_dims: usize) -> i32 {
     if shape_out.is_null() || max_dims < 4 {
         return -2;
     }
@@ -78,12 +84,9 @@ pub extern "C" fn ort_input_shape(
     4
 }
 
+/// Get output tensor shape for a session.
 #[no_mangle]
-pub extern "C" fn ort_output_shape(
-    _session_id: u64,
-    shape_out: *mut i64,
-    max_dims: usize,
-) -> i32 {
+pub extern "C" fn ort_output_shape(_session_id: u64, shape_out: *mut i64, max_dims: usize) -> i32 {
     if shape_out.is_null() || max_dims < 2 {
         return -2;
     }
@@ -94,22 +97,37 @@ pub extern "C" fn ort_output_shape(
     2
 }
 
+/// Set execution provider for a session.
 #[no_mangle]
-pub extern "C" fn ort_set_execution_provider(
-    _session_id: u64,
-    _provider: *const char,
-) -> i32 {
+pub extern "C" fn ort_set_execution_provider(_session_id: u64, _provider: *const c_char) -> i32 {
+    // Placeholder: accept any provider without error.
     0
 }
 
+/// Return the number of active sessions.
 #[no_mangle]
-pub extern "C" fn ort_last_error() -> *const char {
-    static MSG: &str = "ONNX Runtime not implemented (placeholder)";
-    MSG.as_ptr() as *const char
+pub extern "C" fn ort_session_count() -> u64 {
+    SESSIONS.lock().unwrap().len() as u64
 }
 
+/// Check whether ONNX Runtime is available and initialized.
+/// Returns: 1 if available, 0 otherwise.
+#[no_mangle]
+pub extern "C" fn ort_is_available() -> i32 {
+    // Placeholder: always available. Real implementation would verify
+    // the native ONNX Runtime library loaded successfully.
+    1
+}
+
+/// Get last error message.
+#[no_mangle]
+pub extern "C" fn ort_last_error() -> *const c_char {
+    static MSG: &[u8] = b"ONNX Runtime not implemented (placeholder)\0";
+    MSG.as_ptr() as *const c_char
+}
+
+/// Cleanup all resources.
 #[no_mangle]
 pub extern "C" fn ort_cleanup() {
-    let sessions = get_sessions();
-    sessions.clear();
+    SESSIONS.lock().unwrap().clear();
 }
