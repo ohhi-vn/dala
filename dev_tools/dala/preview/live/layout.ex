@@ -25,6 +25,11 @@ defmodule Dala.Preview.Live.Layout do
         <title>#{title}</title>
 
         <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+        <script src="/assets/js/design_canvas.js"></script>
+        <script>
+          window.Hooks = window.Hooks || {};
+          window.Hooks.DesignCanvas = DesignCanvas;
+        </script>
 
         <style>
           :root {

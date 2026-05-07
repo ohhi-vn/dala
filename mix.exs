@@ -138,7 +138,7 @@ defmodule Dala.MixProject do
 
   defp package do
     [
-      licenses: ["MIT"],
+      licenses: ["MIT", "Apache-2.0"],
       links: %{"GitHub" => "https://github.com/manhvu/dala"},
       files: ~w(
         lib native priv
