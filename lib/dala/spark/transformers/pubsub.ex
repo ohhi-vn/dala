@@ -17,7 +17,7 @@ defmodule Dala.Spark.Transformers.Pubsub do
       # Generate handle_info clauses for each subscription
       handle_info_clauses =
         Enum.map(subscriptions, fn sub ->
-          topic = Map.get(sub, :topic)
+          _topic = Map.get(sub, :topic)
           handler = Map.get(sub, :on_message)
 
           quote do

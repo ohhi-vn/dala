@@ -191,14 +191,14 @@ defmodule Mix.Tasks.Dala.SetupBluetoothWifi do
       end
     else
       warning(color?, "  ⚠ iOS setup script not found, using Elixir module")
-      Dala.Setup.IOS.setup_bluetooth()
+      Dala.Setup.Ios.setup_bluetooth()
     end
   end
 
   defp verify_ios_setup(_color?) do
     checks = [
-      {"Bluetooth files", Dala.Setup.IOS.bluetooth_files_present?()},
-      {"Xcode project", Dala.Setup.IOS.xcode_project_exists?()}
+      {"Bluetooth files", Dala.Setup.Ios.bluetooth_files_present?()},
+      {"Xcode project", Dala.Setup.Ios.xcode_project_exists?()}
     ]
 
     failed =
@@ -292,8 +292,8 @@ defmodule Mix.Tasks.Dala.SetupBluetoothWifi do
     info(color?, "iOS:")
 
     checks = [
-      {"Bluetooth files present", Dala.Setup.IOS.bluetooth_files_present?()},
-      {"Xcode project exists", Dala.Setup.IOS.xcode_project_exists?()},
+      {"Bluetooth files present", Dala.Setup.Ios.bluetooth_files_present?()},
+      {"Xcode project exists", Dala.Setup.Ios.xcode_project_exists?()},
       {"Info.plist configured", check_ios_plist(color?)}
     ]
 

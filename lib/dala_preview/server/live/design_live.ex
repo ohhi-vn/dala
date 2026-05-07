@@ -182,7 +182,7 @@ defmodule DalaPreview.Server.DesignLive do
   defp default_props(:button), do: %{"text" => "Button"}
   defp default_props(_), do: %{}
 
-  defp generate_code(design, format \\ "sigil") do
+  defp generate_code(design, format) do
     nodes = Map.get(design, :nodes, [])
 
     case format do

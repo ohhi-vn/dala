@@ -170,7 +170,7 @@ defmodule Dala.Screen.Screen do
 
     case screen_module.mount(params, %{}, socket) do
       {:ok, mounted_socket} ->
-        socket =
+        final_socket =
           if render_mode == :render do
             # Check for a notification that launched the app from a killed state.
             # Send it to self() so it arrives via handle_info after init returns,
@@ -187,10 +187,10 @@ defmodule Dala.Screen.Screen do
 
         # Register with screen manager
         screen_id = Dala.Screen.Manager.next_id()
-        screen_name = mounted_socket.assigns[:name]
+        screen_name = final_socket.assigns[:name]
         Dala.Screen.Manager.register(screen_id, screen_name, self(), screen_module)
 
-        {:ok, {screen_module, mounted_socket, [], render_mode, screen_id}}
+        {:ok, {screen_module, final_socket, [], render_mode, screen_id}}
 
       {:error, reason} ->
         Dala.Platform.Native.log(
@@ -202,17 +202,18 @@ defmodule Dala.Screen.Screen do
   end
 
   @impl GenServer
-  def terminate(reason, {module, socket, nav_history, render_mode, screen_id}) do
+  def terminate(reason, {module, socket, _nav_history, _render_mode, _screen_id}) do
     Dala.Screen.Manager.unregister(self())
     module.terminate(reason, socket)
   end
 
   @impl GenServer
-  def terminate(reason, {module, socket, nav_history, render_mode}) do
+  def terminate(reason, {module, socket, _nav_history, _render_mode}) do
     Dala.Screen.Manager.unregister(self())
     module.terminate(reason, socket)
   end
 
+  @impl GenServer
   def handle_call(
         {:event, event, params},
         _from,
@@ -325,7 +326,7 @@ defmodule Dala.Screen.Screen do
     {:reply, :ok, {new_module, new_socket, new_history, render_mode}}
   end
 
-  def handle_call(:get_socket, _from, {_module, socket, _nav_history, _mode, screen_id} = state) do
+  def handle_call(:get_socket, _from, {_module, socket, _nav_history, _mode, _screen_id} = state) do
     {:reply, socket, state}
   end
 
@@ -333,7 +334,7 @@ defmodule Dala.Screen.Screen do
     {:reply, socket, state}
   end
 
-  def handle_call(:inspect, _from, {module, socket, nav_history, _mode, screen_id} = state) do
+  def handle_call(:inspect, _from, {module, socket, nav_history, _mode, _screen_id} = state) do
     tree = module.render(socket.assigns)
 
     info = %{
@@ -362,7 +363,7 @@ defmodule Dala.Screen.Screen do
   def handle_call(
         :get_current_module,
         _from,
-        {module, _socket, _nav_history, _mode, screen_id} = state
+        {module, _socket, _nav_history, _mode, _screen_id} = state
       ) do
     {:reply, module, state}
   end
@@ -374,7 +375,7 @@ defmodule Dala.Screen.Screen do
   def handle_call(
         :get_nav_history,
         _from,
-        {_module, _socket, nav_history, _mode, screen_id} = state
+        {_module, _socket, nav_history, _mode, _screen_id} = state
       ) do
     {:reply, nav_history, state}
   end
@@ -684,11 +685,6 @@ defmodule Dala.Screen.Screen do
 
   defp to_atom_safe(a) when is_atom(a), do: a
 
-  @impl GenServer
-  def terminate(reason, {module, socket, _nav_history, _render_mode}) do
-    module.terminate(reason, socket)
-  end
-
   # ── Navigation ────────────────────────────────────────────────────────────
 
   # Inspect the socket's nav_action and execute it, returning
@@ -840,12 +836,12 @@ defmodule Dala.Screen.Screen do
       {tree, active_component_keys} =
         module.render(socket.assigns)
         |> Dala.Ui.List.expand(list_renderers, self())
-        |> Dala.Component.expand(self(), platform)
+        |> Dala.Ui.NativeView.expand(self(), platform)
 
       # Convert to Dala.Ui.Node struct for proper diffing
       new_node = Dala.Ui.Node.from_map(tree, "root")
 
-      Dala.ComponentRegistry.reconcile(self(), active_component_keys)
+      Dala.Ui.NativeView.Registry.reconcile(self(), active_component_keys)
 
       # Get previous tree from socket metadata
       old_tree = Dala.Ui.Socket.get_dala(socket, :last_tree)

@@ -18,14 +18,14 @@ defmodule Dala.Event.Component do
   components — registering them in render trees, routing events to them,
   managing their lifecycle — is implemented incrementally:
 
-  1. Existing `Dala.Component` (a sibling concept for native_view widgets)
+  1. Existing `Dala.Ui.NativeView` (a sibling concept for native_view widgets)
      remains the runtime for components that pair with custom native views.
   2. `Dala.Event.Component` (this module) is the *event-routing* abstraction:
      a stateful owner of events for a subtree of standard widgets.
   3. The two will likely merge once the new event model is plumbed end-to-end.
 
   Until then, the Bridge module handles the legacy event shapes and the
-  existing `Dala.Component` is the canonical stateful component.
+  existing `Dala.Ui.NativeView` is the canonical stateful component.
 
   ## Callbacks
 
@@ -35,7 +35,7 @@ defmodule Dala.Event.Component do
         def mount(props, state), do: {:ok, Map.put(state, :email, "")}
 
         def render(state) do
-          # return a render tree (uses Dala.UI helpers)
+          # return a render tree (uses Dala.Ui.Widgets helpers)
           %{type: :column, ...}
         end
 

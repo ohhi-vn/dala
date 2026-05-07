@@ -64,7 +64,7 @@ defmodule Dala.Ui.Renderer do
       Dala.Ui.Renderer.render(tree, :android, MockNIF)
   """
 
-  alias Dala.{Style, Theme}
+  alias Dala.Theme.Theme
 
   @default_nif Dala.Platform.Native
 
@@ -166,106 +166,6 @@ defmodule Dala.Ui.Renderer do
     "6xl": 60.0
   }
 
-  # Props whose atom values are resolved as colors
-  @color_props ~w(background text_color border_color color placeholder_color)a
-  # Props whose atom values are resolved as spacing or radius tokens
-  @spacing_props ~w(padding padding_top padding_right padding_bottom padding_left gap)a
-  @radius_props ~w(corner_radius)a
-  # Props whose atom values are resolved as text sizes (scaled by type_scale)
-  @size_props ~w(text_size font_size)a
-
-  # ── Component defaults ────────────────────────────────────────────────────
-  # Injected for missing styling props. Use semantic tokens so they inherit
-  # the active theme automatically. Explicit props always win.
-
-  @component_defaults %{
-    button: %{
-      background: :primary,
-      text_color: :on_primary,
-      padding: :space_md,
-      corner_radius: :radius_md,
-      text_size: :base,
-      font_weight: "medium",
-      fill_width: true,
-      text_align: :center
-    },
-    progress: %{
-      color: :primary
-    },
-    image: %{
-      resize_mode: :cover
-    },
-    switch: %{
-      value: false,
-      track_color: :primary
-    },
-    activity_indicator: %{
-      size: :small,
-      animating: true,
-      color: :primary
-    },
-    modal: %{
-      visible: false,
-      presentation_style: :full_screen
-    },
-    refresh_control: %{
-      refreshing: false
-    },
-    scroll: %{
-      horizontal: false
-    },
-    pressable: %{},
-    safe_area: %{},
-    status_bar: %{
-      bar_style: :default,
-      hidden: false
-    },
-    progress_bar: %{
-      progress: 0.0,
-      indeterminate: false,
-      color: :primary
-    },
-    list: %{
-      scroll: true
-    },
-    column: %{},
-    row: %{},
-    box: %{},
-    divider: %{
-      thickness: 1.0,
-      color: :border
-    },
-    spacer: %{},
-    text_field: %{
-      background: :surface_raised,
-      text_color: :on_surface,
-      placeholder_color: :muted,
-      border_color: :border,
-      padding: :space_sm,
-      corner_radius: :radius_sm,
-      text_size: :base
-    },
-    toggle: %{
-      value: false,
-      track_color: :primary
-    },
-    slider: %{
-      value: 0.0,
-      min_value: 0.0,
-      max_value: 1.0,
-      color: :primary
-    },
-    tab_bar: %{},
-    video: %{
-      autoplay: false,
-      loop: false,
-      controls: true
-    },
-    icon: %{
-      text_size: 20.0
-    }
-  }
-
   # ── Public API ────────────────────────────────────────────────────────────
 
   @doc """
@@ -278,13 +178,13 @@ defmodule Dala.Ui.Renderer do
   animation. Defaults to `:none` (instant swap).
   """
   @spec render(map(), atom(), module() | atom(), atom()) :: {:ok, :json_tree} | {:error, term()}
-  def render(tree, platform, nif \\ @default_nif, _transition \\ :none) do
-    theme = Theme.current()
+  def render(tree, _platform, nif \\ @default_nif, _transition \\ :none) do
+    theme = apply(Theme, :current, [])
 
-    ctx = %{
-      colors: Theme.color_map(theme),
-      spacing: Theme.spacing_map(theme),
-      radii: Theme.radius_map(theme),
+    _ctx = %{
+      colors: apply(Theme, :color_map, [theme]),
+      spacing: apply(Theme, :spacing_map, [theme]),
+      radii: apply(Theme, :radius_map, [theme]),
       type_scale: theme.type_scale
     }
 
@@ -301,12 +201,12 @@ defmodule Dala.Ui.Renderer do
   # Optimized version that batches tap registrations
   @spec render_fast(Dala.Screen.t(), atom(), module(), atom()) :: {:ok, :binary_tree}
   def render_fast(tree, platform, nif \\ @default_nif, transition \\ :none) do
-    theme = Theme.current()
+    theme = apply(Theme, :current, [])
 
     ctx = %{
-      colors: Theme.color_map(theme),
-      spacing: Theme.spacing_map(theme),
-      radii: Theme.radius_map(theme),
+      colors: apply(Theme, :color_map, [theme]),
+      spacing: apply(Theme, :spacing_map, [theme]),
+      radii: apply(Theme, :radius_map, [theme]),
       type_scale: theme.type_scale
     }
 
@@ -332,7 +232,7 @@ defmodule Dala.Ui.Renderer do
   only the patches to native. Falls back to full render on first call
   (when `old_tree` is nil).
 
-  `new_tree` can be either a map (from Dala.UI functions) or a `Dala.Ui.Node` struct.
+  `new_tree` can be either a map (from Dala.Ui.Widgets functions) or a `Dala.Ui.Node` struct.
   If it's a map, it will be converted to a `Dala.Ui.Node` first.
 
   Returns `{:ok, patches}` where patches is the list of patch tuples.
@@ -345,12 +245,12 @@ defmodule Dala.Ui.Renderer do
           atom()
         ) :: {:ok, [Dala.Ui.Diff.patch()]}
   def render_patches(old_tree, new_tree, platform, nif \\ @default_nif, transition \\ :none) do
-    theme = Theme.current()
+    theme = apply(Theme, :current, [])
 
     ctx = %{
-      colors: Theme.color_map(theme),
-      spacing: Theme.spacing_map(theme),
-      radii: Theme.radius_map(theme),
+      colors: apply(Theme, :color_map, [theme]),
+      spacing: apply(Theme, :spacing_map, [theme]),
+      radii: apply(Theme, :radius_map, [theme]),
       type_scale: theme.type_scale
     }
 
@@ -740,410 +640,4 @@ defmodule Dala.Ui.Renderer do
   def text_sizes, do: @text_sizes
 
   # ── Tree preparation ──────────────────────────────────────────────────────
-
-  # Type aliases: Elixir uses familiar names, native side uses different strings.
-  # This keeps the Elixir API ergonomic while matching native expectations.
-  @type_aliases %{
-    switch: :toggle,
-    progress_bar: :progress
-  }
-
-  defp prepare(%{type: type, props: props, children: children}, nif, platform, ctx) do
-    # Normalize :title → :text for buttons (backward compat)
-    props =
-      if type == :button and Map.has_key?(props, :title) and not Map.has_key?(props, :text) do
-        Map.put(props, :text, Map.get(props, :title))
-      else
-        props
-      end
-
-    # Normalize :size → :fixed_size for spacers
-    props =
-      if type == :spacer and Map.has_key?(props, :size) do
-        Map.put(props, :fixed_size, Map.get(props, :size))
-      else
-        props
-      end
-
-    # Resolve type alias for native side
-    native_type = Map.get(@type_aliases, type, type)
-
-    defaults = Map.get(@component_defaults, type, %{})
-    with_defaults = Map.merge(defaults, props)
-
-    %{
-      "type" => Atom.to_string(native_type),
-      "props" => prepare_props(with_defaults, nif, platform, ctx),
-      "children" => Enum.map(children, &prepare(&1, nif, platform, ctx))
-    }
-  end
-
-  defp prepare_props(props, nif, platform, ctx) do
-    # 1. Merge any %Dala.Ui.Style{} under the :style key (inline props win)
-    {style, base} = Map.pop(props, :style)
-
-    merged =
-      case style do
-        %Dala.Ui.Style{props: sp} -> Map.merge(sp, base)
-        nil -> base
-      end
-
-    # 2. Resolve platform blocks (:ios / :android)
-    ios_extras = Map.get(merged, :ios, %{})
-    android_extras = Map.get(merged, :android, %{})
-    platform_extra = if platform == :ios, do: ios_extras, else: android_extras
-
-    final =
-      merged
-      |> Map.delete(:ios)
-      |> Map.delete(:android)
-      |> Map.merge(platform_extra)
-
-    # 3. Serialize: convert atom keys, register taps/changes, resolve tokens.
-    # on_tap with a tagged tuple also emits "accessibility_id" so test tooling
-    # can locate elements by tag name without relying on screen coordinates.
-    final
-    |> Enum.flat_map(fn
-      {:on_tap, pid} when is_pid(pid) ->
-        [{"on_tap", nif.register_tap(pid)}]
-
-      {:on_tap, {pid, tag}} when is_pid(pid) and is_atom(tag) ->
-        [{"on_tap", nif.register_tap({pid, tag})}, {"accessibility_id", Atom.to_string(tag)}]
-
-      {:on_tap, {pid, tag}} when is_pid(pid) ->
-        [{"on_tap", nif.register_tap({pid, tag})}]
-
-      {:on_change, {pid, tag}} when is_pid(pid) ->
-        [{"on_change", nif.register_tap({pid, tag})}]
-
-      {:on_toggle, {pid, tag}} when is_pid(pid) ->
-        [{"on_toggle", nif.register_tap({pid, tag})}]
-
-      {:on_press, {pid, tag}} when is_pid(pid) ->
-        [{"on_press", nif.register_tap({pid, tag})}]
-
-      {:on_refresh, {pid, tag}} when is_pid(pid) ->
-        [{"on_refresh", nif.register_tap({pid, tag})}]
-
-      {:on_dismiss, {pid, tag}} when is_pid(pid) ->
-        [{"on_dismiss", nif.register_tap({pid, tag})}]
-
-      {:on_focus, {pid, tag}} when is_pid(pid) ->
-        [{"on_focus", nif.register_tap({pid, tag})}]
-
-      {:on_blur, {pid, tag}} when is_pid(pid) ->
-        [{"on_blur", nif.register_tap({pid, tag})}]
-
-      {:on_submit, {pid, tag}} when is_pid(pid) ->
-        [{"on_submit", nif.register_tap({pid, tag})}]
-
-      # IME composition — fires for languages with multi-stage input (CJK,
-      # Korean, Vietnamese, accent input). Phase atom is :began | :updating
-      # | :committed | :cancelled. Apps that need commit-only behaviour
-      # combine on_change + on_compose: ignore on_change while a composition
-      # is active, replace text on :committed.
-      {:on_compose, {pid, tag}} when is_pid(pid) ->
-        [{"on_compose", nif.register_tap({pid, tag})}]
-
-      {:on_end_reached, {pid, tag}} when is_pid(pid) ->
-        [{"on_end_reached", nif.register_tap({pid, tag})}]
-
-      {:on_tab_select, {pid, tag}} when is_pid(pid) ->
-        [{"on_tab_select", nif.register_tap({pid, tag})}]
-
-      # Generic selection event — used by pickers, menus, segmented controls.
-      # Lists use a structured tag (see Dala.Ui.List) and emit on_tap; this is for
-      # widgets where "selection" is the only meaningful interaction.
-      {:on_select, {pid, tag}} when is_pid(pid) ->
-        [{"on_select", nif.register_tap({pid, tag})}]
-
-      # Each maps to a UIGestureRecognizer (iOS) / GestureDetector (Android).
-      # The native side fires the registered handle when the gesture ends in
-      # the recognized state. Per-widget opt-in — most widgets don't carry
-      # gesture overhead by default.
-
-      {:on_long_press, {pid, tag}} when is_pid(pid) ->
-        [{"on_long_press", nif.register_tap({pid, tag})}]
-
-      {:on_double_tap, {pid, tag}} when is_pid(pid) ->
-        [{"on_double_tap", nif.register_tap({pid, tag})}]
-
-      {:on_swipe, {pid, tag}} when is_pid(pid) ->
-        [{"on_swipe", nif.register_tap({pid, tag})}]
-
-      {:on_swipe_left, {pid, tag}} when is_pid(pid) ->
-        [{"on_swipe_left", nif.register_tap({pid, tag})}]
-
-      {:on_swipe_right, {pid, tag}} when is_pid(pid) ->
-        [{"on_swipe_right", nif.register_tap({pid, tag})}]
-
-      {:on_swipe_up, {pid, tag}} when is_pid(pid) ->
-        [{"on_swipe_up", nif.register_tap({pid, tag})}]
-
-      {:on_swipe_down, {pid, tag}} when is_pid(pid) ->
-        [{"on_swipe_down", nif.register_tap({pid, tag})}]
-
-      # ── Batch 5: high-frequency events ────────────────────────────────────
-      # `on_scroll` is the prototype: native side throttles + delta-thresholds
-      # before any enif_send. Default is 30 Hz / 1 px (see Dala.Event.Throttle).
-      # Forms accepted:
-      #   on_scroll: {pid, tag}                     # default throttle
-      #   on_scroll: {pid, tag, throttle: 100}      # 10 Hz
-      #   on_scroll: {pid, tag, debounce: 200}      # only after stillness
-      #   on_scroll: {pid, tag, throttle: 0}        # raw (escape hatch)
-      # The throttle config is serialised as a sibling prop "scroll_config"
-      # which the native side reads alongside the registered handle.
-
-      {:on_scroll, {pid, tag}} when is_pid(pid) ->
-        [{"on_scroll", nif.register_tap({pid, tag})}]
-
-      {:on_scroll, {pid, tag, opts}} when is_pid(pid) and is_list(opts) ->
-        cfg = Dala.Event.Throttle.parse(:scroll, opts)
-        [{"on_scroll", nif.register_tap({pid, tag})}, {"scroll_config", encode_throttle(cfg)}]
-
-      {:on_drag, {pid, tag}} when is_pid(pid) ->
-        [{"on_drag", nif.register_tap({pid, tag})}]
-
-      {:on_drag, {pid, tag, opts}} when is_pid(pid) and is_list(opts) ->
-        cfg = Dala.Event.Throttle.parse(:drag, opts)
-        [{"on_drag", nif.register_tap({pid, tag})}, {"drag_config", encode_throttle(cfg)}]
-
-      {:on_pinch, {pid, tag}} when is_pid(pid) ->
-        [{"on_pinch", nif.register_tap({pid, tag})}]
-
-      {:on_pinch, {pid, tag, opts}} when is_pid(pid) and is_list(opts) ->
-        cfg = Dala.Event.Throttle.parse(:pinch, opts)
-        [{"on_pinch", nif.register_tap({pid, tag})}, {"pinch_config", encode_throttle(cfg)}]
-
-      {:on_rotate, {pid, tag}} when is_pid(pid) ->
-        [{"on_rotate", nif.register_tap({pid, tag})}]
-
-      {:on_rotate, {pid, tag, opts}} when is_pid(pid) and is_list(opts) ->
-        cfg = Dala.Event.Throttle.parse(:rotate, opts)
-        [{"on_rotate", nif.register_tap({pid, tag})}, {"rotate_config", encode_throttle(cfg)}]
-
-      {:on_pointer_move, {pid, tag}} when is_pid(pid) ->
-        [{"on_pointer_move", nif.register_tap({pid, tag})}]
-
-      {:on_pointer_move, {pid, tag, opts}} when is_pid(pid) and is_list(opts) ->
-        cfg = Dala.Event.Throttle.parse(:pointer_move, opts)
-
-        [
-          {"on_pointer_move", nif.register_tap({pid, tag})},
-          {"pointer_config", encode_throttle(cfg)}
-        ]
-
-      # ── Batch 5 Tier 2: semantic scroll events (single-fire, no payload) ──
-      {:on_scroll_began, {pid, tag}} when is_pid(pid) ->
-        [{"on_scroll_began", nif.register_tap({pid, tag})}]
-
-      {:on_scroll_ended, {pid, tag}} when is_pid(pid) ->
-        [{"on_scroll_ended", nif.register_tap({pid, tag})}]
-
-      {:on_scroll_settled, {pid, tag}} when is_pid(pid) ->
-        [{"on_scroll_settled", nif.register_tap({pid, tag})}]
-
-      {:on_top_reached, {pid, tag}} when is_pid(pid) ->
-        [{"on_top_reached", nif.register_tap({pid, tag})}]
-
-      # `on_scrolled_past` requires a threshold; native side fires once when
-      # scroll y crosses the boundary (latched: re-emits only after going back
-      # below and past again).
-      {:on_scrolled_past, {pid, tag, threshold}} when is_pid(pid) and is_number(threshold) ->
-        [
-          {"on_scrolled_past", nif.register_tap({pid, tag})},
-          {"scrolled_past_threshold", threshold}
-        ]
-
-      # ── Batch 5 Tier 3: native-side scroll-driven UI primitives ───────────
-      # These never round-trip to BEAM during scroll. Native side wires them
-      # directly. Pass-through for the renderer; consumed by the platform
-      # layer (SwiftUI .scrollPosition observer / Compose snapshotFlow).
-      {:parallax, %{} = config} ->
-        [{"parallax", encode_native_config(config)}]
-
-      {:fade_on_scroll, %{} = config} ->
-        [{"fade_on_scroll", encode_native_config(config)}]
-
-      {:sticky_when_scrolled_past, %{} = config} ->
-        [{"sticky_when_scrolled_past", encode_native_config(config)}]
-
-      {key, value} ->
-        [{Atom.to_string(key), resolve_token(key, value, ctx)}]
-    end)
-    |> Map.new()
-  end
-
-  # ── Token resolution ──────────────────────────────────────────────────────
-
-  # Color props — two-step: theme semantic map → base palette
-  defp resolve_token(key, value, ctx) when is_atom(value) and key in @color_props do
-    resolve_color(value, ctx.colors)
-  end
-
-  # Text size props — scale table value by type_scale
-  defp resolve_token(key, value, ctx) when is_atom(value) and key in @size_props do
-    case Map.get(@text_sizes, value) do
-      nil -> value
-      size -> size * ctx.type_scale
-    end
-  end
-
-  # Spacing props — spacing tokens first, then radius tokens, then pass through
-  defp resolve_token(key, value, ctx) when key in @spacing_props do
-    cond do
-      is_atom(value) ->
-        case Map.get(ctx.spacing, value) do
-          nil -> value
-          v -> v
-        end
-
-      true ->
-        value
-    end
-  end
-
-  # Radius props — radius tokens from theme
-  defp resolve_token(key, value, ctx) when is_atom(value) and key in @radius_props do
-    Map.get(ctx.radii, value, value)
-  end
-
-  defp resolve_token(_key, value, _ctx), do: value
-
-  # Two-step color resolution:
-  # 1. Check theme semantic map  (:primary → :blue_500)
-  # 2. Check base palette        (:blue_500 → 0xFF2196F3)
-  # 3. Pass through              (unknown atoms serialise as strings)
-  defp resolve_color(value, theme_colors) when is_atom(value) do
-    case Map.get(theme_colors, value) do
-      nil ->
-        Map.get(@colors, value, value)
-
-      palette_atom when is_atom(palette_atom) ->
-        Map.get(@colors, palette_atom, palette_atom)
-
-      raw_int when is_integer(raw_int) ->
-        raw_int
-    end
-  end
-
-  defp resolve_color(value, _theme_colors), do: value
-
-  # ── Batch 5 helpers ─────────────────────────────────────────────────────
-  # Encode a Dala.Event.Throttle config for the native side. We use string
-  # keys + plain numeric/boolean values so the JSON serialiser sends a flat
-  # map across the NIF boundary. Native side reads these and stores per-handle.
-
-  defp encode_throttle(%{} = cfg) do
-    %{
-      "throttle_ms" => cfg.throttle_ms,
-      "debounce_ms" => cfg.debounce_ms,
-      "delta_threshold" => cfg.delta_threshold,
-      "leading" => cfg.leading,
-      "trailing" => cfg.trailing
-    }
-  end
-
-  # Encode a Tier-3 native-side scroll-driven config (parallax, fade_on_scroll,
-  # sticky_when_scrolled_past). Atoms are stringified; nested structures
-  # passed through as-is for native consumption.
-  defp encode_native_config(%{} = config) do
-    Map.new(config, fn
-      {k, v} when is_atom(k) -> {Atom.to_string(k), encode_native_value(v)}
-      {k, v} -> {k, encode_native_value(v)}
-    end)
-  end
-
-  defp encode_native_value(v) when is_atom(v) and not is_boolean(v) and not is_nil(v),
-    do: Atom.to_string(v)
-
-  defp encode_native_value(v), do: v
-
-  # ── Optimized tree preparation with tap batching ──────────────────────
-
-  defp prepare_with_taps(%{type: type, props: props, children: children}, nif, platform, ctx) do
-    # Normalize :title → :text for buttons (backward compat)
-    props =
-      if type == :button and Map.has_key?(props, :title) and not Map.has_key?(props, :text) do
-        Map.put(props, :text, Map.get(props, :title))
-      else
-        props
-      end
-
-    # Normalize :size → :fixed_size for spacers
-    props =
-      if type == :spacer and Map.has_key?(props, :size) do
-        Map.put(props, :fixed_size, Map.get(props, :size))
-      else
-        props
-      end
-
-    # Resolve type alias for native side
-    native_type = Map.get(@type_aliases, type, type)
-
-    defaults = Map.get(@component_defaults, type, %{})
-    with_defaults = Map.merge(defaults, props)
-
-    {prepared_children, all_taps} =
-      children
-      |> Enum.map(&prepare_with_taps(&1, nif, platform, ctx))
-      |> Enum.unzip()
-
-    {prepared_props, prop_taps} = prepare_props_with_taps(with_defaults, nif, platform, ctx)
-
-    node = %{
-      "type" => Atom.to_string(native_type),
-      "props" => prepared_props,
-      "children" => prepared_children
-    }
-
-    taps = List.flatten([prop_taps | all_taps])
-    {node, taps}
-  end
-
-  defp prepare_props_with_taps(props, nif, platform, ctx) do
-    {style, base} = Map.pop(props, :style)
-
-    merged =
-      case style do
-        %Dala.Ui.Style{props: sp} -> Map.merge(sp, base)
-        nil -> base
-      end
-
-    ios_extras = Map.get(merged, :ios, %{})
-    android_extras = Map.get(merged, :android, %{})
-    platform_extra = if platform == :ios, do: ios_extras, else: android_extras
-
-    final =
-      merged
-      |> Map.delete(:ios)
-      |> Map.delete(:android)
-      |> Map.merge(platform_extra)
-
-    {prepared, taps} =
-      final
-      |> Enum.reduce({%{}, []}, fn
-        {key, value}, {acc, taps} when is_tuple(value) and tuple_size(value) >= 2 ->
-          {pid, tag} = value
-
-          if is_pid(pid) do
-            handle = nif.register_tap({pid, tag})
-            props = Map.put(acc, Atom.to_string(key), handle)
-
-            props =
-              if key == :on_tap,
-                do: Map.put(props, "accessibility_id", Atom.to_string(tag)),
-                else: props
-
-            {props, [handle | taps]}
-          else
-            {Map.put(acc, Atom.to_string(key), resolve_token(key, value, ctx)), taps}
-          end
-
-        {key, value}, {acc, taps} ->
-          {Map.put(acc, Atom.to_string(key), resolve_token(key, value, ctx)), taps}
-      end)
-
-    {prepared, taps}
-  end
 end

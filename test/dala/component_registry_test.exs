@@ -1,14 +1,13 @@
 defmodule Dala.ComponentRegistryTest do
   use ExUnit.Case, async: true
-  import Dala.ComponentRegistry
 
   @moduledoc """
-  Tests for Dala.ComponentRegistry.
+  Tests for Dala.Ui.NativeView.Registry.
   """
 
   setup do
     # Start the registry
-    Dala.ComponentRegistry.start_link()
+    Dala.Ui.NativeView.Registry.start_link()
     :ok
   end
 
@@ -22,7 +21,7 @@ defmodule Dala.ComponentRegistryTest do
 
   describe "lookup/3" do
     test "returns :error for non-existent component" do
-      result = Dala.ComponentRegistry.lookup(self(), :test_id, Dala.Test)
+      result = Dala.Ui.NativeView.Registry.lookup(self(), :test_id, Dala.Test)
       assert {:error, :not_found} = result
     end
   end

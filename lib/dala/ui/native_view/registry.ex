@@ -1,4 +1,4 @@
-defmodule Dala.Ui.ComponentRegistry do
+defmodule Dala.Ui.NativeView.Registry do
   @moduledoc false
   # ETS-backed registry mapping {screen_pid, id, module} → component_pid.
   # Started by Dala.App. Components register themselves on mount and deregister
@@ -25,7 +25,7 @@ defmodule Dala.Ui.ComponentRegistry do
     case :ets.lookup(@table, key) do
       [{^key, existing}] when existing != component_pid ->
         raise ArgumentError,
-              "Dala.Component: duplicate id #{inspect(id)} for #{inspect(module)} on screen " <>
+              "Dala.Ui.NativeView: duplicate id #{inspect(id)} for #{inspect(module)} on screen " <>
                 "#{inspect(screen_pid)}. Component ids must be unique per screen."
 
       _ ->
@@ -44,7 +44,7 @@ defmodule Dala.Ui.ComponentRegistry do
     end
   end
 
-  @doc "Remove a component registration (called from ComponentServer.terminate)."
+  @doc "Remove a component registration (called from NativeView.Server.terminate)."
   @spec deregister(pid(), atom(), module()) :: :ok
   def deregister(screen_pid, id, module) do
     key = {screen_pid, id, module}

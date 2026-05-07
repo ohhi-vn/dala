@@ -179,7 +179,7 @@ defmodule Dala.Preview.Live do
       file: "dala_preview_endpoint"
     )
 
-    Code.compile_module(module)
+    Code.compile_quoted(module)
   end
 
   defp open_browser(url) do

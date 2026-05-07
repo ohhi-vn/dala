@@ -26,8 +26,6 @@ defmodule Dala.Ui.Diff do
   stable across renders for proper reconciliation.
   """
 
-  alias Dala.Ui.Node
-
   @type node_id :: String.t() | atom()
 
   @type patch ::
@@ -73,7 +71,9 @@ defmodule Dala.Ui.Diff do
   end
 
   # Children diff with keyed reconciliation
-  defp diff_children(%Dala.Ui.Node{id: parent_id, children: old_children}, %Dala.Ui.Node{children: new_children}) do
+  defp diff_children(%Dala.Ui.Node{id: parent_id, children: old_children}, %Dala.Ui.Node{
+         children: new_children
+       }) do
     old_map = Map.new(old_children, &{&1.id, &1})
     new_map = Map.new(new_children, &{&1.id, &1})
 

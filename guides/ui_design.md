@@ -311,7 +311,7 @@ Both styles support `Dala.Style` for reusable styles:
 # Sigil style
 ~dala(<Box style={@card_style}>...</Box>)
 
-# DSL style (using Dala.UI.box or expression)
+# DSL style (using Dala.Ui.Widgets.box or expression)
 {[:box, style: @card_style, children: [...]]}
 ```
 
@@ -341,7 +341,7 @@ Both styles support `Dala.Style` for reusable styles:
 ### Sigil Style
 
 - Pre-compute handler tuples before the sigil
-- Use `Dala.UI` helper functions for complex nodes
+- Use `Dala.Ui.Widgets` helper functions for complex nodes
 - Extract reusable UI into component functions
 - Keep `render/1` pure — no side effects
 
@@ -356,11 +356,11 @@ Both styles support `Dala.Style` for reusable styles:
 
 You can mix both styles in the same project, but not in the same screen module. Choose one style per screen for consistency.
 
-For shared utilities, `Dala.UI` functions work with both styles since they return plain maps:
+For shared utilities, `Dala.Ui.Widgets` functions work with both styles since they return plain maps:
 
 ```elixir
 # Works in both sigil and DSL screens
-Dala.UI.text(text: "Hello")
+Dala.Ui.Widgets.text(text: "Hello")
 ```
 
 ## Further Reading

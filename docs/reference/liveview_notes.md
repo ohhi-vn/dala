@@ -80,17 +80,17 @@ Application.put_env(:lv_test, LvTestWeb.Endpoint,
 
 ---
 
-## Fix 3: Dala.ComponentRegistry must be started manually
+## Fix 3: Dala.Ui.NativeView.Registry must be started manually
 
-In a normal Dala app, `Dala.App` starts `Dala.ComponentRegistry` as part of its
+In a normal Dala app, `Dala.App` starts `Dala.Ui.NativeView.Registry` as part of its
 supervision tree. In LiveView mode we skip `Dala.App` entirely. If you call
-`Dala.Screen.start_root/1` without `ComponentRegistry` running, it crashes.
+`Dala.Screen.start_root/1` without `NativeView.Registry` running, it crashes.
 
 Start it explicitly after `ensure_all_started/1`:
 
 ```elixir
 {:ok, _} = Application.ensure_all_started(:lv_test)
-{:ok, _} = Dala.ComponentRegistry.start_link()
+{:ok, _} = Dala.Ui.NativeView.Registry.start_link()
 Dala.Screen.start_root(LvTest.dalaScreen)
 ```
 
@@ -297,7 +297,7 @@ LiveView deployment in April 2026.
 **Symptom:** App shows a solid white screen. The BEAM starts, Phoenix is listening on
 port 4200 (`ss -tlnp` confirms it), and step 5 logs `ok` — but nothing is ever rendered.
 
-**Root cause:** `Dala.UI.webview/1` in `dala/lib/dala/ui.ex` returns `%{type: :web_view, ...}`.
+**Root cause:** `Dala.Ui.Widgets.webview/1` in `dala/lib/dala/ui.ex` returns `%{type: :web_view, ...}`.
 `Dala.Renderer` converts that atom to a string via `Atom.to_string(:web_view)`, producing
 `"web_view"` in the JSON payload sent to the native layer. But `RenderNode` in
 `dalaBridge.kt` had:
@@ -425,7 +425,7 @@ am force-stop PKG && am start -n PKG/.MainActivity
 |---|-----|--------------------|
 | 1 | `put_env` before `ensure_all_started` | Endpoint never starts (wrong config) |
 | 2 | `adapter: Bandit.PhoenixAdapter` | Phoenix refuses to start |
-| 3 | `Dala.ComponentRegistry.start_link()` | Crash calling `start_root` |
+| 3 | `Dala.Ui.NativeView.Registry.start_link()` | Crash calling `start_root` |
 | 4 | Route to `PageLive`, not `PageController` | HTTP 500 on every request |
 | 5 | Deploy `priv/static` to BEAMS_DIR | Blank WebView (JS 404) |
 | 6 | Full crypto shim (`pbkdf2_hmac`, `exor`, `mac`, `hash`) | Crash on every request |
@@ -454,4 +454,4 @@ am force-stop PKG && am start -n PKG/.MainActivity
 - `/tmp/lv_test/android/app/src/main/res/xml/network_security_config.xml` — cleartext whitelist (fix A2)
 - `dala_dev/lib/dala_dev/deployer.ex` — `generate_crypto_shim/0` (fix 6, shared)
 - `dala_dev/lib/dala_dev/enable.ex` — `inject_android_network_security_config/1` (fix A2, automated)
-- `dala/lib/dala/ui.ex` — `Dala.UI.webview/1` generates `:web_view` atom (the type A1 must match)
+- `dala/lib/dala/ui.ex` — `Dala.Ui.Widgets.webview/1` generates `:web_view` atom (the type A1 must match)

@@ -90,7 +90,7 @@ defmodule MyApp.HomeScreen do
 end
 ```
 
-The `~H` sigil calls `Dala.UI.column/2`, `Dala.UI.text/2`, etc.
+The `~H` sigil calls `Dala.Ui.Widgets.column/2`, `Dala.Ui.Widgets.text/2`, etc.
 These return **raw maps** like:
 
 ```elixir

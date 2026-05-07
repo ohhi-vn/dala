@@ -27,7 +27,7 @@ defmodule Dala.Theme.Obsidian do
   @doc "Returns the compiled Obsidian theme struct."
   @spec theme() :: Dala.Theme.t()
   def theme do
-    Dala.Theme.build(
+    opts = [
       # ── Brand ──────────────────────────────────────────────────────────────
       # 0xFF7C3AED
       primary: :violet_600,
@@ -54,6 +54,8 @@ defmodule Dala.Theme.Obsidian do
       on_error: :white,
       # subtle purple-tinted divider
       border: 0xFF2D2D4A
-    )
+    ]
+
+    apply(Dala.Theme, :build, [opts])
   end
 end

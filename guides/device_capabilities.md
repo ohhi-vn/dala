@@ -483,7 +483,7 @@ Props: `:url` (required), `:allow` (list of URL prefixes — blocks others), `:s
 
 ## Alerts and toasts
 
-`Dala.Alert` shows native dialogs and status messages. No permission needed.
+`Dala.Ui.Feedback.Alert` shows native dialogs and status messages. No permission needed.
 
 ### Alert dialog
 
@@ -491,7 +491,7 @@ Centered modal for confirmations and errors (iOS: `UIAlertController(.alert)`, A
 
 ```elixir
 def handle_info({:tap, :delete}, socket) do
-  Dala.Alert.alert(socket,
+  Dala.Ui.Feedback.Alert.alert(socket,
     title:   "Delete item?",
     message: "This cannot be undone.",
     buttons: [
@@ -518,7 +518,7 @@ Dismissing without tapping a button (e.g. Android back gesture) sends `{:alert, 
 Bottom-anchored list for choosing between actions (iOS: `UIAlertController(.actionSheet)`, Android: list dialog).
 
 ```elixir
-Dala.Alert.action_sheet(socket,
+Dala.Ui.Feedback.Alert.action_sheet(socket,
   title:   "Share photo",
   buttons: [
     [label: "Save to Photos", action: :save],
@@ -537,8 +537,8 @@ def handle_info({:alert, :dismiss}, socket), do: {:noreply, socket}
 Ephemeral status message with no callback.
 
 ```elixir
-Dala.Alert.toast(socket, "Saved!")
-Dala.Alert.toast(socket, "File uploaded", duration: :long)
+Dala.Ui.Feedback.Alert.toast(socket, "Saved!")
+Dala.Ui.Feedback.Alert.toast(socket, "File uploaded", duration: :long)
 ```
 
 Duration: `:short` (default, ~2 s) or `:long` (~4 s). iOS renders a floating label overlay; Android uses `Toast`.

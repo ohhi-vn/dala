@@ -1,4 +1,4 @@
-defmodule Dala.Ui.Component do
+defmodule Dala.Ui.NativeView do
   @moduledoc """
   Behaviour for native view components.
 
@@ -8,8 +8,8 @@ defmodule Dala.Ui.Component do
 
   ## Lifecycle
 
-  1. The parent screen declares `Dala.UI.native_view(MyComponent, id: :my_id, ...)`
-  2. On first render, a `Dala.ComponentServer` process is started and `mount/2` is called
+  1. The parent screen declares `Dala.Ui.Widgets.native_view(MyComponent, id: :my_id, ...)`
+  2. On first render, a `Dala.Ui.NativeView.Server` process is started and `mount/2` is called
   3. `render/1` is called to get the props map forwarded to the native factory
   4. On subsequent renders, `update/2` is called with new props from the parent
   5. When the native view fires an event, `handle_event/3` is called
@@ -19,7 +19,7 @@ defmodule Dala.Ui.Component do
   ## Usage
 
       defmodule MyApp.ChartComponent do
-        use Dala.Component
+        use Dala.Ui.NativeView
 
         def mount(props, socket) do
           {:ok, Dala.Ui.Socket.assign(socket, :data, props[:data])}
@@ -54,7 +54,7 @@ defmodule Dala.Ui.Component do
 
   ## Declaration
 
-      Dala.UI.native_view(MyApp.ChartComponent, id: :revenue_chart, data: @points)
+      Dala.Ui.Widgets.native_view(MyApp.ChartComponent, id: :revenue_chart, data: @points)
 
   The `:id` must be unique per screen. Duplicate ids on the same screen raise at render time.
 
@@ -85,7 +85,7 @@ defmodule Dala.Ui.Component do
 
   defmacro __using__(_opts) do
     quote do
-      @behaviour Dala.Component
+      @behaviour Dala.Ui.NativeView
 
       def mount(props, socket), do: {:ok, socket}
 
@@ -126,12 +126,12 @@ defmodule Dala.Ui.Component do
 
     unless is_atom(module) and is_atom(id) do
       raise ArgumentError,
-            "Dala.UI.native_view requires :module and :id as atoms, got: #{inspect(props)}"
+            "Dala.Ui.Widgets.native_view requires :module and :id as atoms, got: #{inspect(props)}"
     end
 
     component_pid = ensure_started(screen_pid, id, module, props, platform)
-    rendered_props = Dala.ComponentServer.render_props(component_pid)
-    handle = Dala.ComponentServer.get_handle(component_pid)
+    rendered_props = Dala.Ui.NativeView.Server.render_props(component_pid)
+    handle = Dala.Ui.NativeView.Server.get_handle(component_pid)
 
     enriched =
       Map.merge(rendered_props, %{
@@ -156,14 +156,14 @@ defmodule Dala.Ui.Component do
   defp walk(node, _screen_pid, _platform, active), do: {node, active}
 
   defp ensure_started(screen_pid, id, module, props, platform) do
-    case Dala.ComponentRegistry.lookup(screen_pid, id, module) do
+    case Dala.Ui.NativeView.Registry.lookup(screen_pid, id, module) do
       {:ok, pid} ->
-        Dala.ComponentServer.update(pid, props)
+        Dala.Ui.NativeView.Server.update(pid, props)
         pid
 
       {:error, :not_found} ->
         {:ok, pid} =
-          Dala.ComponentServer.start(
+          Dala.Ui.NativeView.Server.start(
             module: module,
             id: id,
             screen_pid: screen_pid,

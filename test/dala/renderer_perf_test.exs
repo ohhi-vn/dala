@@ -35,7 +35,19 @@ defmodule Dala.RendererPerfTest do
 
   describe "Performance tests" do
     setup do
-      MockNIF.start()
+      case MockNIF.start() do
+        {:ok, _pid} -> :ok
+        {:error, {:already_started, _pid}} -> MockNIF.reset()
+      end
+
+      on_exit(fn ->
+        try do
+          Agent.stop(MockNIF)
+        catch
+          :exit, _ -> :ok
+        end
+      end)
+
       :ok
     end
 

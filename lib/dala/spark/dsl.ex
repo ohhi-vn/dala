@@ -3,7 +3,7 @@ defmodule Dala.Spark.Dsl do
   Spark DSL for declarative Dala screens.
 
   Defines attributes for screen state and UI component entities that mirror
-  `Dala.UI` one-to-one. Container entities (`column`, `row`, `box`, `scroll`,
+  `Dala.Ui.Widgets` one-to-one. Container entities (`column`, `row`, `box`, `scroll`,
   `modal`, `pressable`, `safe_area`) support nested children via Spark's
   `entities` + `recursive_as` mechanism.
 
@@ -599,11 +599,15 @@ defmodule Dala.Spark.Dsl do
   @native_view %Spark.Dsl.Entity{
     name: :native_view,
     target: NativeView,
-    describe: "Platform-native component (must implement Dala.Component)",
+    describe: "Platform-native component (must implement Dala.Ui.NativeView)",
     args: [:module],
     examples: ["native_view MyApp.ChartComponent, id: :revenue_chart"],
     schema: [
-      module: [type: :atom, required: true, doc: "Component module (implements Dala.Component)"],
+      module: [
+        type: :atom,
+        required: true,
+        doc: "Component module (implements Dala.Ui.NativeView)"
+      ],
       id: [type: :atom, required: true, doc: "Unique identifier per screen"]
     ]
   }

@@ -1,11 +1,11 @@
-defmodule Dala.Ui.Webview do
+defmodule Dala.Ui.Embedded.Webview do
   @compile {:nowarn_undefined, [:Nx]}
   @moduledoc """
   Bidirectional JS bridge for the native WebView component.
 
   ## Overview:
 
-  Use `Dala.UI.webview/1` to embed the component, then call these functions
+  Use `Dala.Ui.Widgets.webview/1` to embed the component, then call these functions
   from `handle_info` to communicate with the page.
 
   ## JS Side (injected automatically):
@@ -93,7 +93,10 @@ defmodule Dala.Ui.Webview do
   """
   @spec go_forward(Dala.Ui.Socket.t()) :: Dala.Ui.Socket.t()
   def go_forward(socket) do
-    Dala.Platform.Native.webview_eval_js("if (window.history.length > 1) window.history.forward()")
+    Dala.Platform.Native.webview_eval_js(
+      "if (window.history.length > 1) window.history.forward()"
+    )
+
     socket
   end
 

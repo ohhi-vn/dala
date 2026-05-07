@@ -231,7 +231,7 @@ These are the things we've burned ourselves on. Following them isn't optional.
 
 ## 16. **Spark DSL for declarative screens.**
     Dala supports a Spark DSL for defining screens declaratively. The DSL mirrors
-    `Dala.UI` one-to-one — every component and prop available in `Dala.UI` has
+    `Dala.Ui.Widgets` one-to-one — every component and prop available in `Dala.Ui.Widgets` has
     a DSL equivalent.
 
     ```elixir

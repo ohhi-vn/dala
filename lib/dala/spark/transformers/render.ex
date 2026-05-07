@@ -3,7 +3,7 @@ defmodule Dala.Spark.Transformers.Render do
   Spark transformer that generates the `render/1` function from DSL entities.
 
   Walks the entity tree (screen → container children → leaves) and produces
-  a `render/1` that builds the same node maps `Dala.UI` functions return:
+  a `render/1` that builds the same node maps `Dala.Ui.Widgets` functions return:
 
       %{type: :column, props: %{...}, children: [...]}
 
@@ -70,8 +70,8 @@ defmodule Dala.Spark.Transformers.Render do
 
   # ── Type mapping ──────────────────────────────────────────────────────────
 
-  # Maps DSL struct modules to the :type atom that Dala.UI uses.
-  # Must stay in sync with Dala.UI function → type mappings.
+  # Maps DSL struct modules to the :type atom that Dala.Ui.Widgets uses.
+  # Must stay in sync with Dala.Ui.Widgets function → type mappings.
   defp struct_to_type(Dala.Spark.Dsl.Text), do: :text
   defp struct_to_type(Dala.Spark.Dsl.Button), do: :button
   defp struct_to_type(Dala.Spark.Dsl.Icon), do: :icon

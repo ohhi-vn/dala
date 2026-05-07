@@ -1,4 +1,4 @@
-defmodule Dala.Ui.Ui do
+defmodule Dala.Ui.Widgets do
   @moduledoc """
   UI component constructors for the Dala framework.
 
@@ -10,7 +10,7 @@ defmodule Dala.Ui.Ui do
       %{type: :text, props: %{text: "Hello"}, children: []}
 
       # Component function (keyword list or map)
-      Dala.UI.text(text: "Hello")
+      Dala.Ui.Widgets.text(text: "Hello")
 
       # Sigil (import Dala.Sigil or use Dala.Screen)
       ~dala(<Text text="Hello" />)
@@ -81,9 +81,9 @@ defmodule Dala.Ui.Ui do
 
   ## Examples
 
-      Dala.UI.column([padding: :space_md, gap: :space_sm], [
-        Dala.UI.text(text: "Title"),
-        Dala.UI.text(text: "Subtitle")
+      Dala.Ui.Widgets.column([padding: :space_md, gap: :space_sm], [
+        Dala.Ui.Widgets.text(text: "Title"),
+        Dala.Ui.Widgets.text(text: "Subtitle")
       ])
   """
   @spec column(keyword() | map(), list()) :: map()
@@ -163,8 +163,8 @@ defmodule Dala.Ui.Ui do
 
   ## Examples
 
-      Dala.UI.text(text: "Hello")
-      Dala.UI.text(text: "Title", text_size: :xl, font_weight: "bold", text_color: :on_surface)
+      Dala.Ui.Widgets.text(text: "Hello")
+      Dala.Ui.Widgets.text(text: "Title", text_size: :xl, font_weight: "bold", text_color: :on_surface)
   """
   @spec text(keyword() | map()) :: map()
   def text(props) when is_list(props), do: text(Map.new(props))
@@ -198,8 +198,8 @@ defmodule Dala.Ui.Ui do
 
   ## Examples
 
-      Dala.UI.button(text: "Submit", on_tap: {self(), :submit})
-      Dala.UI.button(title: "OK", on_tap: {self(), :ok}, background: :primary)
+      Dala.Ui.Widgets.button(text: "Submit", on_tap: {self(), :submit})
+      Dala.Ui.Widgets.button(title: "OK", on_tap: {self(), :ok}, background: :primary)
   """
   @spec button(keyword() | map()) :: map()
   def button(props \\ [])
@@ -247,8 +247,8 @@ defmodule Dala.Ui.Ui do
 
   ## Examples
 
-      Dala.UI.icon(name: "settings", text_size: 24, text_color: :on_surface)
-      Dala.UI.icon(name: "chevron_right", on_tap: {self(), :navigate})
+      Dala.Ui.Widgets.icon(name: "settings", text_size: 24, text_color: :on_surface)
+      Dala.Ui.Widgets.icon(name: "chevron_right", on_tap: {self(), :navigate})
   """
   @spec icon(keyword() | map()) :: map()
   def icon(props \\ [])
@@ -279,8 +279,8 @@ defmodule Dala.Ui.Ui do
 
   ## Examples
 
-      Dala.UI.divider()
-      Dala.UI.divider(thickness: 2, color: :primary)
+      Dala.Ui.Widgets.divider()
+      Dala.Ui.Widgets.divider(thickness: 2, color: :primary)
   """
   @spec divider(keyword() | map()) :: map()
   def divider(props \\ [])
@@ -303,8 +303,8 @@ defmodule Dala.Ui.Ui do
 
   ## Examples
 
-      Dala.UI.spacer()          # flexible — fills available space
-      Dala.UI.spacer(size: 20)  # fixed 20pt gap
+      Dala.Ui.Widgets.spacer()          # flexible — fills available space
+      Dala.Ui.Widgets.spacer(size: 20)  # fixed 20pt gap
   """
   @spec spacer(keyword() | map()) :: map()
   def spacer(props \\ [])
@@ -338,8 +338,8 @@ defmodule Dala.Ui.Ui do
 
   ## Examples
 
-      Dala.UI.text_field(placeholder: "Enter name", on_change: {self(), :name_changed})
-      Dala.UI.text_field(keyboard_type: :email, return_key: :next, on_submit: {self(), :next_field})
+      Dala.Ui.Widgets.text_field(placeholder: "Enter name", on_change: {self(), :name_changed})
+      Dala.Ui.Widgets.text_field(keyboard_type: :email, return_key: :next, on_submit: {self(), :next_field})
   """
   @spec text_field(keyword() | map()) :: map()
   def text_field(props \\ [])
@@ -374,7 +374,7 @@ defmodule Dala.Ui.Ui do
 
   ## Examples
 
-      Dala.UI.toggle(value: true, on_change: {self(), :notifications_toggled}, text: "Notifications")
+      Dala.Ui.Widgets.toggle(value: true, on_change: {self(), :notifications_toggled}, text: "Notifications")
   """
   @spec toggle(keyword() | map()) :: map()
   def toggle(props \\ [])
@@ -403,7 +403,7 @@ defmodule Dala.Ui.Ui do
 
   ## Examples
 
-      Dala.UI.slider(value: 0.5, min_value: 0, max_value: 100, on_change: {self(), :volume_changed})
+      Dala.Ui.Widgets.slider(value: 0.5, min_value: 0, max_value: 100, on_change: {self(), :volume_changed})
   """
   @spec slider(keyword() | map()) :: map()
   def slider(props \\ [])
@@ -430,7 +430,7 @@ defmodule Dala.Ui.Ui do
 
   ## Examples
 
-      Dala.UI.tab_bar(
+      Dala.Ui.Widgets.tab_bar(
         tabs: [
           %{id: "home", label: "Home", icon: "home"},
           %{id: "settings", label: "Settings", icon: "settings"}
@@ -464,7 +464,7 @@ defmodule Dala.Ui.Ui do
 
   ## Examples
 
-      Dala.UI.video(src: "https://example.com/clip.mp4", autoplay: true, loop: true)
+      Dala.Ui.Widgets.video(src: "https://example.com/clip.mp4", autoplay: true, loop: true)
   """
   @spec video(keyword() | map()) :: map()
   def video(props \\ [])
@@ -494,7 +494,7 @@ defmodule Dala.Ui.Ui do
 
   ## Examples
 
-      Dala.UI.image(src: "https://example.com/photo.jpg", resize_mode: :cover, corner_radius: 12)
+      Dala.Ui.Widgets.image(src: "https://example.com/photo.jpg", resize_mode: :cover, corner_radius: 12)
   """
   @spec image(keyword() | map()) :: map()
   def image(props \\ [])
@@ -574,8 +574,8 @@ defmodule Dala.Ui.Ui do
 
   ## Examples
 
-      Dala.UI.modal([visible: true, on_dismiss: {self(), :dismissed}], [
-        Dala.UI.text(text: "Modal content")
+      Dala.Ui.Widgets.modal([visible: true, on_dismiss: {self(), :dismissed}], [
+        Dala.Ui.Widgets.text(text: "Modal content")
       ])
   """
   @spec modal(keyword() | map(), list()) :: map()
@@ -626,8 +626,8 @@ defmodule Dala.Ui.Ui do
 
   ## Examples
 
-      Dala.UI.scroll([padding: :space_md], [
-        Dala.UI.text(text: "Long content...")
+      Dala.Ui.Widgets.scroll([padding: :space_md], [
+        Dala.Ui.Widgets.text(text: "Long content...")
       ])
   """
   @spec scroll(keyword() | map(), list()) :: map()
@@ -656,8 +656,8 @@ defmodule Dala.Ui.Ui do
 
   ## Examples
 
-      Dala.UI.pressable([on_press: {self(), :card_tapped}], [
-        Dala.UI.text(text: "Tap me")
+      Dala.Ui.Widgets.pressable([on_press: {self(), :card_tapped}], [
+        Dala.Ui.Widgets.text(text: "Tap me")
       ])
   """
   @spec pressable(keyword() | map(), list()) :: map()
@@ -746,7 +746,7 @@ defmodule Dala.Ui.Ui do
 
   ## Examples
 
-      Dala.UI.list(id: :my_list, data: assigns.items)
+      Dala.Ui.Widgets.list(id: :my_list, data: assigns.items)
 
       # With custom renderer in mount/3:
       # Dala.Ui.List.put_renderer(socket, :my_list, fn item -> ... end)
@@ -824,7 +824,7 @@ defmodule Dala.Ui.Ui do
   @doc """
   Returns a `:native_view` node that renders a platform-native component.
 
-  `module` must implement the `Dala.Component` behaviour and be registered
+  `module` must implement the `Dala.Ui.NativeView` behaviour and be registered
   on the native side via `dalaNativeViewRegistry`. The `:id` must be unique
   per screen — a duplicate raises at render time.
 
@@ -832,7 +832,7 @@ defmodule Dala.Ui.Ui do
 
   ## Example
 
-      Dala.UI.native_view(MyApp.ChartComponent, id: :revenue_chart, data: @points)
+      Dala.Ui.Widgets.native_view(MyApp.ChartComponent, id: :revenue_chart, data: @points)
 
   """
   @spec native_view(module(), keyword() | map()) :: map()

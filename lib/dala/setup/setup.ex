@@ -32,7 +32,7 @@ defmodule Dala.Setup.Setup do
   """
   @spec check_bluetooth() :: {:ok, Dala.Bluetooth.state()} | {:error, term()}
   def check_bluetooth do
-    case Dala.Bluetooth.state() do
+    case apply(Dala.Bluetooth, :state, []) do
       :unsupported -> {:error, :bluetooth_not_supported}
       :unauthorized -> {:error, :bluetooth_permission_denied}
       state -> {:ok, state}
@@ -50,7 +50,7 @@ defmodule Dala.Setup.Setup do
   """
   @spec check_wifi() :: {:ok, map()} | {:error, term()}
   def check_wifi do
-    case Dala.WiFi.current_network() do
+    case apply(Dala.WiFi, :current_network, []) do
       %{connected: true} = info -> {:ok, info}
       %{connected: false} -> {:ok, %{connected: false}}
       _ -> {:error, :wifi_not_available}
@@ -69,7 +69,7 @@ defmodule Dala.Setup.Setup do
   """
   @spec ensure_bluetooth_permissions(Dala.Ui.Socket.t()) :: Dala.Ui.Socket.t()
   def ensure_bluetooth_permissions(socket) do
-    Dala.Permissions.request(socket, :bluetooth)
+    apply(Dala.Permissions, :request, [socket, :bluetooth])
   end
 
   @doc """
@@ -82,7 +82,7 @@ defmodule Dala.Setup.Setup do
   """
   @spec ensure_wifi_permissions(Dala.Ui.Socket.t()) :: Dala.Ui.Socket.t()
   def ensure_wifi_permissions(socket) do
-    Dala.Permissions.request(socket, :wifi)
+    apply(Dala.Permissions, :request, [socket, :wifi])
   end
 
   @doc """

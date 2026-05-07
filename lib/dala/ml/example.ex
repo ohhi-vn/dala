@@ -13,7 +13,7 @@ defmodule Dala.Ml.Example do
   Run this in a Dala app after calling `Dala.ML.setup/0`.
   """
   def basic_operations do
-    Dala.ML.Nx.init()
+    Dala.Ml.Nx.init()
 
     a = Nx.tensor([[1.0, 2.0], [3.0, 4.0]])
     b = Nx.tensor([[5.0], [6.0]])
@@ -89,7 +89,7 @@ defmodule Dala.Ml.Example do
   Verify EMLX is working on iOS.
   """
   def verify_setup do
-    case Dala.ML.EMLX.available?() do
+    case apply(Dala.ML.EMLX, :available?, []) do
       true ->
         result = basic_operations()
         {:ok, result}
