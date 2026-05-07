@@ -190,6 +190,22 @@ impl Tree {
         }
     }
 
+    /// Clear all nodes from the tree
+    pub fn clear(&mut self) {
+        self.nodes.clear();
+        self.root = None;
+        self.dirty_layout.clear();
+        self.dirty_paint.clear();
+    }
+
+    /// Set the root node of the tree
+    pub fn set_root(&mut self, node: Node) {
+        let id = node.id;
+        self.nodes.insert(id, node);
+        self.root = Some(id);
+        self.mark_dirty_layout(id);
+    }
+
     // Apply a list of patches
     pub fn apply_patches(&mut self, patches: Vec<Patch>) {
         for patch in patches {

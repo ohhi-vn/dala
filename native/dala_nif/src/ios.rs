@@ -7,15 +7,15 @@ use std::ptr;
 
 // For WiFi IP address lookup
 #[cfg(target_os = "ios")]
-use libc::{getifaddrs, freeifaddrs, ifaddrs, sockaddr_in, AF_INET, IFF_UP, IFF_RUNNING};
+use libc::{freeifaddrs, getifaddrs, ifaddrs, sockaddr_in, AF_INET, IFF_RUNNING, IFF_UP};
 
 // For CNCopyCurrentNetworkInfo
 #[cfg(target_os = "ios")]
-use core_foundation::string::CFString;
+use core_foundation::base::{CFType, TCFType, ToVoid};
 #[cfg(target_os = "ios")]
 use core_foundation::dictionary::CFDictionary;
 #[cfg(target_os = "ios")]
-use core_foundation::base::{CFType, TCFType, ToVoid};
+use core_foundation::string::CFString;
 
 // Helper: convert Rust string to NSString
 unsafe fn ns_string_from_str(s: &str) -> *mut Object {
@@ -38,14 +38,32 @@ unsafe fn string_from_ns_string(ns: *mut Object) -> String {
 
 // Register Bluetooth callbacks with Objective-C code
 pub fn register_bluetooth_callbacks(
-    device_found: unsafe extern "C" fn(*const libc::c_char, *const libc::c_char, libc::c_int, *const libc::c_char),
+    device_found: unsafe extern "C" fn(
+        *const libc::c_char,
+        *const libc::c_char,
+        libc::c_int,
+        *const libc::c_char,
+    ),
     device_connected: unsafe extern "C" fn(*const libc::c_char),
 ) {
     extern "C" {
-        fn DalaBluetoothSetDeviceFoundCallback(callback: unsafe extern "C" fn(*const libc::c_char, *const libc::c_char, libc::c_int, *const libc::c_char));
-        fn DalaBluetoothSetDeviceConnectedCallback(callback: unsafe extern "C" fn(*const libc::c_char));
-        fn DalaBluetoothSetDeviceConnectFailedCallback(callback: unsafe extern "C" fn(*const libc::c_char, *const libc::c_char));
-        fn DalaBluetoothSetDeviceDisconnectedCallback(callback: unsafe extern "C" fn(*const libc::c_char));
+        fn DalaBluetoothSetDeviceFoundCallback(
+            callback: unsafe extern "C" fn(
+                *const libc::c_char,
+                *const libc::c_char,
+                libc::c_int,
+                *const libc::c_char,
+            ),
+        );
+        fn DalaBluetoothSetDeviceConnectedCallback(
+            callback: unsafe extern "C" fn(*const libc::c_char),
+        );
+        fn DalaBluetoothSetDeviceConnectFailedCallback(
+            callback: unsafe extern "C" fn(*const libc::c_char, *const libc::c_char),
+        );
+        fn DalaBluetoothSetDeviceDisconnectedCallback(
+            callback: unsafe extern "C" fn(*const libc::c_char),
+        );
     }
 
     unsafe {
@@ -351,6 +369,22 @@ pub fn set_root(json: &str, transition: &str) {
     }
 }
 
+pub fn set_root_binary(data: &[u8], transition: &str) {
+    unsafe {
+        let vm: *mut Object = msg_send![class!(DalaViewModel), shared];
+        if vm.is_null() {
+            eprintln!("[Dala] set_root_binary: DalaViewModel.shared is nil");
+            return;
+        }
+        let ns_data: *mut Object = msg_send![class!(NSData),
+            dataWithBytes: data.as_ptr() as *const std::ffi::c_void,
+            length: data.len()
+        ];
+        let ns_transition = ns_string_from_str(transition);
+        let _: () = msg_send![vm, setRootFromBinary: ns_data, transition: ns_transition];
+    }
+}
+
 // ============================================================================
 // Bluetooth (BLE)
 // ============================================================================
@@ -518,90 +552,99 @@ pub fn bluetooth_unsubscribe(device_id: &str, service: &str, characteristic: &st
     }
 }
 
-    // ============================================================================
-    // WiFi
-    // ============================================================================
+// ============================================================================
+// WiFi
+// ============================================================================
 
-    pub fn wifi_current_network<'a>(env: Env<'a>) -> Term<'a> {
-        // iOS: Use CNCopyCurrentNetworkInfo to get SSID/BSSID
-        // Note: iOS 13+ requires special entitlements and location permission
-        // Returns a map with: connected, ssid, bssid, ip, rssi
+pub fn wifi_current_network<'a>(env: Env<'a>) -> Term<'a> {
+    // iOS: Use CNCopyCurrentNetworkInfo to get SSID/BSSID
+    // Note: iOS 13+ requires special entitlements and location permission
+    // Returns a map with: connected, ssid, bssid, ip, rssi
 
-        unsafe {
-            // Import CoreWiFi/CaptiveNetwork framework functions
-            use core_foundation::base::TCFType;
-            use core_foundation::string::CFString;
+    unsafe {
+        // Import CoreWiFi/CaptiveNetwork framework functions
+        use core_foundation::base::TCFType;
+        use core_foundation::string::CFString;
 
-            // Get the WiFi interface name (usually "en0")
-            let iface_name = CString::new("en0").unwrap();
+        // Get the WiFi interface name (usually "en0")
+        let iface_name = CString::new("en0").unwrap();
 
-            // Call CNCopyCurrentNetworkInfo
-            // This function is deprecated in iOS 14+ but still works with entitlements
-            type CNCopyCurrentNetworkInfoFunc = unsafe extern "C" fn(*const libc::c_void) -> *mut libc::c_void;
+        // Call CNCopyCurrentNetworkInfo
+        // This function is deprecated in iOS 14+ but still works with entitlements
+        type CNCopyCurrentNetworkInfoFunc =
+            unsafe extern "C" fn(*const libc::c_void) -> *mut libc::c_void;
 
-            // Load the function from SystemConfiguration framework
-            let net_info: *mut libc::c_void = ptr::null_mut();
+        // Load the function from SystemConfiguration framework
+        let net_info: *mut libc::c_void = ptr::null_mut();
 
-            // For now, we'll use a simpler approach with the available APIs
-            // In production, you'd need to properly link against SystemConfiguration
+        // For now, we'll use a simpler approach with the available APIs
+        // In production, you'd need to properly link against SystemConfiguration
 
-            // Get IP address for en0 interface
-            let ip_addr = get_wifi_ip_address();
+        // Get IP address for en0 interface
+        let ip_addr = get_wifi_ip_address();
 
-            // Try to get SSID using Objective-C approach
-            let ssid = get_wifi_ssid();
-            let bssid = get_wifi_bssid();
+        // Try to get SSID using Objective-C approach
+        let ssid = get_wifi_ssid();
+        let bssid = get_wifi_bssid();
 
-            let connected = !ssid.is_empty();
+        let connected = !ssid.is_empty();
 
-            // Build the result map
-            let connected_term = if connected {
-                rustler::types::atom::Atom::from_str(env, "true").unwrap().to_term(env)
-            } else {
-                rustler::types::atom::Atom::from_str(env, "false").unwrap().to_term(env)
-            };
+        // Build the result map
+        let connected_term = if connected {
+            rustler::types::atom::Atom::from_str(env, "true")
+                .unwrap()
+                .to_term(env)
+        } else {
+            rustler::types::atom::Atom::from_str(env, "false")
+                .unwrap()
+                .to_term(env)
+        };
 
-            let ssid_term = rustler::types::binary::Binary::from_bytes(env, ssid.as_bytes())
-                .to_term(env);
-            let bssid_term = rustler::types::binary::Binary::from_bytes(env, bssid.as_bytes())
-                .to_term(env);
-            let ip_term = rustler::types::binary::Binary::from_bytes(env, ip_addr.as_bytes())
-                .to_term(env);
+        let ssid_term =
+            rustler::types::binary::Binary::from_bytes(env, ssid.as_bytes()).to_term(env);
+        let bssid_term =
+            rustler::types::binary::Binary::from_bytes(env, bssid.as_bytes()).to_term(env);
+        let ip_term =
+            rustler::types::binary::Binary::from_bytes(env, ip_addr.as_bytes()).to_term(env);
 
-            // RSSI (signal strength) - not easily available on iOS without NEHotspotNetwork
-            let rssi_term = rustler::types::binary::Binary::from_bytes(env, b"0".as_ref())
-                .to_term(env);
+        // RSSI (signal strength) - not easily available on iOS without NEHotspotNetwork
+        let rssi_term = rustler::types::binary::Binary::from_bytes(env, b"0".as_ref()).to_term(env);
 
-            let result = rustler::types::map::map_new(env, 5);
-            let result = rustler::types::map::map_put(
-                result,
-                rustler::types::binary::Binary::from_bytes(env, b"connected").to_term(env),
-                connected_term,
-            ).unwrap();
-            let result = rustler::types::map::map_put(
-                result,
-                rustler::types::binary::Binary::from_bytes(env, b"ssid").to_term(env),
-                ssid_term,
-            ).unwrap();
-            let result = rustler::types::map::map_put(
-                result,
-                rustler::types::binary::Binary::from_bytes(env, b"bssid").to_term(env),
-                bssid_term,
-            ).unwrap();
-            let result = rustler::types::map::map_put(
-                result,
-                rustler::types::binary::Binary::from_bytes(env, b"ip").to_term(env),
-                ip_term,
-            ).unwrap();
-            let result = rustler::types::map::map_put(
-                result,
-                rustler::types::binary::Binary::from_bytes(env, b"rssi").to_term(env),
-                rssi_term,
-            ).unwrap();
+        let result = rustler::types::map::map_new(env, 5);
+        let result = rustler::types::map::map_put(
+            result,
+            rustler::types::binary::Binary::from_bytes(env, b"connected").to_term(env),
+            connected_term,
+        )
+        .unwrap();
+        let result = rustler::types::map::map_put(
+            result,
+            rustler::types::binary::Binary::from_bytes(env, b"ssid").to_term(env),
+            ssid_term,
+        )
+        .unwrap();
+        let result = rustler::types::map::map_put(
+            result,
+            rustler::types::binary::Binary::from_bytes(env, b"bssid").to_term(env),
+            bssid_term,
+        )
+        .unwrap();
+        let result = rustler::types::map::map_put(
+            result,
+            rustler::types::binary::Binary::from_bytes(env, b"ip").to_term(env),
+            ip_term,
+        )
+        .unwrap();
+        let result = rustler::types::map::map_put(
+            result,
+            rustler::types::binary::Binary::from_bytes(env, b"rssi").to_term(env),
+            rssi_term,
+        )
+        .unwrap();
 
-            result
-        }
+        result
     }
+}
 
 // Helper: Get WiFi IP address using getifaddrs
 unsafe fn get_wifi_ip_address() -> String {
@@ -805,19 +848,11 @@ pub fn coreml_is_model_loaded(identifier: &str) -> bool {
     unsafe { DalaCoreMLIsModelLoaded(identifier_c.as_ptr()) != 0 }
 }
 
-pub fn coreml_predict(
-    identifier: &str,
-    inputs_json: &str,
-    callback: DalaCoreMLPredictionCallback,
-) {
+pub fn coreml_predict(identifier: &str, inputs_json: &str, callback: DalaCoreMLPredictionCallback) {
     let identifier_c = std::ffi::CString::new(identifier).unwrap();
     let inputs_json_c = std::ffi::CString::new(inputs_json).unwrap();
     unsafe {
-        DalaCoreMLPredict(
-            identifier_c.as_ptr(),
-            inputs_json_c.as_ptr(),
-            callback,
-        );
+        DalaCoreMLPredict(identifier_c.as_ptr(), inputs_json_c.as_ptr(), callback);
     }
 }
 

@@ -97,6 +97,19 @@ pub fn platform_set_root(_json: &str, _transition: &str) {
     println!("[Dala] set_root({}) stub", _json);
 }
 
+pub fn platform_set_root_binary(_data: &[u8], _transition: &str) {
+    #[cfg(target_os = "ios")]
+    ios::set_root_binary(_data, _transition);
+
+    #[cfg(target_os = "android")]
+    super::android::set_root_binary(_data, _transition);
+
+    #[cfg(not(any(target_os = "ios", target_os = "android")))]
+    {
+        let _ = (_data, _transition);
+    }
+}
+
 // ============================================================================
 // Public functions — tap registry
 // ============================================================================

@@ -76,48 +76,30 @@ defmodule Dala.App do
         # Always called — even with [] this seeds the default theme explicitly.
         Dala.Theme.set(unquote(theme_opts))
 
-        case Dala.Nav.Registry.start_link(__MODULE__) do
-          {:ok, _} -> :ok
-          {:error, {:already_started, _}} -> :ok
-        end
+        # Start core services — crash on real errors, ignore already-started
+        ensure_started(Dala.Nav.Registry, __MODULE__)
+        ensure_started(Dala.State)
+        ensure_started(Dala.ComponentRegistry)
 
-        case Dala.State.start_link() do
-          {:ok, _} -> :ok
-          {:error, {:already_started, _}} -> :ok
-        end
+        # Platform modules must exist before Dala.Device starts
+        ensure_started(Dala.Device.IOS)
+        ensure_started(Dala.Device.Android)
+        ensure_started(Dala.Device)
 
-        case Dala.ComponentRegistry.start_link() do
-          {:ok, _} -> :ok
-          {:error, {:already_started, _}} -> :ok
-        end
-
-        # Dala.Device dispatcher + platform fan-out modules. Order matters:
-        # the IOS / Android modules must exist before Dala.Device starts,
-        # because Dala.Device forwards platform-tagged messages to them.
-        case Dala.Device.IOS.start_link() do
-          {:ok, _} -> :ok
-          {:error, {:already_started, _}} -> :ok
-        end
-
-        case Dala.Device.Android.start_link() do
-          {:ok, _} -> :ok
-          {:error, {:already_started, _}} -> :ok
-        end
-
-        case Dala.Device.start_link() do
-          {:ok, _} -> :ok
-          {:error, {:already_started, _}} -> :ok
-        end
-
-        # Adaptive-theme watcher: subscribes to Dala.Device :appearance and
-        # re-resolves Dala.Theme on OS color-scheme flips. Started after
-        # Dala.Device so the subscribe call has a target.
-        case Dala.Theme.AdaptiveWatcher.start_link() do
-          {:ok, _} -> :ok
-          {:error, {:already_started, _}} -> :ok
-        end
+        # Adaptive theme watcher depends on Dala.Device
+        ensure_started(Dala.Theme.AdaptiveWatcher)
 
         __MODULE__.on_start()
+      end
+
+      defp ensure_started(mod, arg \\ nil) do
+        result = if arg, do: mod.start_link(arg), else: mod.start_link()
+
+        case result do
+          {:ok, _} -> :ok
+          {:error, {:already_started, _}} -> :ok
+          {:error, reason} -> raise "Failed to start #{inspect(mod)}: #{inspect(reason)}"
+        end
       end
 
       def on_start, do: :ok

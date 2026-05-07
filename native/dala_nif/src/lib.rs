@@ -1,4 +1,4 @@
-use rustler::{Binary, Env, NifResult, Term};
+use rustler::{Binary, Encoder, Env, NifResult, Term};
 use std::sync::Mutex;
 
 #[cfg(target_os = "android")]
@@ -198,6 +198,22 @@ fn set_root<'a>(env: Env<'a>, json: Term<'a>) -> NifResult<Term<'a>> {
 }
 
 #[rustler::nif]
+fn set_root_binary<'a>(env: Env<'a>, binary: Binary<'a>) -> NifResult<Term<'a>> {
+    let bytes = binary.as_slice();
+    let transition = get_transition_and_clear();
+
+    let mut tree = TREE
+        .lock()
+        .map_err(|_| rustler::Error::Term(Box::new("tree lock poisoned")))?;
+
+    decode_full_tree(&mut tree, bytes);
+
+    platform_set_root_binary(bytes, &transition);
+
+    ok(env)
+}
+
+#[rustler::nif]
 fn set_taps<'a>(env: Env<'a>, _taps: Term<'a>) -> NifResult<Term<'a>> {
     ok(env)
 }
@@ -222,8 +238,8 @@ fn exit_app<'a>(env: Env<'a>) -> NifResult<Term<'a>> {
 
 #[rustler::nif]
 fn safe_area<'a>(env: Env<'a>) -> NifResult<Term<'a>> {
-    let _insets = platform_safe_area();
-    ok(env)
+    let insets = platform_safe_area();
+    Ok((insets.top, insets.right, insets.bottom, insets.left).encode(env))
 }
 
 // ============================================================================
@@ -236,8 +252,16 @@ fn apply_patches<'a>(env: Env<'a>, binary: Binary<'a>) -> NifResult<Term<'a>> {
     let mut tree = TREE
         .lock()
         .map_err(|_| rustler::Error::Term(Box::new("tree lock poisoned")))?;
-    decode_and_apply(&mut tree, bytes);
-    ok(env)
+    match decode_and_apply(&mut tree, bytes) {
+        Ok(()) => ok(env),
+        Err(msg) => {
+            eprintln!("[Dala] apply_patches error: {}", msg);
+            Err(rustler::Error::Term(Box::new(format!(
+                "apply_patches: {}",
+                msg
+            ))))
+        }
+    }
 }
 
 // ============================================================================

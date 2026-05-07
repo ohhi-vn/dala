@@ -160,6 +160,10 @@ defmodule Dala.Screen do
         {:ok, {screen_module, socket, [], render_mode}}
 
       {:error, reason} ->
+        Dala.Native.log(
+          "Dala.Screen: mount failed for #{inspect(screen_module)}: #{inspect(reason)}"
+        )
+
         {:stop, reason}
     end
   end
@@ -272,14 +276,14 @@ defmodule Dala.Screen do
   # Android file/camera/photo/scan results arrive as {:dala_file_result, event, sub, json_binary}.
   # Decode the JSON and re-dispatch as the user-facing event tuple.
   def handle_info({:dala_file_result, event, sub, json_binary}, state) do
-    event_atom = String.to_atom(event)
-    sub_atom = String.to_atom(sub)
+    event_atom = String.to_existing_atom(event)
+    sub_atom = String.to_existing_atom(sub)
 
     items =
       case :json.decode(json_binary) do
         list when is_list(list) ->
           Enum.map(list, fn item when is_map(item) ->
-            Map.new(item, fn {k, v} -> {String.to_atom(k), v} end)
+            Map.new(item, fn {k, v} -> {String.to_existing_atom(k), v} end)
           end)
 
         _ ->
@@ -398,7 +402,13 @@ defmodule Dala.Screen do
   end
 
   defp to_atom_safe(nil), do: :qr
-  defp to_atom_safe(s) when is_binary(s), do: String.to_atom(s)
+
+  defp to_atom_safe(s) when is_binary(s) do
+    String.to_existing_atom(s)
+  rescue
+    ArgumentError -> :unknown
+  end
+
   defp to_atom_safe(a) when is_atom(a), do: a
 
   @impl GenServer
@@ -522,7 +532,7 @@ defmodule Dala.Screen do
         data =
           case Map.get(map, "data") do
             d when is_map(d) ->
-              Map.new(d, fn {k, v} -> {String.to_atom(k), v} end)
+              Map.new(d, fn {k, v} -> {String.to_existing_atom(k), v} end)
 
             _ ->
               %{}

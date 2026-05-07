@@ -210,8 +210,8 @@ defmodule Dala.ML do
     setup()
 
     key = Nx.Random.key(42)
-    {a, _} = Nx.Random.uniform(key, {size, size})
-    {b, _} = Nx.Random.uniform(key, {size, size})
+    {a, _} = Nx.Random.uniform(key, shape: {size, size})
+    {b, _} = Nx.Random.uniform(key, shape: {size, size})
 
     # Warmup
     Nx.dot(a, b) |> Nx.to_binary()

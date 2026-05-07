@@ -233,11 +233,10 @@ fn decode_node(bytes: &[u8], i: &mut usize) -> super::tree::Node {
 }
 
 /// Decode a binary frame and apply patches to the tree.
-pub fn decode_and_apply(tree: &mut super::tree::Tree, bytes: &[u8]) {
+pub fn decode_and_apply(tree: &mut super::tree::Tree, bytes: &[u8]) -> Result<(), String> {
     // Need at least 4 bytes for header (version + patch_count)
     if bytes.len() < 4 {
-        eprintln!("[Dala] Input too short for header: {} bytes", bytes.len());
-        return;
+        return Err(format!("Input too short for header: {} bytes", bytes.len()));
     }
 
     let mut i = 0;
@@ -245,19 +244,24 @@ pub fn decode_and_apply(tree: &mut super::tree::Tree, bytes: &[u8]) {
     // Header: [u16 version][u16 patch_count]
     let version = read_u16(bytes, &mut i);
     if version != VERSION {
-        eprintln!("[Dala] Unknown protocol version: {}", version);
-        return;
+        return Err(format!("Unknown protocol version: {}", version));
     }
 
     let patch_count = read_u16(bytes, &mut i) as usize;
 
-    for _ in 0..patch_count {
+    for n in 0..patch_count {
+        if i >= bytes.len() {
+            return Err(format!("Unexpected end of input at patch {}", n));
+        }
+
         let opcode = bytes[i];
         i += 1;
 
         match opcode {
             OP_INSERT => {
-                // [u64 id][u64 parent][u32 index][u8 type][PROPS]
+                if i + 20 > bytes.len() {
+                    return Err(format!("INSERT patch {} truncated", n));
+                }
                 let id = read_u64(bytes, &mut i);
                 let parent = read_u64(bytes, &mut i);
                 let index = read_u32(bytes, &mut i) as usize;
@@ -269,20 +273,27 @@ pub fn decode_and_apply(tree: &mut super::tree::Tree, bytes: &[u8]) {
                 });
             }
             OP_REMOVE => {
+                if i + 8 > bytes.len() {
+                    return Err(format!("REMOVE patch {} truncated", n));
+                }
                 let id = read_u64(bytes, &mut i);
                 tree.apply_patch(super::tree::Patch::Remove { id });
             }
             OP_UPDATE => {
+                if i + 8 > bytes.len() {
+                    return Err(format!("UPDATE patch {} truncated", n));
+                }
                 let id = read_u64(bytes, &mut i);
                 let props = decode_props(bytes, &mut i);
                 tree.apply_patch(super::tree::Patch::UpdateProps { id, props });
             }
             _ => {
-                eprintln!("[Dala] Unknown opcode: 0x{:02x}", opcode);
-                break;
+                return Err(format!("Unknown opcode: 0x{:02x} at patch {}", opcode, n));
             }
         }
     }
+
+    Ok(())
 }
 
 /// Decode node fields for INSERT: the id is already read from the wire,
@@ -321,6 +332,101 @@ fn decode_node_from_insert(bytes: &[u8], i: &mut usize, id: u64) -> super::tree:
         dirty_layout: true,
         dirty_paint: true,
     }
+}
+
+/// Decode a full tree binary (version 2) and replace the retained tree.
+/// Format: [u16 version=2][u16 flags][u64 node_count] + node data
+pub fn decode_full_tree(tree: &mut super::tree::Tree, bytes: &[u8]) {
+    if bytes.len() < 12 {
+        eprintln!("[Dala] Full tree binary too short: {} bytes", bytes.len());
+        return;
+    }
+
+    let mut i = 0;
+    let version = read_u16(bytes, &mut i);
+    if version != 2 {
+        eprintln!("[Dala] Expected full tree version 2, got {}", version);
+        return;
+    }
+
+    let _flags = read_u16(bytes, &mut i);
+    let _node_count = read_u64(bytes, &mut i);
+
+    // Clear the existing tree and rebuild from the binary
+    tree.clear();
+
+    // Decode nodes recursively
+    if i < bytes.len() {
+        match decode_tree_node(bytes, &mut i) {
+            Some(node) => {
+                tree.set_root(node);
+            }
+            None => {
+                eprintln!("[Dala] Failed to decode root node from full tree binary");
+            }
+        }
+    }
+}
+
+/// Decode a single tree node and its children from the full tree binary.
+fn decode_tree_node(bytes: &[u8], i: &mut usize) -> Option<super::tree::Node> {
+    if *i + 9 > bytes.len() {
+        return None;
+    }
+
+    let id = read_u64(bytes, i);
+    let kind_byte = bytes[*i];
+    *i += 1;
+
+    let kind = match kind_byte {
+        0x01 => super::tree::NodeKind::Column,
+        0x02 => super::tree::NodeKind::Row,
+        0x03 => super::tree::NodeKind::Text,
+        0x04 => super::tree::NodeKind::Button,
+        0x05 => super::tree::NodeKind::Image,
+        0x06 => super::tree::NodeKind::Scroll,
+        0x07 => super::tree::NodeKind::WebView,
+        _ => {
+            eprintln!("[Dala] Unknown node kind: 0x{:02x}", kind_byte);
+            return None;
+        }
+    };
+
+    let props = decode_props(bytes, i);
+
+    if *i + 4 > bytes.len() {
+        return None;
+    }
+    let child_count = read_u32(bytes, i) as usize;
+
+    let mut children = Vec::with_capacity(child_count);
+    // Read child IDs first (they come as u64 references)
+    let mut child_ids = Vec::with_capacity(child_count);
+    for _ in 0..child_count {
+        if *i + 8 > bytes.len() {
+            return None;
+        }
+        child_ids.push(read_u64(bytes, i));
+    }
+
+    // Decode child nodes recursively
+    for _ in 0..child_count {
+        match decode_tree_node(bytes, i) {
+            Some(child) => children.push(child),
+            None => return None,
+        }
+    }
+
+    Some(super::tree::Node {
+        id,
+        kind,
+        props,
+        parent: None,
+        children: child_ids,
+        layout: super::tree::Layout::default(),
+        dirty_layout: true,
+        dirty_paint: true,
+    })
 }
 
 // ── Tests ──────────────────────────────────────────────────
@@ -398,7 +504,7 @@ mod tests {
         bytes.extend_from_slice(&99u64.to_le_bytes()); // id=99
 
         let mut tree = make_tree();
-        decode_and_apply(&mut tree, &bytes);
+        decode_and_apply(&mut tree, &bytes).unwrap();
         // Tree should have processed the remove patch
         // (actual verification depends on tree implementation)
     }
@@ -419,7 +525,7 @@ mod tests {
         bytes.extend_from_slice(text.as_bytes());
 
         let mut tree = make_tree();
-        decode_and_apply(&mut tree, &bytes);
+        decode_and_apply(&mut tree, &bytes).unwrap();
         // Tree should have updated props for node 42
     }
 
@@ -445,7 +551,7 @@ mod tests {
         bytes.extend_from_slice(&0u32.to_le_bytes());
 
         let mut tree = make_tree();
-        decode_and_apply(&mut tree, &bytes);
+        decode_and_apply(&mut tree, &bytes).unwrap();
         // Tree should have inserted new node
     }
 
@@ -469,7 +575,7 @@ mod tests {
         bytes.extend_from_slice(text.as_bytes());
 
         let mut tree = make_tree();
-        decode_and_apply(&mut tree, &bytes);
+        decode_and_apply(&mut tree, &bytes).unwrap();
         // Tree should have processed both patches
     }
 
@@ -507,7 +613,7 @@ mod tests {
         bytes.push(FLEX_ROW);
 
         let mut tree = make_tree();
-        decode_and_apply(&mut tree, &bytes);
+        decode_and_apply(&mut tree, &bytes).unwrap();
     }
 
     #[test]
@@ -517,8 +623,8 @@ mod tests {
         bytes.extend_from_slice(&0u16.to_le_bytes());
 
         let mut tree = make_tree();
-        decode_and_apply(&mut tree, &bytes);
-        // Should print error and return without panic
+        assert!(decode_and_apply(&mut tree, &bytes).is_err());
+        // Should return error for invalid version
     }
 
     #[test]
@@ -528,7 +634,7 @@ mod tests {
         bytes.extend_from_slice(&0u16.to_le_bytes()); // patch_count=0
 
         let mut tree = make_tree();
-        decode_and_apply(&mut tree, &bytes);
+        decode_and_apply(&mut tree, &bytes).unwrap();
         // Should do nothing, no panic
     }
 
@@ -557,7 +663,7 @@ mod tests {
         }
 
         let mut tree = make_tree();
-        decode_and_apply(&mut tree, &bytes);
+        decode_and_apply(&mut tree, &bytes).unwrap();
     }
 
     #[test]
@@ -588,7 +694,7 @@ mod tests {
         }
 
         let mut tree = make_tree();
-        decode_and_apply(&mut tree, &bytes);
+        decode_and_apply(&mut tree, &bytes).unwrap();
     }
 
     #[test]
@@ -647,7 +753,7 @@ mod tests {
         bytes.extend_from_slice(&50u64.to_le_bytes());
 
         let mut tree = make_tree();
-        decode_and_apply(&mut tree, &bytes);
+        decode_and_apply(&mut tree, &bytes).unwrap();
     }
 
     #[test]
@@ -678,7 +784,7 @@ mod tests {
         bytes.extend_from_slice(color.as_bytes());
 
         let mut tree = make_tree();
-        decode_and_apply(&mut tree, &bytes);
+        decode_and_apply(&mut tree, &bytes).unwrap();
     }
 
     #[test]
@@ -695,7 +801,7 @@ mod tests {
             bytes.extend_from_slice(&(i as f32).to_le_bytes());
 
             let mut tree = make_tree();
-            decode_and_apply(&mut tree, &bytes);
+            decode_and_apply(&mut tree, &bytes).unwrap();
         }
     }
 
@@ -719,7 +825,7 @@ mod tests {
         }
 
         let mut tree = make_tree();
-        decode_and_apply(&mut tree, &bytes);
+        decode_and_apply(&mut tree, &bytes).unwrap();
     }
 
     #[test]
@@ -748,7 +854,7 @@ mod tests {
             bytes.extend_from_slice(&0u32.to_le_bytes()); // no children
 
             let mut tree = make_tree();
-            decode_and_apply(&mut tree, &bytes);
+            decode_and_apply(&mut tree, &bytes).unwrap();
         }
     }
 
@@ -757,8 +863,7 @@ mod tests {
         // Too short for header
         let bytes = vec![0x01];
         let mut tree = make_tree();
-        decode_and_apply(&mut tree, &bytes);
-        // Should not panic
+        assert!(decode_and_apply(&mut tree, &bytes).is_err());
 
         // Invalid opcode
         let mut bytes = vec![];
@@ -766,7 +871,6 @@ mod tests {
         bytes.extend_from_slice(&1u16.to_le_bytes());
         bytes.push(0xFF); // invalid opcode
         let mut tree = make_tree();
-        decode_and_apply(&mut tree, &bytes);
-        // Should not panic
+        assert!(decode_and_apply(&mut tree, &bytes).is_err());
     }
 }
