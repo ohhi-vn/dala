@@ -96,6 +96,19 @@ pub fn log_with_level(level: &str, msg: &str) {
 // App lifecycle
 // ============================================================================
 
+pub fn set_root(_json: &str, _transition: &str) {
+    // Stub - requires JNIEnv from JavaVM
+    eprintln!("[Dala] set_root called (stub)");
+}
+
+pub fn set_root_binary(_data: &[u8], _transition: &str) {
+    // TODO: implement via JNI call to DalaBridge.setRootFromBinary
+    eprintln!(
+        "[Dala] set_root_binary called with {} bytes (stub)",
+        _data.len()
+    );
+}
+
 pub fn exit_app() {
     // Stub - requires JNIEnv from JavaVM
     eprintln!("[Dala] exit_app called (stub)");

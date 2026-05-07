@@ -374,7 +374,14 @@ defmodule Dala.Renderer do
         nif.set_transition(transition)
 
         binary = encode_tree(new_node)
-        nif.set_root_binary(binary)
+
+        try do
+          nif.set_root_binary(binary)
+        rescue
+          e ->
+            Dala.Native.log("Dala.Renderer: set_root_binary failed: #{inspect(e)}")
+        end
+
         {:ok, patches}
       else
         # Check if patches contain inserts/removes (which may carry new tap
@@ -389,7 +396,14 @@ defmodule Dala.Renderer do
           nif.set_transition(transition)
 
           binary = encode_tree(new_node)
-          nif.set_root_binary(binary)
+
+          try do
+            nif.set_root_binary(binary)
+          rescue
+            e ->
+              Dala.Native.log("Dala.Renderer: set_root_binary failed: #{inspect(e)}")
+          end
+
           {:ok, patches}
         else
           # Pure prop updates — safe to send as patches (no new tap targets)
@@ -410,9 +424,14 @@ defmodule Dala.Renderer do
     binary = encode_frame(patches)
 
     if function_exported?(nif, :apply_patches, 1) do
-      nif.apply_patches(binary)
+      try do
+        nif.apply_patches(binary)
+      rescue
+        e ->
+          Dala.Native.log("Dala.Renderer: apply_patches failed: #{inspect(e)}")
+      end
     else
-      IO.puts("[Dala] apply_patches not available, got patches: #{inspect(patches)}")
+      Dala.Native.log("Dala.Renderer: apply_patches not available")
     end
   end
 
@@ -550,9 +569,8 @@ defmodule Dala.Renderer do
 
   defp hash_id(id) do
     id_str = to_string(id)
-    lo = :erlang.phash2(id_str, 0xFFFFFFFF)
-    hi = :erlang.phash2({id_str, :hi}, 0xFFFFFFFF)
-    Bitwise.bor(Bitwise.bsl(hi, 32), lo)
+    <<hash::unsigned-64-big, _rest::binary>> = :crypto.hash(:sha256, id_str)
+    hash
   end
 
   # ── Props encoder ──────────────────────────────────────────────────
