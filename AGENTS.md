@@ -337,6 +337,7 @@ These are the things we've burned ourselves on. Following them isn't optional.
 | Per-feature deep dives (events, navigation, theming, ...) | `guides/*.md` |
 | Render engine deep dive (Elixir → native data transfer) | `guides/render_engine.md` |
 | UI design patterns (sigil vs DSL style) | `guides/ui_design.md` |
+| Preview designer (drag-and-drop, code gen) | `dev_tools/INTERACTIVE_PREVIEW.md`, `dev_tools/dala/preview/` |
 | Architecture decisions (one ADR per cross-cutting decision) | `docs/decisions/` |
 | iOS device deployment (provisioning, build chain, gotchas) | `guides/ios_physical_device.md` |
 | iOS ML support (Nx, Axon, EMLX) | `guides/ios_ml_support.md`, `lib/dala/ml/` |
@@ -392,40 +393,58 @@ Key constraints:
 Helper modules: `Dala.ML`, `Dala.ML.EMLX`, `Dala.ML.Nx`, `Dala.ML.CoreML`, `Dala.ML.ONNX` in `lib/dala/ml/`.
 Full guide: `guides/ios_ml_support.md`
 
-## 21. **Dev-only UI preview tool.**
-    `Dala.Preview` module (in `dev_tools/` directory) provides HTML-based preview
-    of Dala UI components in a browser, no simulator/emulator needed.
-    
+## 21. **Dev-only UI preview and design tool.**
+    `Dala.Preview` module (in `dev_tools/` directory) provides two modes:
+
+    1. **Static preview** — generates standalone HTML with CSS that mimics Dala's styling.
+    2. **Live designer** — Phoenix LiveView server with drag-and-drop component palette,
+       property editor, live phone-frame preview, and code generation (sigil or DSL style).
+
     **Key points:**
     - Lives in `dev_tools/` directory — only compiled in `:dev` environment
     - Not included in Hex package (excluded via `mix.exs` package/0 filter)
-    - Generates static HTML with CSS that mimics Dala's styling
-    - Supports all major Dala UI components (column, row, text, button, etc.)
-    
-    **Usage:**
+    - Static preview works without any server
+    - Live designer starts a Phoenix endpoint with LiveView
+    - Code generation supports `~dala` sigil style and Spark DSL style
+
+    **Static preview:**
     ```elixir
-    # In IEx (dev environment)
     Dala.Preview.preview(MyApp.HomeScreen)
     Dala.Preview.preview_to_file(MyApp.HomeScreen, "preview.html")
     Dala.Preview.preview_and_open(MyApp.HomeScreen)
     ```
-    
+
+    **Live designer:**
+    ```elixir
+    Dala.Preview.start_designer(port: 4200)
+    Dala.Preview.generate_code(tree, :sigil, "MyApp.HomeScreen")
+    Dala.Preview.generate_code(tree, :dsl, "MyApp.HomeScreen")
+    ```
+
     ```bash
-    # Via mix task
+    # Static preview
     mix dala.preview MyApp.HomeScreen
     mix dala.preview MyApp.HomeScreen --output custom.html --no-open
+
+    # Live designer
+    mix dala.preview --live
+    mix dala.preview --live --port 4200 --module MyApp.HomeScreen
     ```
-    
+
     **Implementation:**
-    - `dev_tools/dala/preview.ex` — Main module with HTML generation
-    - `dev_tools/mix/tasks/dala/preview.ex` — Mix task
-    - Renders Dala UI trees as styled HTML divs with CSS
-    - Shows component tree inspector (toggleable with Alpine.js)
-    
-    **Limitations:**
-    - Static preview only (no live interaction like taps)
-    - Doesn't execute `mount/3` or `handle_event/3` — just renders the UI tree
-    - For full interactivity, use `Dala.Test` with real device/node
+    - `dev_tools/dala/preview.ex` — Main module: static preview + `start_designer/1` + `generate_code/3`
+    - `dev_tools/dala/preview/codegen.ex` — Code generation: sigil + DSL styles, handler extraction
+    - `dev_tools/dala/preview/canvas.ex` — LiveView: drag-and-drop designer with property editor
+    - `dev_tools/dala/preview/live.ex` — Phoenix endpoint setup and server lifecycle
+    - `dev_tools/dala/preview/live/layout.ex` — Root HTML layout with LiveView client JS
+    - `dev_tools/dala/preview/example.ex` — Example UI trees
+    - `dev_tools/mix/tasks/dala/preview.ex` — Mix task with `--live` flag
+
+    **Code generation:**
+    - `Dala.Preview.Codegen.generate_sigil/3` — `~dala` sigil style with PascalCase tags
+    - `Dala.Preview.Codegen.generate_dsl/3` — Spark DSL style with snake_case entities
+    - `Dala.Preview.Codegen.extract_handlers/1` — Extract event handler atoms from UI tree
+    - Auto-generates `handle_event/3` stubs for all event handlers found in the tree
 
 ## 20. **Bluetooth and WiFi support.**
     Dala provides full BLE and WiFi APIs via `Dala.Bluetooth` and `Dala.WiFi` modules.

@@ -1,123 +1,100 @@
 defmodule Dala.Preview.Live.Layout do
   @moduledoc """
-  Layout module for Dala Preview LiveView.
+  Root layout for Dala Preview LiveView.
 
-  This layout wraps the preview in a minimal HTML structure
-  with the necessary JavaScript and CSS for interactivity.
+  Provides the HTML shell with Phoenix LiveView client JS,
+  the DesignCanvas drag-and-drop hook, and base styles.
   """
 
-  # This is a simple layout module that returns HTML
-  # It doesn't use Phoenix.LiveView.Layout to avoid compilation issues
+  use Phoenix.Component
 
   @doc """
-  Render the layout.
+  Root layout for the preview designer.
   """
-  def render(assigns) do
-    title = assigns[:page_title] || "Dala Preview"
-    inner_content = assigns[:inner_content] || ""
-
-    """
+  def root(assigns) do
+    ~H"""
     <!DOCTYPE html>
     <html lang="en">
       <head>
-        <meta charset="utf-8"/>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-        <title>#{title}</title>
-
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Dala Preview Designer</title>
+        <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>◆</text></svg>" />
         <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
-        <script src="/assets/js/design_canvas.js"></script>
-        <script>
-          window.Hooks = window.Hooks || {};
-          window.Hooks.DesignCanvas = DesignCanvas;
-        </script>
-
-        <style>
-          :root {
-            --primary: #2196F3;
-            --surface: #FFFFFF;
-            --on-surface: #212121;
-            --background: #F5F5F5;
-            --border: #E0E0E0;
-            --space-xs: 4px;
-            --space-sm: 8px;
-            --space-md: 16px;
-            --space-lg: 24px;
-          }
-
-          body {
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-            margin: 0;
-            padding: var(--space-md);
-            background: var(--background);
-            color: var(--on-surface);
-          }
-
-          .live-preview-container {
-            display: flex;
-            gap: var(--space-lg);
-            max-width: 1600px;
-            margin: 0 auto;
-          }
-
-          .preview-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: var(--space-md);
-            padding-bottom: var(--space-md);
-            border-bottom: 1px solid var(--border);
-          }
-
-          .preview-header h2 {
-            margin: 0;
-          }
-
-          .preview-header button {
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: var(--space-sm) var(--space-md);
-            border-radius: 4px;
-            cursor: pointer;
-          }
-
-          .preview-content {
-            flex: 1;
-            max-width: 800px;
-          }
-
-          .event-log {
-            flex: 1;
-            max-width: 400px;
-            padding: var(--space-md);
-            background: #F9F9F9;
-            border-radius: 8px;
-            border: 1px solid var(--border);
-            max-height: 600px;
-            overflow-y: auto;
-          }
-
-          .event-log h3 {
-            margin-top: 0;
-            margin-bottom: var(--space-sm);
-          }
-
-          .log-entry {
-            padding: 4px;
-            border-bottom: 1px solid var(--border);
-            font-family: monospace;
-            font-size: 12px;
-          }
-
-          .log-entry strong {
-            margin-right: 8px;
-          }
-        </style>
+        <.live_head />
       </head>
       <body>
-        #{inner_content}
+        <%= @inner_content %>
       </body>
     </html>
+    """
+  end
+
+  defp live_head(assigns) do
+    ~H"""
+    <script>
+      // Phoenix LiveView client
+      if (typeof window.phx_live_view_loaded === 'undefined') {
+        var s = document.createElement('script');
+        s.src = 'https://cdn.jsdelivr.net/npm/phoenix@1.7.0/priv/static/phoenix.min.js';
+        document.head.appendChild(s);
+        var s2 = document.createElement('script');
+        s2.src = 'https://cdn.jsdelivr.net/npm/phoenix_live_view@1.0.0/priv/static/phoenix_live_view.min.js';
+        s2.onload = function() {
+          // Register the DesignCanvas hook
+          window.Hooks = window.Hooks || {};
+          window.Hooks.DesignCanvas = DesignCanvas;
+
+          // Connect LiveView
+          var liveSocket = new LiveView.LiveSocket('/live', Phoenix.Socket, {
+            hooks: window.Hooks,
+            params: { _csrf_token: '' }
+          });
+          liveSocket.connect();
+          window.liveSocket = liveSocket;
+        };
+        document.head.appendChild(s2);
+      }
+    </script>
+    <script>
+      // DesignCanvas drag-and-drop hook
+      var DesignCanvas = {
+        mounted() { this.initDragDrop(); },
+        updated() { this.initDragDrop(); },
+        initDragDrop() {
+          var root = this.el;
+          root.querySelectorAll('.palette-item[draggable]').forEach(function(el) {
+            el.addEventListener('dragstart', function(e) {
+              e.dataTransfer.setData('text/plain', el.dataset.dragType);
+              e.dataTransfer.effectAllowed = 'copy';
+            });
+          });
+          root.querySelectorAll('.drop-zone').forEach(function(zone) {
+            zone.addEventListener('dragover', function(e) {
+              e.preventDefault();
+              e.dataTransfer.dropEffect = 'copy';
+              zone.classList.add('drag-over');
+            });
+            zone.addEventListener('dragleave', function(e) {
+              zone.classList.remove('drag-over');
+            });
+            zone.addEventListener('drop', function(e) {
+              e.preventDefault();
+              zone.classList.remove('drag-over');
+              var type = e.dataTransfer.getData('text/plain');
+              var targetId = zone.dataset.dropTarget;
+              if (type && targetId) {
+                this.pushEvent('drop_on_node', { type: type, target_id: targetId });
+              }
+            }.bind(this));
+          }.bind(this));
+        }
+      };
+    </script>
+    <style>
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+      html, body { height: 100%; overflow: hidden; }
+    </style>
     """
   end
 end
