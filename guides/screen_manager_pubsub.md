@@ -44,9 +44,9 @@ Dala.Screen.Manager.dispatch(pid, {:update, data})
 
 ```elixir
 # Send a message to any screen
-Dala.Screen.dispatch(:home, {:update, data})
-Dala.Screen.dispatch(0, {:update, data})
-Dala.Screen.dispatch(pid, {:update, data})
+Dala.Screen.Screen.dispatch(:home, {:update, data})
+Dala.Screen.Screen.dispatch(0, {:update, data})
+Dala.Screen.Screen.dispatch(pid, {:update, data})
 
 # List all screens
 Dala.Screen.list()
@@ -78,7 +78,7 @@ defmodule MyApp.OtherScreen do
 
   def handle_event(:send_update, _params, socket) do
     # Send message to home screen by name
-    Dala.Screen.dispatch(:home, {:update, %{value: 42}})
+    Dala.Screen.Screen.dispatch(:home, {:update, %{value: 42}})
     {:noreply, socket}
   end
 end

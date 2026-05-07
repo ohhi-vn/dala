@@ -88,31 +88,31 @@ defmodule Dala.Nav.ScreenNavTest do
   describe "push_screen/2 (module dest)" do
     test "switches current module to the pushed screen" do
       {:ok, pid} = Dala.Screen.start_link(HomeScreen, %{})
-      Dala.Screen.dispatch(pid, "go_profile", %{})
-      assert Dala.Screen.get_current_module(pid) == ProfileScreen
+      Dala.Screen.Screen.dispatch(pid, "go_profile", %{})
+      assert Dala.Screen.Screen.get_current_module(pid) == ProfileScreen
       GenServer.stop(pid)
     end
 
     test "new screen is mounted with empty params" do
       {:ok, pid} = Dala.Screen.start_link(HomeScreen, %{})
-      Dala.Screen.dispatch(pid, "go_profile", %{})
-      socket = Dala.Screen.get_socket(pid)
+      Dala.Screen.Screen.dispatch(pid, "go_profile", %{})
+      socket = Dala.Screen.Screen.get_socket(pid)
       assert socket.assigns.name == "anon"
       GenServer.stop(pid)
     end
 
     test "nav history grows by one on push" do
-      {:ok, pid} = Dala.Screen.start_link(HomeScreen, %{})
-      assert Dala.Screen.get_nav_history(pid) == []
-      Dala.Screen.dispatch(pid, "go_profile", %{})
-      assert length(Dala.Screen.get_nav_history(pid)) == 1
+      {:ok, pid} = Dala.Screen.Screen.start_link(HomeScreen, %{})
+      assert Dala.Screen.Screen.get_nav_history(pid) == []
+      Dala.Screen.Screen.dispatch(pid, "go_profile", %{})
+      assert length(Dala.Screen.Screen.get_nav_history(pid)) == 1
       GenServer.stop(pid)
     end
 
     test "history head is the previous module" do
-      {:ok, pid} = Dala.Screen.start_link(HomeScreen, %{})
-      Dala.Screen.dispatch(pid, "go_profile", %{})
-      [{prev_module, _prev_socket} | _] = Dala.Screen.get_nav_history(pid)
+      {:ok, pid} = Dala.Screen.Screen.start_link(HomeScreen, %{})
+      Dala.Screen.Screen.dispatch(pid, "go_profile", %{})
+      [{prev_module, _prev_socket} | _] = Dala.Screen.Screen.get_nav_history(pid)
       assert prev_module == HomeScreen
       GenServer.stop(pid)
     end
@@ -121,9 +121,9 @@ defmodule Dala.Nav.ScreenNavTest do
   describe "push_screen/3 (registered atom dest with params)" do
     test "resolves atom via registry and mounts with params" do
       {:ok, pid} = Dala.Screen.start_link(HomeScreen, %{})
-      Dala.Screen.dispatch(pid, "go_settings", %{})
-      assert Dala.Screen.get_current_module(pid) == SettingsScreen
-      socket = Dala.Screen.get_socket(pid)
+      Dala.Screen.Screen.dispatch(pid, "go_settings", %{})
+      assert Dala.Screen.Screen.get_current_module(pid) == SettingsScreen
+      socket = Dala.Screen.Screen.get_socket(pid)
       assert socket.assigns.from == :home
       GenServer.stop(pid)
     end
@@ -133,36 +133,36 @@ defmodule Dala.Nav.ScreenNavTest do
 
   describe "pop_screen/1" do
     test "returns to previous module" do
-      {:ok, pid} = Dala.Screen.start_link(HomeScreen, %{})
-      Dala.Screen.dispatch(pid, "go_profile", %{})
-      Dala.Screen.dispatch(pid, "back", %{})
-      assert Dala.Screen.get_current_module(pid) == HomeScreen
+      {:ok, pid} = Dala.Screen.Screen.start_link(HomeScreen, %{})
+      Dala.Screen.Screen.dispatch(pid, "go_profile", %{})
+      Dala.Screen.Screen.dispatch(pid, "back", %{})
+      assert Dala.Screen.Screen.get_current_module(pid) == HomeScreen
       GenServer.stop(pid)
     end
 
     test "restores previous screen's socket assigns" do
-      {:ok, pid} = Dala.Screen.start_link(HomeScreen, %{})
-      Dala.Screen.dispatch(pid, "go_profile", %{})
-      Dala.Screen.dispatch(pid, "back", %{})
-      socket = Dala.Screen.get_socket(pid)
+      {:ok, pid} = Dala.Screen.Screen.start_link(HomeScreen, %{})
+      Dala.Screen.Screen.dispatch(pid, "go_profile", %{})
+      Dala.Screen.Screen.dispatch(pid, "back", %{})
+      socket = Dala.Screen.Screen.get_socket(pid)
       assert socket.assigns.page == :home
       GenServer.stop(pid)
     end
 
     test "nav history shrinks on pop" do
-      {:ok, pid} = Dala.Screen.start_link(HomeScreen, %{})
-      Dala.Screen.dispatch(pid, "go_profile", %{})
-      Dala.Screen.dispatch(pid, "back", %{})
-      assert Dala.Screen.get_nav_history(pid) == []
+      {:ok, pid} = Dala.Screen.Screen.start_link(HomeScreen, %{})
+      Dala.Screen.Screen.dispatch(pid, "go_profile", %{})
+      Dala.Screen.Screen.dispatch(pid, "back", %{})
+      assert Dala.Screen.Screen.get_nav_history(pid) == []
       GenServer.stop(pid)
     end
 
     test "pop at root is a no-op (module stays the same)" do
-      {:ok, pid} = Dala.Screen.start_link(HomeScreen, %{})
+      {:ok, pid} = Dala.Screen.Screen.start_link(HomeScreen, %{})
       # Send an info message that would trigger pop — default handle_info is noop
       send(pid, :pop_test)
       Process.sleep(10)
-      assert Dala.Screen.get_current_module(pid) == HomeScreen
+      assert Dala.Screen.Screen.get_current_module(pid) == HomeScreen
       GenServer.stop(pid)
     end
   end
@@ -171,21 +171,21 @@ defmodule Dala.Nav.ScreenNavTest do
 
   describe "pop_to_root/1" do
     test "returns to the root from two levels deep" do
-      {:ok, pid} = Dala.Screen.start_link(HomeScreen, %{})
-      Dala.Screen.dispatch(pid, "go_profile", %{})
-      Dala.Screen.dispatch(pid, "go_settings", %{})
-      assert Dala.Screen.get_current_module(pid) == SettingsScreen
+      {:ok, pid} = Dala.Screen.Screen.start_link(HomeScreen, %{})
+      Dala.Screen.Screen.dispatch(pid, "go_profile", %{})
+      Dala.Screen.Screen.dispatch(pid, "go_settings", %{})
+      assert Dala.Screen.Screen.get_current_module(pid) == SettingsScreen
       # SettingsScreen now also handles back_to_root
-      Dala.Screen.dispatch(pid, "back_to_root", %{})
-      assert Dala.Screen.get_current_module(pid) == HomeScreen
-      assert Dala.Screen.get_nav_history(pid) == []
+      Dala.Screen.Screen.dispatch(pid, "back_to_root", %{})
+      assert Dala.Screen.Screen.get_current_module(pid) == HomeScreen
+      assert Dala.Screen.Screen.get_nav_history(pid) == []
       GenServer.stop(pid)
     end
 
     test "pop_to_root at root is a no-op" do
-      {:ok, pid} = Dala.Screen.start_link(ProfileScreen, %{name: "alice"})
-      Dala.Screen.dispatch(pid, "back_to_root", %{})
-      assert Dala.Screen.get_current_module(pid) == ProfileScreen
+      {:ok, pid} = Dala.Screen.Screen.start_link(ProfileScreen, %{name: "alice"})
+      Dala.Screen.Screen.dispatch(pid, "back_to_root", %{})
+      assert Dala.Screen.Screen.get_current_module(pid) == ProfileScreen
       GenServer.stop(pid)
     end
   end
@@ -194,28 +194,28 @@ defmodule Dala.Nav.ScreenNavTest do
 
   describe "pop_to/2" do
     test "pops back to the target module in history" do
-      {:ok, pid} = Dala.Screen.start_link(HomeScreen, %{})
-      Dala.Screen.dispatch(pid, "go_settings", %{})
+      {:ok, pid} = Dala.Screen.Screen.start_link(HomeScreen, %{})
+      Dala.Screen.Screen.dispatch(pid, "go_settings", %{})
       # Now we're on SettingsScreen. Push ProfileScreen from there is not wired,
       # so instead test the same scenario by going Home -> Profile -> Settings
       # then pop_to_home from Settings.
       GenServer.stop(pid)
 
-      {:ok, pid2} = Dala.Screen.start_link(HomeScreen, %{})
-      Dala.Screen.dispatch(pid2, "go_profile", %{})
-      Dala.Screen.dispatch(pid2, "go_settings", %{})
-      assert Dala.Screen.get_current_module(pid2) == SettingsScreen
-      Dala.Screen.dispatch(pid2, "pop_to_home", %{})
-      assert Dala.Screen.get_current_module(pid2) == HomeScreen
-      assert Dala.Screen.get_nav_history(pid2) == []
+      {:ok, pid2} = Dala.Screen.Screen.start_link(HomeScreen, %{})
+      Dala.Screen.Screen.dispatch(pid2, "go_profile", %{})
+      Dala.Screen.Screen.dispatch(pid2, "go_settings", %{})
+      assert Dala.Screen.Screen.get_current_module(pid2) == SettingsScreen
+      Dala.Screen.Screen.dispatch(pid2, "pop_to_home", %{})
+      assert Dala.Screen.Screen.get_current_module(pid2) == HomeScreen
+      assert Dala.Screen.Screen.get_nav_history(pid2) == []
       GenServer.stop(pid2)
     end
 
     test "is a no-op if target is not in history" do
-      {:ok, pid} = Dala.Screen.start_link(SettingsScreen, %{})
+      {:ok, pid} = Dala.Screen.Screen.start_link(SettingsScreen, %{})
       # SettingsScreen tries to pop_to HomeScreen, but HomeScreen isn't in history
-      Dala.Screen.dispatch(pid, "pop_to_home", %{})
-      assert Dala.Screen.get_current_module(pid) == SettingsScreen
+      Dala.Screen.Screen.dispatch(pid, "pop_to_home", %{})
+      assert Dala.Screen.Screen.get_current_module(pid) == SettingsScreen
       GenServer.stop(pid)
     end
   end
@@ -225,21 +225,21 @@ defmodule Dala.Nav.ScreenNavTest do
   describe "reset_to/2" do
     test "replaces entire nav stack with a fresh screen" do
       # Start on HomeScreen, push to ProfileScreen, then reset to HomeScreen from there
-      {:ok, pid} = Dala.Screen.start_link(HomeScreen, %{})
-      Dala.Screen.dispatch(pid, "go_profile", %{})
-      assert Dala.Screen.get_current_module(pid) == ProfileScreen
+      {:ok, pid} = Dala.Screen.Screen.start_link(HomeScreen, %{})
+      Dala.Screen.Screen.dispatch(pid, "go_profile", %{})
+      assert Dala.Screen.Screen.get_current_module(pid) == ProfileScreen
       # ProfileScreen handles "reset_to_home" via Dala.Socket.reset_to(socket, HomeScreen)
-      Dala.Screen.dispatch(pid, "reset_to_home", %{})
-      assert Dala.Screen.get_current_module(pid) == HomeScreen
-      assert Dala.Screen.get_nav_history(pid) == []
+      Dala.Screen.Screen.dispatch(pid, "reset_to_home", %{})
+      assert Dala.Screen.Screen.get_current_module(pid) == HomeScreen
+      assert Dala.Screen.Screen.get_nav_history(pid) == []
       GenServer.stop(pid)
     end
 
     test "new screen is freshly mounted" do
       {:ok, pid} = Dala.Screen.start_link(HomeScreen, %{})
-      Dala.Screen.dispatch(pid, "go_profile", %{})
-      Dala.Screen.dispatch(pid, "reset_to_home", %{})
-      socket = Dala.Screen.get_socket(pid)
+      Dala.Screen.Screen.dispatch(pid, "go_profile", %{})
+      Dala.Screen.Screen.dispatch(pid, "reset_to_home", %{})
+      socket = Dala.Screen.Screen.get_socket(pid)
       assert socket.assigns.page == :home
       GenServer.stop(pid)
     end
@@ -266,7 +266,7 @@ defmodule Dala.Nav.ScreenNavTest do
 
       exit_reason =
         try do
-          Dala.Screen.dispatch(pid, "bad_nav", %{})
+          Dala.Screen.Screen.dispatch(pid, "bad_nav", %{})
           nil
         catch
           :exit, reason -> reason

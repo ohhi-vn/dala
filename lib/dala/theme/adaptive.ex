@@ -24,7 +24,7 @@ defmodule Dala.Theme.Adaptive do
   @doc "Returns the Light or Dark theme struct based on the current OS appearance."
   @spec theme() :: Dala.Theme.t()
   def theme do
-    case Dala.Theme.color_scheme() do
+    case Dala.Theme.Theme.color_scheme() do
       :dark -> Dala.Theme.Dark.theme()
       _ -> Dala.Theme.Light.theme()
     end

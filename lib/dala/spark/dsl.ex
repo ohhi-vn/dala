@@ -24,7 +24,7 @@ defmodule Dala.Spark.Dsl do
         end
 
         def handle_event(:increment, _params, socket) do
-          {:noreply, Dala.Socket.assign(socket, :count, socket.assigns.count + 1)}
+          {:noreply, Dala.Ui.Socket.assign(socket, :count, socket.assigns.count + 1)}
         end
       end
   """
@@ -1026,13 +1026,13 @@ defmodule Dala.Spark.Dsl do
     transformers: [
       Dala.Spark.Transformers.GenerateMount,
       Dala.Spark.Transformers.Render,
-      Dala.Spark.Transformers.PubSub
+      Dala.Spark.Transformers.Pubsub
     ],
     verifiers: [__MODULE__.Verifier]
 
   use Spark.Dsl, default_extensions: [extensions: __MODULE__]
 
-  # PubSub extension is automatically available via sections
+  # Pubsub extension is automatically available via sections
 
   # ── Verifier ────────────────────────────────────────────────────────────
 

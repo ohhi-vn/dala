@@ -17,9 +17,9 @@ defmodule Dala.Theme.Light do
   """
 
   @doc "Returns the compiled Light theme struct."
-  @spec theme() :: Dala.Theme.t()
+  @spec theme() :: Dala.Theme.Theme.t()
   def theme do
-    Dala.Theme.build(
+    Dala.Theme.Theme.build(
       # ── Brand ──────────────────────────────────────────────────────────────
       # near-black — buttons read as solid + decisive in bright sun
       primary: 0xFF1F1F1F,

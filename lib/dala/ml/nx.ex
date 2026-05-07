@@ -1,4 +1,4 @@
-defmodule Dala.ML.Nx do
+defmodule Dala.Ml.Nx do
   @compile {:nowarn_undefined, [:Nx]}
   @moduledoc """
   Nx integration helpers for Dala.

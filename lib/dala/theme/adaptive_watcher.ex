@@ -59,7 +59,7 @@ defmodule Dala.Theme.AdaptiveWatcher do
     # events. If Dala.Device isn't running (host BEAM, unit tests), skip
     # cleanly — set/1 still works, we just won't react to events.
     try do
-      Dala.Device.subscribe(:appearance)
+      Dala.Device.Device.subscribe(:appearance)
     catch
       :exit, _ -> :ok
     end
@@ -83,7 +83,7 @@ defmodule Dala.Theme.AdaptiveWatcher do
     # adaptive module. Re-setting other themes would clobber a user's
     # explicit choice.
     if active_is_adaptive?(state.adaptive) do
-      Dala.Theme.set(state.adaptive)
+      Dala.Theme.Theme.set(state.adaptive)
     end
 
     {:noreply, state}
@@ -97,6 +97,6 @@ defmodule Dala.Theme.AdaptiveWatcher do
   defp active_is_adaptive?(module) do
     Code.ensure_loaded?(module) and
       function_exported?(module, :theme, 0) and
-      Dala.Theme.current() == module.theme()
+      Dala.Theme.Theme.current() == module.theme()
   end
 end

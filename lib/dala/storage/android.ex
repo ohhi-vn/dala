@@ -36,7 +36,7 @@ defmodule Dala.Storage.Android do
   """
   @spec external_files_dir(atom()) :: String.t() | nil
   def external_files_dir(type \\ :documents) do
-    case Dala.Native.storage_external_files_dir(type) do
+    case Dala.Platform.Native.storage_external_files_dir(type) do
       nil -> nil
       path -> IO.iodata_to_binary(path)
     end
@@ -49,9 +49,9 @@ defmodule Dala.Storage.Android do
   `type` is `:image`, `:video`, or `:audio`. Defaults to `:auto`, which
   infers the type from the file extension.
   """
-  @spec save_to_media_store(Dala.Socket.t(), String.t(), atom()) :: Dala.Socket.t()
+  @spec save_to_media_store(Dala.Ui.Socket.t(), String.t(), atom()) :: Dala.Ui.Socket.t()
   def save_to_media_store(socket, path, type \\ :auto) do
-    Dala.Native.storage_save_to_media_store(path, type)
+    Dala.Platform.Native.storage_save_to_media_store(path, type)
     socket
   end
 end

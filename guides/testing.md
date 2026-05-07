@@ -18,7 +18,7 @@ defmodule MyApp.CounterScreenTest do
     assert socket.assigns.count == 0
 
     # Dispatch an event
-    :ok = Dala.Screen.dispatch(pid, "tap", %{"tag" => "increment"})
+    :ok = Dala.Screen.Screen.dispatch(pid, "tap", %{"tag" => "increment"})
 
     # Verify updated state
     socket = Dala.Screen.get_socket(pid)
@@ -27,7 +27,7 @@ defmodule MyApp.CounterScreenTest do
 
   test "navigates to detail on tap" do
     {:ok, pid} = Dala.Screen.start_link(MyApp.HomeScreen, %{})
-    :ok = Dala.Screen.dispatch(pid, "tap", %{"tag" => "open_detail"})
+    :ok = Dala.Screen.Screen.dispatch(pid, "tap", %{"tag" => "open_detail"})
 
     assert Dala.Screen.get_current_module(pid) == MyApp.DetailScreen
   end
@@ -36,7 +36,7 @@ end
 
 Key functions for test-mode screens:
 - `Dala.Screen.get_socket/1` — returns the current `Dala.Socket.t()`
-- `Dala.Screen.dispatch/3` — sends an event, blocks until processed
+- `Dala.Screen.Screen.dispatch/3` — sends an event, blocks until processed
 - `Dala.Screen.get_current_module/1` — returns the current screen module (after navigation)
 - `Dala.Screen.get_nav_history/1` — returns the navigation stack as `[{module, socket}]`
 

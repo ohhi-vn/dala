@@ -80,7 +80,7 @@ defmodule Dala.Event.Address do
   Validate that `id` is one of the supported types. Returns `:ok` or
   `{:error, reason}`.
 
-  Used by `Dala.Renderer` and `Dala.Event` to fail fast when an obviously-bad
+  Used by `Dala.Ui.Renderer` and `Dala.Event` to fail fast when an obviously-bad
   ID is passed (e.g. a pid, a function, or an undefined value).
 
       iex> Dala.Event.Address.validate_id(:save)

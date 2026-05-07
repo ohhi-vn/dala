@@ -17,9 +17,9 @@ defmodule Dala.Theme.Dark do
   """
 
   @doc "Returns the compiled Dark theme struct."
-  @spec theme() :: Dala.Theme.t()
+  @spec theme() :: Dala.Theme.Theme.t()
   def theme do
-    Dala.Theme.build(
+    Dala.Theme.Theme.build(
       # ── Brand ──────────────────────────────────────────────────────────────
       # near-white — primary buttons stay readable at low brightness
       primary: 0xFFE6E6E6,

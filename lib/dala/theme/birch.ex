@@ -25,9 +25,9 @@ defmodule Dala.Theme.Birch do
   """
 
   @doc "Returns the compiled Birch theme struct."
-  @spec theme() :: Dala.Theme.t()
+  @spec theme() :: Dala.Theme.Theme.t()
   def theme do
-    Dala.Theme.build(
+    Dala.Theme.Theme.build(
       # ── Brand ──────────────────────────────────────────────────────────────
       # 0xFF7C4A1E — warm chestnut
       primary: :brown_600,

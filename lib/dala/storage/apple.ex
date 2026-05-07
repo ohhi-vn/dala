@@ -42,7 +42,7 @@ defmodule Dala.Storage.Apple do
   """
   @spec dir(atom()) :: String.t() | nil
   def dir(location) when location in @locations do
-    case Dala.Native.storage_dir(location) do
+    case Dala.Platform.Native.storage_dir(location) do
       nil -> nil
       path -> IO.iodata_to_binary(path)
     end
@@ -53,9 +53,9 @@ defmodule Dala.Storage.Apple do
 
   Type (`:image` or `:video`) is inferred from the file extension.
   """
-  @spec save_to_photo_library(Dala.Socket.t(), String.t()) :: Dala.Socket.t()
+  @spec save_to_photo_library(Dala.Ui.Socket.t(), String.t()) :: Dala.Ui.Socket.t()
   def save_to_photo_library(socket, path) do
-    Dala.Native.storage_save_to_photo_library(path)
+    Dala.Platform.Native.storage_save_to_photo_library(path)
     socket
   end
 end

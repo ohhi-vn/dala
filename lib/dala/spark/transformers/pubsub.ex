@@ -1,4 +1,4 @@
-defmodule Dala.Spark.Transformers.PubSub do
+defmodule Dala.Spark.Transformers.Pubsub do
   @moduledoc """
   Spark transformer that handles PubSub subscriptions from DSL.
 
@@ -11,7 +11,7 @@ defmodule Dala.Spark.Transformers.PubSub do
 
   @impl true
   def transform(dsl_state) do
-    subscriptions = Dala.Spark.PubSub.get_subscriptions(dsl_state)
+    subscriptions = Dala.Spark.Pubsub.get_subscriptions(dsl_state)
 
     if Enum.any?(subscriptions) do
       # Generate handle_info clauses for each subscription

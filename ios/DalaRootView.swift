@@ -1057,7 +1057,7 @@ public struct DalaRootView: View {
             }
         }
         // Notify Elixir when the OS appearance toggles so subscribers
-        // (Dala.Device → Dala.Theme.Adaptive consumers) can re-resolve.
+        // (Dala.Device.Device → Dala.Theme.Adaptive consumers) can re-resolve.
         // SwiftUI re-evaluates `colorScheme` automatically on system change,
         // so this fires reliably without polling.
         .onChange(of: colorScheme) { _, newScheme in

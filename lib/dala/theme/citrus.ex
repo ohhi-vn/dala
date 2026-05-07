@@ -25,9 +25,9 @@ defmodule Dala.Theme.Citrus do
   """
 
   @doc "Returns the compiled Citrus theme struct."
-  @spec theme() :: Dala.Theme.t()
+  @spec theme() :: Dala.Theme.Theme.t()
   def theme do
-    Dala.Theme.build(
+    Dala.Theme.Theme.build(
       # ── Brand ──────────────────────────────────────────────────────────────
       # 0xFFA3E635 — bright lime green
       primary: :lime_400,

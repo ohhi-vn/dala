@@ -1,182 +1,34 @@
 defmodule Dala.App do
   @moduledoc """
-  Behaviour for Dala application entry point.
+  Public API for Dala application functionality.
 
-  ## Usage
-
-      defmodule MyApp do
-        use Dala.App
-
-        def navigation(_platform) do
-          stack(:home, root: MyApp.HomeScreen)
-        end
-
-        def on_start do
-          # Pattern-match start_root so failures crash loudly instead of hanging
-          {:ok, _pid} = Dala.Screen.start_root(MyApp.HomeScreen)
-          # ⚠️ Use secure cookies - never hardcode in production!
-          cookie = Dala.Dist.cookie_from_env("MY_APP_DIST_COOKIE", "my_app")
-          Dala.Dist.ensure_started(node: :"my_app@127.0.0.1", cookie: cookie)
-        end
-      end
-
-  `use Dala.App` generates a `start/0` that the BEAM entry point calls. It
-  handles all framework initialization (native logger, navigation registry)
-  before delegating to `on_start/0`. App code only goes in `on_start/0`.
-
-  ## Navigation
-
-  Implement `navigation/1` to declare the app's navigation structure.
-  Use the helper functions `stack/2`, `tab_bar/1`, and `drawer/1`:
-
-      def navigation(:ios),     do: tab_bar([stack(:home, root: HomeScreen), ...])
-      def navigation(:android), do: drawer([stack(:home, root: HomeScreen), ...])
-      def navigation(_),        do: stack(:home, root: HomeScreen)
-
-  All `name` atoms used in stacks become valid `push_screen` destinations
-  without needing to reference modules directly.
+  This module delegates to `Dala.App.App` for application functionality.
   """
-
-  @callback navigation(platform :: atom()) :: map()
 
   @doc """
-  App-specific startup hook. Called by the generated `start/0` after all
-  framework initialization is complete.
-
-  Override to start your root screen, configure Erlang distribution,
-  set the Logger level, etc. The default implementation is a no-op.
+  Defines an application module.
   """
-  @callback on_start() :: term()
-
-  @optional_callbacks [on_start: 0]
-
   defmacro __using__(opts) do
-    theme_opts = Keyword.get(opts, :theme, [])
-
     quote do
-      @behaviour Dala.App
-      import Dala.App
-
-      @doc """
-      Framework entry point — called from the BEAM entry module (e.g.
-      `dala_demo.erl`) after OTP applications have started.
-
-      Installs `Dala.NativeLogger` so all Elixir Logger output is routed to
-      the platform system log (logcat / NSLog) from this point forward, seeds
-      the `Dala.Nav.Registry` from this module's `navigation/1` declarations,
-      then calls `on_start/0` for app-specific initialization.
-
-      Do not override — implement `on_start/0` instead.
-      """
-      def start do
-        Dala.NativeLogger.install()
-
-        # Compile theme from options passed to `use Dala.App, theme: [...]`
-        # and store it so Dala.Renderer picks it up on every render.
-        # Always called — even with [] this seeds the default theme explicitly.
-        Dala.Theme.set(unquote(theme_opts))
-
-        # Start core services — crash on real errors, ignore already-started
-        ensure_started(Dala.Nav.Registry, __MODULE__)
-        ensure_started(Dala.State)
-        ensure_started(Dala.ComponentRegistry)
-        ensure_started(Dala.Screen.Manager)
-
-        # Platform modules must exist before Dala.Device starts
-        ensure_started(Dala.Device.IOS)
-        ensure_started(Dala.Device.Android)
-        ensure_started(Dala.Device)
-
-        # Adaptive theme watcher depends on Dala.Device
-        ensure_started(Dala.Theme.AdaptiveWatcher)
-
-        __MODULE__.on_start()
-      end
-
-      defp ensure_started(mod, arg \\ nil) do
-        result = if arg, do: mod.start_link(arg), else: mod.start_link()
-
-        case result do
-          {:ok, _} -> :ok
-          {:error, {:already_started, _}} -> :ok
-          {:error, reason} -> raise "Failed to start #{inspect(mod)}: #{inspect(reason)}"
-        end
-      end
-
-      def on_start, do: :ok
-
-      defoverridable on_start: 0
+      use Dala.App.App, unquote(opts)
     end
   end
 
-  # ── Navigation helpers ─────────────────────────────────────────────────────
-
   @doc """
   Declare a navigation stack.
-
-  `name` is the atom identifier used with `push_screen/2,3`, `pop_to/2`,
-  and `reset_to/2,3`. The `:root` option is the module mounted when the stack
-  is first entered.
-
-  Options:
-  - `:root` (required) — screen module that is the stack's initial screen
-  - `:title` — optional display label shown in tabs or drawer entries
   """
   @spec stack(atom(), keyword()) :: map()
-  def stack(name, opts) when is_atom(name) and is_list(opts) do
-    %{
-      type: :stack,
-      name: name,
-      root: Keyword.fetch!(opts, :root),
-      title: Keyword.get(opts, :title)
-    }
-  end
+  defdelegate stack(name, opts), to: Dala.App.App
 
   @doc """
   Declare a tab bar containing multiple named stacks.
-
-  Each branch must be a `stack/2` map. Renders as a bottom NavigationBar on
-  Android and a UITabBarController on iOS.
   """
   @spec tab_bar([map()]) :: map()
-  def tab_bar(branches) when is_list(branches) do
-    %{type: :tab_bar, branches: branches}
-  end
+  defdelegate tab_bar(branches), to: Dala.App.App
 
   @doc """
   Declare a side drawer containing multiple named stacks.
-
-  Renders as a ModalNavigationDrawer on Android. iOS uses a custom slide-in
-  panel (native UIKit drawer support deferred).
   """
   @spec drawer([map()]) :: map()
-  def drawer(branches) when is_list(branches) do
-    %{type: :drawer, branches: branches}
-  end
-
-  @doc """
-  Declare a screen module for use in navigation.
-
-  This is a convenience function that can be used in `navigation/1` to
-  register screens. The screen module must implement `Dala.Screen` behaviour.
-
-  Example:
-      def navigation(_) do
-        screens([
-          MyApp.HomeScreen,
-          MyApp.SettingsScreen
-        ])
-        stack(:home, root: MyApp.HomeScreen)
-      end
-  """
-  @spec screens([module()]) :: :ok
-  def screens(screen_modules) when is_list(screen_modules) do
-    Enum.each(screen_modules, fn mod ->
-      unless Code.ensure_loaded?(mod) and function_exported?(mod, :render, 1) do
-        raise ArgumentError, "#{inspect(mod)} is not a valid Dala.Screen module"
-      end
-    end)
-
-    :ok
-  end
+  defdelegate drawer(branches), to: Dala.App.App
 end

@@ -1,4 +1,4 @@
-defmodule Dala.ML.ConfigHelper do
+defmodule Dala.Ml.ConfigUhelper do
   @moduledoc """
   Helper to configure ML dependencies and settings for Dala apps.
 

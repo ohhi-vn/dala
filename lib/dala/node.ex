@@ -2,10 +2,9 @@ defmodule Dala.Node do
   @moduledoc """
   Structured representation of a UI node in the Dala framework.
 
-  Using a struct instead of raw maps provides:
-  - Compile-time verification of field names
-  - Default values for optional fields
-  - Clear documentation of the node structure
+  This is a public API wrapper around `Dala.Ui.Node`. The struct definition
+  mirrors `Dala.Ui.Node` so that `%Dala.Node{}` and `%Dala.Ui.Node{}`
+  are compatible.
 
   ## Fields
 
@@ -37,55 +36,26 @@ defmodule Dala.Node do
   defstruct [
     :id,
     :type,
-    props: %{},
+    props: %{},  
     children: []
   ]
 
   @doc """
-  Create a new Node struct from a map.
+  Creates a node struct from a map representation.
 
-  Converts the map representation (used by Dala.UI functions) to a proper Node struct.
-  Generates an ID if not present.
-
-  ## Example
-
-      Dala.Node.from_map(%{
-        type: :text,
-        props: %{text: "Hello"},
-        children: []
-      }, "parent:0")
-
+  The map should have `:type` and `:props` keys. Optionally `:id` and `:children`.
+  If `:id` is not provided, it will be generated from the parent id and child index.
   """
   @spec from_map(map(), String.t()) :: t()
-  def from_map(%{type: type} = map, default_id) do
-    id = map[:id] || Map.get(map, :props, %{})[:id] || default_id
-
-    children =
-      Map.get(map, :children, [])
-      |> Enum.with_index()
-      |> Enum.map(fn {child, idx} ->
-        Dala.Node.from_map(child, "#{id}:#{idx}")
-      end)
-
-    %__MODULE__{
-      id: id,
-      type: type,
-      props: Map.get(map, :props, %{}),
-      children: children
-    }
+  def from_map(map, default_id) do
+    Dala.Ui.Node.from_map(map, default_id)
   end
 
   @doc """
-  Convert a Node struct back to a map representation.
-
-  This is used before sending to the renderer/native side.
+  Converts a node to a map.
   """
   @spec to_map(t()) :: map()
-  def to_map(%__MODULE__{id: id, type: type, props: props, children: children}) do
-    %{
-      type: type,
-      props: Map.put(props, :id, id),
-      children: Enum.map(children, &to_map/1)
-    }
+  def to_map(node) do
+    Dala.Ui.Node.to_map(node)
   end
 end
