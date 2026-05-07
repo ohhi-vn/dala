@@ -20,6 +20,4 @@ defmodule Dala.Sigil do
       </Column>
       \"\"\"
   """
-
-  import Dala.Ui.Sigil
 end

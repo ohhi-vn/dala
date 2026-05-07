@@ -612,7 +612,7 @@ pub fn platform_bluetooth_state_with_env(env: &mut jni::JNIEnv) -> String {
     android::bluetooth_state_with_env(env)
 }
 
-pub fn platform_bluetooth_start_scan(services: &[String], timeout_ms: u64) {
+pub fn platform_bluetooth_start_scan(_services: &[String], _timeout_ms: u64) {
     #[cfg(target_os = "ios")]
     ios::bluetooth_start_scan(services, timeout_ms);
 
@@ -648,12 +648,12 @@ pub fn platform_bluetooth_stop_scan_with_env(env: &mut jni::JNIEnv) {
     android::bluetooth_stop_scan_with_env(env);
 }
 
-pub fn platform_bluetooth_connect(device_id: &str) {
+pub fn platform_bluetooth_connect(_device_id: &str) {
     #[cfg(target_os = "ios")]
-    ios::bluetooth_connect(device_id);
+    ios::bluetooth_connect(_device_id);
 
     #[cfg(target_os = "android")]
-    android::bluetooth_connect(device_id);
+    android::bluetooth_connect(_device_id);
 
     #[cfg(not(any(target_os = "ios", target_os = "android")))]
     println!("[Dala] bluetooth_connect stub");
@@ -664,12 +664,12 @@ pub fn platform_bluetooth_connect_with_env(env: &mut jni::JNIEnv, device_id: &st
     android::bluetooth_connect_with_env(env, device_id);
 }
 
-pub fn platform_bluetooth_disconnect(device_id: &str) {
+pub fn platform_bluetooth_disconnect(_device_id: &str) {
     #[cfg(target_os = "ios")]
-    ios::bluetooth_disconnect(device_id);
+    ios::bluetooth_disconnect(_device_id);
 
     #[cfg(target_os = "android")]
-    android::bluetooth_disconnect(device_id);
+    android::bluetooth_disconnect(_device_id);
 
     #[cfg(not(any(target_os = "ios", target_os = "android")))]
     println!("[Dala] bluetooth_disconnect stub");
@@ -680,12 +680,12 @@ pub fn platform_bluetooth_disconnect_with_env(env: &mut jni::JNIEnv, device_id: 
     android::bluetooth_disconnect_with_env(env, device_id);
 }
 
-pub fn platform_bluetooth_discover_services(device_id: &str) {
+pub fn platform_bluetooth_discover_services(_device_id: &str) {
     #[cfg(target_os = "ios")]
-    ios::bluetooth_discover_services(device_id);
+    ios::bluetooth_discover_services(_device_id);
 
     #[cfg(target_os = "android")]
-    android::bluetooth_discover_services(device_id);
+    android::bluetooth_discover_services(_device_id);
 
     #[cfg(not(any(target_os = "ios", target_os = "android")))]
     println!("[Dala] bluetooth_discover_services stub");
@@ -697,15 +697,15 @@ pub fn platform_bluetooth_discover_services_with_env(env: &mut jni::JNIEnv, devi
 }
 
 pub fn platform_bluetooth_read_characteristic(
-    device_id: &str,
-    service: &str,
-    characteristic: &str,
+    _device_id: &str,
+    _service: &str,
+    _characteristic: &str,
 ) {
     #[cfg(target_os = "ios")]
-    ios::bluetooth_read_characteristic(device_id, service, characteristic);
+    ios::bluetooth_read_characteristic(_device_id, _service, _characteristic);
 
     #[cfg(target_os = "android")]
-    android::bluetooth_read_characteristic(device_id, service, characteristic);
+    android::bluetooth_read_characteristic(_device_id, _service, _characteristic);
 
     #[cfg(not(any(target_os = "ios", target_os = "android")))]
     println!("[Dala] bluetooth_read_characteristic stub");
@@ -722,16 +722,16 @@ pub fn platform_bluetooth_read_characteristic_with_env(
 }
 
 pub fn platform_bluetooth_write_characteristic(
-    device_id: &str,
-    service: &str,
-    characteristic: &str,
-    value: &[u8],
+    _device_id: &str,
+    _service: &str,
+    _characteristic: &str,
+    _value: &[u8],
 ) {
     #[cfg(target_os = "ios")]
-    ios::bluetooth_write_characteristic(device_id, service, characteristic, value);
+    ios::bluetooth_write_characteristic(_device_id, _service, _characteristic, _value);
 
     #[cfg(target_os = "android")]
-    android::bluetooth_write_characteristic(device_id, service, characteristic, value);
+    android::bluetooth_write_characteristic(_device_id, _service, _characteristic, _value);
 
     #[cfg(not(any(target_os = "ios", target_os = "android")))]
     println!("[Dala] bluetooth_write_characteristic stub");
@@ -754,12 +754,12 @@ pub fn platform_bluetooth_write_characteristic_with_env(
     );
 }
 
-pub fn platform_bluetooth_subscribe(device_id: &str, service: &str, characteristic: &str) {
+pub fn platform_bluetooth_subscribe(_device_id: &str, _service: &str, _characteristic: &str) {
     #[cfg(target_os = "ios")]
-    ios::bluetooth_subscribe(device_id, service, characteristic);
+    ios::bluetooth_subscribe(_device_id, _service, _characteristic);
 
     #[cfg(target_os = "android")]
-    android::bluetooth_subscribe(device_id, service, characteristic);
+    android::bluetooth_subscribe(_device_id, _service, _characteristic);
 
     #[cfg(not(any(target_os = "ios", target_os = "android")))]
     println!("[Dala] bluetooth_subscribe stub");
@@ -775,12 +775,12 @@ pub fn platform_bluetooth_subscribe_with_env(
     android::bluetooth_subscribe_with_env(env, device_id, service, characteristic);
 }
 
-pub fn platform_bluetooth_unsubscribe(device_id: &str, service: &str, characteristic: &str) {
+pub fn platform_bluetooth_unsubscribe(_device_id: &str, _service: &str, _characteristic: &str) {
     #[cfg(target_os = "ios")]
-    ios::bluetooth_unsubscribe(device_id, service, characteristic);
+    ios::bluetooth_unsubscribe(_device_id, _service, _characteristic);
 
     #[cfg(target_os = "android")]
-    android::bluetooth_unsubscribe(device_id, service, characteristic);
+    android::bluetooth_unsubscribe(_device_id, _service, _characteristic);
 
     #[cfg(not(any(target_os = "ios", target_os = "android")))]
     println!("[Dala] bluetooth_unsubscribe stub");

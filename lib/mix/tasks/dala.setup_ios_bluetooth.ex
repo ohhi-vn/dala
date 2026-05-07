@@ -92,7 +92,7 @@ defmodule Mix.Tasks.Dala.SetupIosBluetooth do
     """)
 
     # Check prerequisites
-    unless Dala.Setup.IOS.bluetooth_files_present?(ios_dir) do
+    unless Dala.Setup.Ios.bluetooth_files_present?(ios_dir) do
       Mix.shell().error("Bluetooth files not found in ios/ directory.")
       Mix.shell().info("Required files:")
       Mix.shell().info("  - DalaBluetoothManager.h")
@@ -102,7 +102,7 @@ defmodule Mix.Tasks.Dala.SetupIosBluetooth do
       Mix.raise("Missing Bluetooth files")
     end
 
-    unless Dala.Setup.IOS.xcode_project_exists?(ios_dir) do
+    unless Dala.Setup.Ios.xcode_project_exists?(ios_dir) do
       Mix.shell().error("No Xcode project found in #{ios_dir || "ios/"} directory.")
       Mix.shell().info("Please create an Xcode project first.")
       Mix.raise("Xcode project not found")
@@ -114,7 +114,7 @@ defmodule Mix.Tasks.Dala.SetupIosBluetooth do
       Mix.shell().info("Running setup with verbose output...")
     end
 
-    case Dala.Setup.IOS.setup_bluetooth(ios_dir) do
+    case Dala.Setup.Ios.setup_bluetooth(ios_dir) do
       {:ok, output} ->
         Mix.shell().info("Setup completed successfully!")
 
@@ -132,7 +132,7 @@ defmodule Mix.Tasks.Dala.SetupIosBluetooth do
   defp run_check(ios_dir) do
     Mix.shell().info("Checking iOS Bluetooth/WiFi setup...\n")
 
-    case Dala.Setup.IOS.check(ios_dir) do
+    case Dala.Setup.Ios.check(ios_dir) do
       {:ok, output} ->
         Mix.shell().info(output)
 
@@ -145,7 +145,7 @@ defmodule Mix.Tasks.Dala.SetupIosBluetooth do
   defp dry_run(ios_dir) do
     Mix.shell().info("Dry run - no changes will be made\n")
 
-    case Dala.Setup.IOS.find_xcode_project(ios_dir) do
+    case Dala.Setup.Ios.find_xcode_project(ios_dir) do
       {:ok, project} ->
         Mix.shell().info("Found Xcode project: #{project}")
 
@@ -153,7 +153,7 @@ defmodule Mix.Tasks.Dala.SetupIosBluetooth do
         Mix.shell().info("Xcode project: NOT FOUND (#{reason})")
     end
 
-    if Dala.Setup.IOS.bluetooth_files_present?(ios_dir) do
+    if Dala.Setup.Ios.bluetooth_files_present?(ios_dir) do
       Mix.shell().info("Bluetooth files: PRESENT")
     else
       Mix.shell().info("Bluetooth files: MISSING")

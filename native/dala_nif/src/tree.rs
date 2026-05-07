@@ -63,6 +63,7 @@ impl Default for AlignItems {
 
 // Constraints for layout
 #[derive(Clone, Copy)]
+#[allow(dead_code)]
 pub struct Constraints {
     pub max_width: f32,
     pub max_height: f32,
@@ -106,6 +107,7 @@ impl Default for Props {
     }
 }
 
+#[allow(dead_code)]
 impl Props {
     /// Resolve flex_direction with a default fallback
     pub fn flex_direction(&self) -> FlexDirection {
@@ -135,6 +137,7 @@ impl Props {
 
 // Layout - cached layout information
 #[derive(Debug, Clone, Copy, Default)]
+#[allow(dead_code)]
 pub struct Layout {
     pub x: f32,
     pub y: f32,
@@ -144,6 +147,7 @@ pub struct Layout {
 
 // Node - the main UI tree node
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct Node {
     pub id: NodeId,
     pub kind: NodeKind,
@@ -180,6 +184,7 @@ pub struct Tree {
     pub dirty_paint: Vec<NodeId>,
 }
 
+#[allow(dead_code)]
 impl Tree {
     pub fn new() -> Self {
         Tree {
@@ -645,6 +650,7 @@ impl Tree {
 }
 
 // Helper to convert Elixir-style ID to NodeId (u64)
+#[allow(dead_code)]
 pub fn hash_id(id: &str) -> NodeId {
     let mut hasher = std::collections::hash_map::DefaultHasher::new();
     id.hash(&mut hasher);

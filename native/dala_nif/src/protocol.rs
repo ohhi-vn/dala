@@ -60,16 +60,19 @@ pub const FIELD_JUSTIFY_CONTENT: u8 = 11;
 pub const FIELD_ALIGN_ITEMS: u8 = 12;
 
 // Flex direction values
+#[allow(dead_code)]
 pub const FLEX_COLUMN: u8 = 0;
 pub const FLEX_ROW: u8 = 1;
 
 // Justify content values
+#[allow(dead_code)]
 pub const JUSTIFY_START: u8 = 0;
 pub const JUSTIFY_CENTER: u8 = 1;
 pub const JUSTIFY_END: u8 = 2;
 pub const JUSTIFY_SPACE_BETWEEN: u8 = 3;
 
 // Align items values
+#[allow(dead_code)]
 pub const ALIGN_START: u8 = 0;
 pub const ALIGN_CENTER: u8 = 1;
 pub const ALIGN_END: u8 = 2;
@@ -77,6 +80,7 @@ pub const ALIGN_STRETCH: u8 = 3;
 
 // ── Read helpers (little-endian) ──────────────────────────────────────
 
+#[allow(dead_code)]
 pub fn read_u8(bytes: &[u8], i: &mut usize) -> u8 {
     let val = bytes[*i];
     *i += 1;
@@ -194,6 +198,7 @@ fn decode_props(bytes: &[u8], i: &mut usize) -> super::tree::Props {
 }
 
 /// Decode a node: [id:u64][type:u8][PROPS][children_count:u32][child_ids...]
+#[allow(dead_code)]
 fn decode_node(bytes: &[u8], i: &mut usize) -> super::tree::Node {
     let id = read_u64(bytes, i);
 

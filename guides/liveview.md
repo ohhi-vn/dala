@@ -216,8 +216,8 @@ config :dala, liveview_port: 4000
 `Dala.LiveView.local_url/1` reads this value:
 
 ```elixir
-Dala.UI.webview(url: Dala.LiveView.local_url("/"))           # http://127.0.0.1:4000/
-Dala.UI.webview(url: Dala.LiveView.local_url("/dashboard"))  # http://127.0.0.1:4000/dashboard
+Dala.Ui.Widgets.webview(url: Dala.LiveView.local_url("/"))           # http://127.0.0.1:4000/
+Dala.Ui.Widgets.webview(url: Dala.LiveView.local_url("/dashboard"))  # http://127.0.0.1:4000/dashboard
 ```
 
 Use `127.0.0.1` explicitly — not `localhost`. On Android, `localhost` may resolve to the host machine rather than the device's own loopback interface.

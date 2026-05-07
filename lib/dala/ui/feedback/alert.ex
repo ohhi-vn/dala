@@ -1,4 +1,4 @@
-defmodule Dala.Ui.Alert do
+defmodule Dala.Ui.Feedback.Alert do
   @compile {:nowarn_undefined, [:Nx]}
   @moduledoc """
   Native alert dialogs, action sheets, and toast messages.
@@ -11,7 +11,7 @@ defmodule Dala.Ui.Alert do
   `UIAlertController(.alert)` on iOS and `AlertDialog` on Android.
 
       def handle_event("delete", _params, socket) do
-        Dala.Alert.alert(socket,
+        Dala.Ui.Feedback.Alert.alert(socket,
           title: "Delete item?",
           message: "This cannot be undone.",
           buttons: [
@@ -30,7 +30,7 @@ defmodule Dala.Ui.Alert do
   Bottom-anchored list for choosing between actions. Maps to
   `UIAlertController(.actionSheet)` on iOS and a list dialog on Android.
 
-      Dala.Alert.action_sheet(socket,
+      Dala.Ui.Feedback.Alert.action_sheet(socket,
         title: "Share photo",
         buttons: [
           [label: "Save to Photos", action: :save],
@@ -43,7 +43,7 @@ defmodule Dala.Ui.Alert do
 
   Ephemeral status message. No button, no callback.
 
-      Dala.Alert.toast(socket, "Saved!", duration: :short)
+      Dala.Ui.Feedback.Alert.toast(socket, "Saved!", duration: :short)
 
   iOS renders a floating label overlay (no native equivalent).
   Android uses `Toast`.

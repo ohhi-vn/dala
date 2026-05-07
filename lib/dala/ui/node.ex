@@ -44,7 +44,7 @@ defmodule Dala.Ui.Node do
   @doc """
   Create a new Node struct from a map.
 
-  Converts the map representation (used by Dala.UI functions) to a proper Node struct.
+  Converts the map representation (used by Dala.Ui.Widgets functions) to a proper Node struct.
   Generates an ID if not present.
 
   ## Example

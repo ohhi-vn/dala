@@ -128,7 +128,7 @@ defmodule MyApp.WebViewScreen do
       children: [
         %{type: :text, props: %{text: "WebView Interact Example", text_size: :xl, font_weight: :bold},
         %{type: :text, props: %{text: "Status: #{assigns.status}", text_color: :secondary},
-        Dala.UI.webview(
+        Dala.Ui.Widgets.webview(
           url: "http://127.0.0.1:4000/index.html",
           allow: ["http://127.0.0.1:4000"],
           width: 400,

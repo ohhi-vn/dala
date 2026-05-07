@@ -478,7 +478,7 @@ defmodule Dala.Preview.Canvas do
   attr(:default, :any, default: nil)
 
   def prop_field(assigns) do
-    %{node: node, prop_name: prop_name, prop_type: prop_type, default: default} = assigns
+    %{node: node, prop_name: prop_name, prop_type: _prop_type, default: default} = assigns
     current_value = Map.get(node.props, prop_name, default)
 
     assigns =
@@ -823,7 +823,6 @@ defmodule Dala.Preview.Canvas do
   defp default_props(:list), do: %{}
   defp default_props(_), do: %{}
 
-  defp container_types, do: @container_types
   defp container_type?(type), do: type in @container_types
   defp has_children?(node), do: node[:children] != nil and node.children != []
 

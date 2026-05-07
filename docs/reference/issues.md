@@ -443,7 +443,7 @@ Empty AX label. Pre-existing position-based fallback (`ax_action_at_xy` with tog
 **Fix options**:
 
 - **(a) AX-route the action** — find the UIAlertController in the responder chain, look up the matching action by title, invoke its handler directly. Reliable but ties Dala.Test to an internal UIKit detail.
-- **(b) Have Dala.Alert tag its buttons** — give each rendered alert button an accessibility identifier we can match precisely, and have the NIF dispatch via the action target rather than the visual view.
+- **(b) Have Dala.Ui.Feedback.Alert tag its buttons** — give each rendered alert button an accessibility identifier we can match precisely, and have the NIF dispatch via the action target rather than the visual view.
 - **(c) Punt to a synthesized tap on the button's frame** — works for visual buttons but iOS's UIAlertController might guard its actions behind specific touch conditions.
 
 **Priority** — low. Workaround exists: define alert buttons with a Dala `action:` atom and dismiss them in user code via `Dala.Test.send_message(node, {:alert, :ok_action})`. Useful enough that we should do (b) eventually.

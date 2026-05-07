@@ -60,7 +60,7 @@ defmodule Dala.ML.CoreML do
   """
   def load_model(model_path, identifier) when is_binary(model_path) and is_binary(identifier) do
     try do
-      case Dala.Native.coreml_load_model(model_path, identifier) do
+      case apply(Dala.Native, :coreml_load_model, [model_path, identifier]) do
         :ok -> :ok
         {:error, reason} -> {:error, reason}
         error when is_binary(error) -> {:error, error}
@@ -80,7 +80,7 @@ defmodule Dala.ML.CoreML do
   - `identifier`: The identifier used when loading the model
   """
   def unload_model(identifier) when is_binary(identifier) do
-    Dala.Native.coreml_unload_model(identifier)
+    apply(Dala.Native, :coreml_unload_model, [identifier])
     :ok
   end
 
@@ -98,7 +98,7 @@ defmodule Dala.ML.CoreML do
   """
   def loaded?(identifier) when is_binary(identifier) do
     try do
-      Dala.Native.coreml_is_model_loaded(identifier) == "true"
+      apply(Dala.Native, :coreml_is_model_loaded, [identifier]) == "true"
     rescue
       UndefinedFunctionError -> false
       _ -> false
@@ -146,7 +146,7 @@ defmodule Dala.ML.CoreML do
     try do
       inputs_json = Jason.encode!(inputs)
 
-      case Dala.Native.coreml_predict(identifier, inputs_json) do
+      case apply(Dala.Native, :coreml_predict, [identifier, inputs_json]) do
         {:ok, result_json} -> {:ok, result_json}
         {:error, reason} -> {:error, reason}
         :not_supported -> :not_supported
@@ -167,7 +167,7 @@ defmodule Dala.ML.CoreML do
   """
   def loaded_models do
     try do
-      Dala.Native.coreml_loaded_models()
+      apply(Dala.Native, :coreml_loaded_models, [])
     rescue
       UndefinedFunctionError -> :none
       _ -> :none

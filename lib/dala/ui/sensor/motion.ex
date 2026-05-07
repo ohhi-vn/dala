@@ -1,4 +1,4 @@
-defmodule Dala.Ui.Motion do
+defmodule Dala.Ui.Sensor.Motion do
   @compile {:nowarn_undefined, [:Nx]}
   @moduledoc """
   Accelerometer and gyroscope sensor data.

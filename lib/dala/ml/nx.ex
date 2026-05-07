@@ -20,7 +20,7 @@ defmodule Dala.Ml.Nx do
   def init do
     cond do
       emlx_available?() ->
-        Dala.ML.EMLX.setup()
+        apply(Dala.ML.EMLX, :setup, [])
         :emlx
 
       true ->
@@ -63,7 +63,7 @@ defmodule Dala.Ml.Nx do
   """
   def default_backend do
     if emlx_available?() do
-      {EMLX.Backend, device: Dala.ML.EMLX.default_device()}
+      {EMLX.Backend, device: apply(Dala.ML.EMLX, :default_device, [])}
     else
       Nx.BinaryBackend
     end

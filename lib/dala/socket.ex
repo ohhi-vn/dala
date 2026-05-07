@@ -33,13 +33,17 @@ defmodule Dala.Socket do
   Get a value from the socket assigns.
   """
   @spec get(Dala.Ui.Socket.t(), atom(), term()) :: term()
-  defdelegate get(socket, key, default \\ nil), to: Socket
+  def get(%Dala.Ui.Socket{assigns: assigns}, key, default \\ nil) do
+    Map.get(assigns, key, default)
+  end
 
   @doc """
   Get the Dala metadata from the socket.
   """
   @spec get_dala(Dala.Ui.Socket.t(), atom(), term()) :: term()
-  defdelegate get_dala(socket, key, default \\ nil), to: Socket
+  def get_dala(%Dala.Ui.Socket{__dala__: dala}, key, default \\ nil) do
+    Map.get(dala, key, default)
+  end
 
   @doc """
   Put Dala metadata into the socket.
@@ -56,4 +60,16 @@ defmodule Dala.Socket do
   defdelegate pop_screen(socket), to: Socket
 
   defdelegate reset_to(socket, dest, params \\ %{}), to: Socket
+
+  @doc """
+  Check if specific key(s) have changed since the last render.
+  """
+  @spec changed?(Dala.Ui.Socket.t(), atom() | [atom()]) :: boolean()
+  defdelegate changed?(socket, keys), to: Socket
+
+  @doc """
+  Store the root view ref in the socket.
+  """
+  @spec put_root_view(Dala.Ui.Socket.t(), term()) :: Dala.Ui.Socket.t()
+  defdelegate put_root_view(socket, view), to: Socket
 end

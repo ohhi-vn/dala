@@ -146,10 +146,10 @@ defmodule Dala.Platform.LiveUview do
 
   ## local_url/1
 
-  Use `Dala.LiveView.local_url/1` to build the loopback URL for `Dala.UI.webview/1`:
+  Use `Dala.LiveView.local_url/1` to build the loopback URL for `Dala.Ui.Widgets.webview/1`:
 
-      Dala.UI.webview(url: Dala.LiveView.local_url("/"))
-      Dala.UI.webview(url: Dala.LiveView.local_url("/dashboard"))
+      Dala.Ui.Widgets.webview(url: Dala.LiveView.local_url("/"))
+      Dala.Ui.Widgets.webview(url: Dala.LiveView.local_url("/dashboard"))
 
   The port is read from `Application.get_env(:dala, :liveview_port)`, defaulting
   to 4000. Set it in `dala.exs` (created by `mix dala.enable liveview`):

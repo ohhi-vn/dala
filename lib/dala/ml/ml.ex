@@ -51,7 +51,7 @@ defmodule Dala.Ml.Ml do
   """
 
   # No alias - we want to use the actual Nx tensor library
-  # Dala.ML.Nx is available via Dala.ML.Nx
+  # Dala.Ml.Nx is available via Dala.Ml.Nx
 
   @doc """
   Sets up the ML stack for the current platform.
@@ -79,7 +79,7 @@ defmodule Dala.Ml.Ml do
   def setup do
     cond do
       ios?() ->
-        Dala.ML.EMLX.setup()
+        apply(Dala.ML.EMLX, :setup, [])
 
       android?() ->
         Nx.default_backend(Nx.BinaryBackend)
@@ -106,14 +106,14 @@ defmodule Dala.Ml.Ml do
   Returns `true` if running on a real iOS device (not simulator).
   """
   def ios_device? do
-    Dala.ML.EMLX.ios_device?()
+    apply(Dala.ML.EMLX, :ios_device?, [])
   end
 
   @doc """
   Returns `true` if running in iOS Simulator.
   """
   def ios_simulator? do
-    Dala.ML.EMLX.ios_simulator?()
+    apply(Dala.ML.EMLX, :ios_simulator?, [])
   end
 
   @doc """
@@ -148,12 +148,12 @@ defmodule Dala.Ml.Ml do
 
     %{
       platform: platform,
-      backend: Dala.ML.Nx.default_backend(),
-      emlx_available: Dala.ML.EMLX.available?(),
+      backend: Dala.Ml.Nx.default_backend(),
+      emlx_available: apply(Dala.ML.EMLX, :available?, []),
       coreml_available:
         ios?() and Code.ensure_loaded?(Dala.Platform.Native) and
           function_exported?(Dala.Platform.Native, :coreml_load_model, 2),
-      onnx_available: Dala.ML.ONNX.available?(),
+      onnx_available: apply(Dala.ML.ONNX, :available?, []),
       libraries: %{
         nx: Code.ensure_loaded?(Nx),
         scholar: Code.ensure_loaded?(Scholar),
@@ -173,7 +173,7 @@ defmodule Dala.Ml.Ml do
     try do
       tensor = Nx.tensor([1.0, 2.0, 3.0])
       sum = Nx.sum(tensor) |> Nx.to_number()
-      %{status: :ok, sum: sum, backend: Dala.ML.Nx.default_backend()}
+      %{status: :ok, sum: sum, backend: Dala.Ml.Nx.default_backend()}
     rescue
       e -> %{status: :error, message: Exception.message(e)}
     end
@@ -185,7 +185,7 @@ defmodule Dala.Ml.Ml do
   def available_backends do
     backends = [:nx]
 
-    backends = if Dala.ML.EMLX.available?(), do: [:emlx | backends], else: backends
+    backends = if apply(Dala.ML.EMLX, :available?, []), do: [:emlx | backends], else: backends
 
     backends =
       if ios?() and Code.ensure_loaded?(Dala.Platform.Native) and
@@ -193,7 +193,7 @@ defmodule Dala.Ml.Ml do
          do: [:coreml | backends],
          else: backends
 
-    backends = if Dala.ML.ONNX.available?(), do: [:onnx | backends], else: backends
+    backends = if apply(Dala.ML.ONNX, :available?, []), do: [:onnx | backends], else: backends
 
     Enum.reverse(backends)
   end
@@ -259,10 +259,10 @@ defmodule Dala.Ml.Ml do
         Dala.ML.CoreML.predict(model, input)
 
       is_integer(model) ->
-        Dala.ML.ONNX.run(model, input)
+        apply(Dala.ML.ONNX, :run, [model, input])
 
       is_tuple(model) ->
-        Dala.ML.Nx.inference(elem(model, 0), elem(model, 1), input)
+        Dala.Ml.Nx.inference(elem(model, 0), elem(model, 1), input)
 
       true ->
         {:error, "Unsupported model type: #{inspect(model)}"}

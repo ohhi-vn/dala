@@ -1,6 +1,6 @@
 defmodule Dala.Ui.Socket do
   @moduledoc """
-  The socket struct passed through all Dala.Screen and Dala.Component callbacks.
+  The socket struct passed through all Dala.Screen and Dala.Ui.NativeView callbacks.
 
   Holds two things:
   - `assigns` — the public data map your `render/1` function reads from `@assigns`
@@ -157,6 +157,11 @@ defmodule Dala.Ui.Socket do
   @spec get_dala(t(), atom()) :: term()
   def get_dala(%__MODULE__{__dala__: dala}, key) do
     Map.get(dala, key)
+  end
+
+  @spec get_dala(t(), atom(), term()) :: term()
+  def get_dala(%__MODULE__{__dala__: dala}, key, default) do
+    Map.get(dala, key, default)
   end
 
   @doc """

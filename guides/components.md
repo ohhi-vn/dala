@@ -429,7 +429,7 @@ end
 
 ### Sub-component event isolation (planned, not yet implemented)
 
-A future `Dala.Component` wrapper will allow a subtree of the render tree to have its own `handle_info/2`, routing events to that component process instead of the screen. Until then, use the `tag` field to distinguish events from different parts of the same screen:
+A future `Dala.Ui.NativeView` wrapper will allow a subtree of the render tree to have its own `handle_info/2`, routing events to that component process instead of the screen. Until then, use the `tag` field to distinguish events from different parts of the same screen:
 
 ```elixir
 top_save_tap    = {self(), :top_save}
