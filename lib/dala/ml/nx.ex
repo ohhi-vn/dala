@@ -1,10 +1,10 @@
 defmodule Dala.ML.Nx do
   @compile {:nowarn_undefined, [:Nx]}
   @moduledoc """
-  Nx integration helpers for Dala on iOS.
+  Nx integration helpers for Dala.
 
   Nx itself is pure Elixir and works on any platform. This module provides
-  iOS-specific helpers and backend selection logic.
+  backend selection logic and inference helpers.
   """
 
   @doc """
@@ -12,21 +12,31 @@ defmodule Dala.ML.Nx do
 
   Priority:
   1. EMLX (if available) - best for Apple Silicon
-  2. Nx default (pure Elixir fallback)
+  2. Nx.BinaryBackend (pure Elixir fallback)
 
+  Works on all platforms, not just iOS.
   Also see `Dala.ML` for the unified entry point.
   """
-  def init_for_ios do
+  def init do
     cond do
       emlx_available?() ->
         Dala.ML.EMLX.setup()
         :emlx
 
       true ->
-        # Pure Nx (CPU-only, no acceleration)
         Nx.default_backend(Nx.BinaryBackend)
         :nx_binary
     end
+  end
+
+  @doc """
+  Initializes Nx with the best available backend for iOS.
+
+  Deprecated: Use `init/0` instead, which works on all platforms.
+  """
+  @deprecated "Use init/0 instead"
+  def init_for_ios do
+    init()
   end
 
   @doc """

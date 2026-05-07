@@ -1,5 +1,4 @@
 use rustler::{Binary, Env, NifResult, Term};
-use std::ffi::c_void;
 use std::sync::Mutex;
 
 #[cfg(target_os = "android")]
@@ -932,7 +931,7 @@ fn linking_initial_url<'a>(env: Env<'a>) -> NifResult<Term<'a>> {
 // ===========================================================================
 
 #[cfg(target_os = "ios")]
-#[rustler::nif]
+#[rustler::nif(schedule = "DirtyCpu")]
 fn coreml_load_model<'a>(
     env: Env<'a>,
     model_path: Term<'a>,
@@ -988,8 +987,13 @@ fn coreml_is_model_loaded<'a>(env: Env<'a>, _identifier: Term<'a>) -> NifResult<
     Ok(atom(env, "false"))
 }
 
+// CoreML prediction result captured from synchronous ObjC callback
+lazy_static::lazy_static! {
+    static ref COREML_RESULT: Mutex<Option<Result<String, String>>> = Mutex::new(None);
+}
+
 #[cfg(target_os = "ios")]
-#[rustler::nif]
+#[rustler::nif(schedule = "DirtyCpu")]
 fn coreml_predict<'a>(
     env: Env<'a>,
     identifier: Term<'a>,
@@ -997,8 +1001,50 @@ fn coreml_predict<'a>(
 ) -> NifResult<Term<'a>> {
     let id: String = identifier.decode()?;
     let json: String = inputs_json.decode()?;
+
+    // Clear previous result
+    {
+        let mut result = COREML_RESULT.lock().unwrap();
+        *result = None;
+    }
+
+    // The ObjC predictWithModel:inputs:callback: is synchronous —
+    // it calls the callback inline before returning.
     crate::ios::coreml_predict(&id, &json, coreml_prediction_callback);
-    ok(env)
+
+    // Retrieve the captured result
+    let captured = COREML_RESULT.lock().unwrap().take();
+    match captured {
+        Some(Ok(result_json)) => {
+            let result_term =
+                rustler::types::binary::Binary::from(result_json.as_bytes()).to_term(env);
+            Ok(rustler::types::tuple::make_tuple(
+                env,
+                &[
+                    rustler::types::atom::Atom::from_str(env, "ok")
+                        .unwrap()
+                        .to_term(env),
+                    result_term,
+                ],
+            )
+            .unwrap())
+        }
+        Some(Err(error_msg)) => {
+            let error_term =
+                rustler::types::binary::Binary::from(error_msg.as_bytes()).to_term(env);
+            Ok(rustler::types::tuple::make_tuple(
+                env,
+                &[
+                    rustler::types::atom::Atom::from_str(env, "error")
+                        .unwrap()
+                        .to_term(env),
+                    error_term,
+                ],
+            )
+            .unwrap())
+        }
+        None => Ok(atom(env, "error")),
+    }
 }
 
 #[cfg(not(target_os = "ios"))]
@@ -1008,33 +1054,26 @@ fn coreml_predict<'a>(
     _identifier: Term<'a>,
     _inputs_json: Term<'a>,
 ) -> NifResult<Term<'a>> {
-    ok(env)
+    Ok(atom(env, "not_supported"))
 }
 
 #[cfg(target_os = "ios")]
 unsafe extern "C" fn coreml_prediction_callback(
-    model_identifier: *const std::ffi::c_char,
+    _model_identifier: *const std::ffi::c_char,
     result_json: *const std::ffi::c_char,
     error: *const std::ffi::c_char,
 ) {
-    // Convert C strings to Rust strings
-    let identifier = if !model_identifier.is_null() {
-        std::ffi::CStr::from_ptr(model_identifier)
-            .to_string_lossy()
-            .into_owned()
-    } else {
-        String::new()
-    };
+    let mut result = COREML_RESULT.lock().unwrap();
 
     if !error.is_null() {
         let error_msg = std::ffi::CStr::from_ptr(error)
             .to_string_lossy()
             .into_owned();
-        eprintln!("[Dala CoreML] Prediction error: {}", error_msg);
+        *result = Some(Err(error_msg));
         return;
     }
 
-    let result = if !result_json.is_null() {
+    let json = if !result_json.is_null() {
         std::ffi::CStr::from_ptr(result_json)
             .to_string_lossy()
             .into_owned()
@@ -1042,12 +1081,7 @@ unsafe extern "C" fn coreml_prediction_callback(
         String::new()
     };
 
-    // Send result to Elixir via message
-    // This would use erl_nif to send a message to a waiting process
-    eprintln!(
-        "[Dala CoreML] Prediction result for {}: {}",
-        identifier, result
-    );
+    *result = Some(Ok(json));
 }
 
 #[cfg(target_os = "ios")]
@@ -1069,12 +1103,12 @@ fn coreml_loaded_models<'a>(env: Env<'a>) -> NifResult<Term<'a>> {
         .to_term(env))
 }
 
-#[cfg(target_os = "ios")]
+#[cfg(any(target_os = "ios", target_os = "android"))]
 mod onnx;
 
 // ONNX Runtime NIFs
-#[cfg(target_os = "ios")]
-#[rustler::nif]
+#[cfg(any(target_os = "ios", target_os = "android"))]
+#[rustler::nif(schedule = "DirtyCpu")]
 fn onnx_create_session<'a>(env: Env<'a>, model_data: Binary<'a>) -> NifResult<Term<'a>> {
     let data = model_data.as_slice();
     let session_id = crate::onnx::create_session(data);
@@ -1094,14 +1128,14 @@ fn onnx_create_session<'a>(env: Env<'a>, model_data: Binary<'a>) -> NifResult<Te
     }
 }
 
-#[cfg(not(target_os = "ios"))]
+#[cfg(not(any(target_os = "ios", target_os = "android")))]
 #[rustler::nif]
 fn onnx_create_session<'a>(env: Env<'a>, _model_data: Term<'a>) -> NifResult<Term<'a>> {
     Ok(atom(env, "not_supported"))
 }
 
-#[cfg(target_os = "ios")]
-#[rustler::nif]
+#[cfg(any(target_os = "ios", target_os = "android"))]
+#[rustler::nif(schedule = "DirtyCpu")]
 fn onnx_destroy_session<'a>(env: Env<'a>, session_id: Term<'a>) -> NifResult<Term<'a>> {
     let id: u64 = session_id.decode()?;
     let result = crate::onnx::destroy_session(id);
@@ -1112,32 +1146,36 @@ fn onnx_destroy_session<'a>(env: Env<'a>, session_id: Term<'a>) -> NifResult<Ter
     }
 }
 
-#[cfg(not(target_os = "ios"))]
+#[cfg(not(any(target_os = "ios", target_os = "android")))]
 #[rustler::nif]
 fn onnx_destroy_session<'a>(env: Env<'a>, _session_id: Term<'a>) -> NifResult<Term<'a>> {
     ok(env)
 }
 
-#[cfg(target_os = "ios")]
-#[rustler::nif]
+#[cfg(any(target_os = "ios", target_os = "android"))]
+#[rustler::nif(schedule = "DirtyCpu")]
 fn onnx_run<'a>(env: Env<'a>, session_id: Term<'a>, input: Binary<'a>) -> NifResult<Term<'a>> {
     let id: u64 = session_id.decode()?;
     let input_data = input.as_slice();
-    // For now, echo input as output (placeholder)
-    let output_term = rustler::types::binary::Binary::from(input_data).to_term(env);
-    Ok(rustler::types::tuple::make_tuple(
-        env,
-        &[
-            rustler::types::atom::Atom::from_str(env, "ok")
-                .unwrap()
-                .to_term(env),
-            output_term,
-        ],
-    )
-    .unwrap())
+    match crate::onnx::run(id, input_data) {
+        Some(output) => {
+            let output_term = rustler::types::binary::Binary::from(output.as_slice()).to_term(env);
+            Ok(rustler::types::tuple::make_tuple(
+                env,
+                &[
+                    rustler::types::atom::Atom::from_str(env, "ok")
+                        .unwrap()
+                        .to_term(env),
+                    output_term,
+                ],
+            )
+            .unwrap())
+        }
+        None => Ok(atom(env, "error")),
+    }
 }
 
-#[cfg(not(target_os = "ios"))]
+#[cfg(not(any(target_os = "ios", target_os = "android")))]
 #[rustler::nif]
 fn onnx_run<'a>(env: Env<'a>, _session_id: Term<'a>, _input: Term<'a>) -> NifResult<Term<'a>> {
     Ok(atom(env, "not_supported"))
