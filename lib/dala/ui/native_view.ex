@@ -63,6 +63,16 @@ defmodule Dala.Ui.NativeView do
   If a component has no internal state, omit `mount/2` and `handle_info/2`. The
   default `handle_event/3` raises for any event — add clauses for the events your
   native view fires, or delegate to the parent screen by forwarding via `send/2`.
+
+  ## Plugin Components
+
+  Plugin components are registered via `Dala.Plugin` and use string type names
+  instead of atoms. They are automatically expanded using the same lifecycle
+  as native_view components, but without requiring a custom Elixir module.
+
+  Example:
+
+      %{type: "video", props: %{source: "...", autoplay: true}, children: []}
   """
 
   @callback mount(props :: map(), socket :: Dala.Ui.Socket.t()) ::
@@ -113,6 +123,8 @@ defmodule Dala.Ui.NativeView do
   injects the NIF handle. Returns `{expanded_tree, active_keys}` where
   `active_keys` is a `MapSet` of `{id, module}` pairs seen in this render —
   used by the screen to stop components that have left the tree.
+
+  Also expands plugin-based components (registered via Dala.Plugin).
   """
   @spec expand(map(), pid(), atom()) :: {map(), MapSet.t()}
   def expand(tree, screen_pid, platform) do
@@ -144,7 +156,47 @@ defmodule Dala.Ui.NativeView do
     {%{node | props: enriched}, active}
   end
 
-  defp walk(%{children: children} = node, screen_pid, platform, active) do
+  defp walk(%{type: type, props: props} = node, screen_pid, platform, active)
+       when is_binary(type) do
+    # Check if this is a plugin component
+    case Dala.Plugin.Registry.lookup_component(type) do
+      {:ok, _plugin} ->
+        # Plugin component - treat as native_view with auto-generated module
+        id =
+          props[:id] ||
+            raise ArgumentError,
+                  "Plugin component #{type} requires :id prop"
+
+        # Use a synthetic module name for the component
+        module = :"Elixir.Dala.PluginComponent.#{type}"
+
+        component_pid = ensure_started(screen_pid, id, module, props, platform)
+        rendered_props = Dala.Ui.NativeView.Server.render_props(component_pid)
+        handle = Dala.Ui.NativeView.Server.get_handle(component_pid)
+
+        enriched =
+          Map.merge(rendered_props, %{
+            module: type,
+            id: to_string(id),
+            component_handle: handle
+          })
+
+        active = MapSet.put(active, {id, module})
+        {%{node | props: enriched}, active}
+
+      {:error, :not_found} ->
+        # Not a plugin component, continue normal walk
+        walk_children(node, screen_pid, platform, active)
+    end
+  end
+
+  defp walk(%{children: _children} = node, screen_pid, platform, active) do
+    walk_children(node, screen_pid, platform, active)
+  end
+
+  defp walk(node, _screen_pid, _platform, active), do: {node, active}
+
+  defp walk_children(%{children: children} = node, screen_pid, platform, active) do
     {new_children, active} =
       Enum.map_reduce(children, active, fn child, acc ->
         walk(child, screen_pid, platform, acc)
@@ -152,8 +204,6 @@ defmodule Dala.Ui.NativeView do
 
     {%{node | children: new_children}, active}
   end
-
-  defp walk(node, _screen_pid, _platform, active), do: {node, active}
 
   defp ensure_started(screen_pid, id, module, props, platform) do
     case Dala.Ui.NativeView.Registry.lookup(screen_pid, id, module) do

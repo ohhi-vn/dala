@@ -1,0 +1,87 @@
+defmodule Dala.Plugin.Component do
+  @moduledoc """
+  Represents a single component schema within a plugin.
+
+  Contains all metadata needed for code generation, validation, and runtime
+  dispatch. This is the core of the schema-first architecture.
+  """
+
+  alias Dala.Plugin
+
+  @type t :: %__MODULE__{
+          name: Plugin.component_name(),
+          plugin: Plugin.plugin_name(),
+          props: [prop()],
+          events: [event()],
+          natives: %{String.t() => String.t()},
+          capabilities: [Plugin.capability()],
+          doc: String.t() | nil
+        }
+
+  @type prop :: %{
+          name: Plugin.prop_name(),
+          type: Plugin.prop_type(),
+          required: boolean(),
+          default: term(),
+          doc: String.t() | nil
+        }
+
+  @type event :: %{
+          name: Plugin.event_name(),
+          payload: map(),
+          doc: String.t() | nil
+        }
+
+  defstruct [
+    :name,
+    :plugin,
+    props: [],
+    events: [],
+    natives: %{},
+    capabilities: [],
+    doc: nil
+  ]
+
+  @doc """
+  Adds a property to the component schema.
+  """
+  def add_prop(component, name, type, opts \\ []) do
+    prop = %{
+      name: name,
+      type: type,
+      required: Keyword.get(opts, :required, false),
+      default: Keyword.get(opts, :default, nil),
+      doc: Keyword.get(opts, :doc, nil)
+    }
+
+    %{component | props: component.props ++ [prop]}
+  end
+
+  @doc """
+  Adds an event to the component schema.
+  """
+  def add_event(component, name, opts \\ []) do
+    event = %{
+      name: name,
+      payload: Keyword.get(opts, :payload, %{}),
+      doc: Keyword.get(opts, :doc, nil)
+    }
+
+    %{component | events: component.events ++ [event]}
+  end
+
+  @doc """
+  Adds a native platform mapping to the component schema.
+  """
+  def add_native(component, platform, class_name)
+      when is_binary(platform) and is_binary(class_name) do
+    %{component | natives: Map.put(component.natives, platform, class_name)}
+  end
+
+  @doc """
+  Adds a capability to the component schema.
+  """
+  def add_capability(component, capability) do
+    %{component | capabilities: [capability | component.capabilities]}
+  end
+end

@@ -71,6 +71,7 @@ defmodule Dala.MixProject do
         "Events & Interaction": ~r/guides\/(events|event_)\.md/,
         "Data & Device APIs": ~r/guides\/(data|device_capabilities)\.md/,
         "Testing & Development": ~r/guides\/(testing|agentic_coding)\.md/,
+        Plugins: ~r/guides\/plugin_\.md/,
         "iOS & Rust": ~r/guides\/(ios_|rustler_|emlx_)\.md/,
         "Advanced Topics": ~r/guides\/(liveview|publishing|security|troubleshooting)\.md/
       ],
@@ -113,6 +114,14 @@ defmodule Dala.MixProject do
           Dala.Notify
         ],
         "Testing & Debugging": [Dala.Test],
+        Plugins: [
+          Dala.Plugin,
+          Dala.Plugin.Component,
+          Dala.Plugin.ComponentDSL,
+          Dala.Plugin.Registry,
+          Dala.Plugin.Protocol,
+          Dala.Plugin.Manifest
+        ],
         Internals: [Dala.Dist, Dala.NativeLogger, Dala.List]
       ],
       before_closing_body_tag: &before_closing_body_tag/1
@@ -163,6 +172,8 @@ defmodule Dala.MixProject do
 
   defp deps do
     [
+      # JSON encoding — used by Plugin.Manifest
+      {:jason, "~> 1.4"},
       # HTML/HEEx template engine — same one Phoenix uses
       {:phoenix_live_view, "~> 1.0", only: [:dev, :test]},
       {:nimble_parsec, "~> 1.0"},
