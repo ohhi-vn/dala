@@ -1,6 +1,6 @@
 // ios.rs - iOS-specific NIF implementations using Objective-C FFI
 
-use objc::runtime::{Class, Object};
+use objc::runtime::{Class, Object, NO, YES};
 use objc::{class, msg_send, sel, sel_impl};
 use std::ffi::{CStr, CString};
 use std::ptr;
@@ -348,6 +348,36 @@ pub fn share_text(text: &str) {
         let scene: *mut Object = msg_send![app, connectedScenes];
         // Simplified: present from first window scene
         let _: () = msg_send![init, autorelease];
+    }
+}
+
+// ============================================================================
+// Wakelock
+// ============================================================================
+
+pub fn wakelock_enable() {
+    // SAFETY: UIApplication.sharedApplication is always valid in a running app.
+    // Setting idleTimerDisabled prevents the screen from sleeping.
+    unsafe {
+        let app: *mut Object = msg_send![class!(UIApplication), sharedApplication];
+        let _: () = msg_send![app, setIdleTimerDisabled: YES];
+    }
+}
+
+pub fn wakelock_disable() {
+    // SAFETY: UIApplication.sharedApplication is always valid in a running app.
+    unsafe {
+        let app: *mut Object = msg_send![class!(UIApplication), sharedApplication];
+        let _: () = msg_send![app, setIdleTimerDisabled: NO];
+    }
+}
+
+pub fn wakelock_enabled() -> bool {
+    // SAFETY: isIdleTimerDisabled returns a BOOL.
+    unsafe {
+        let app: *mut Object = msg_send![class!(UIApplication), sharedApplication];
+        let enabled: BOOL = msg_send![app, isIdleTimerDisabled];
+        enabled != 0
     }
 }
 

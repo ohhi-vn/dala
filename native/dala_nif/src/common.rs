@@ -1,5 +1,7 @@
 // common.rs - Shared types and platform dispatch
 
+#[cfg(target_os = "android")]
+use jni::JNIEnv;
 use rustler::{Env, Term};
 use std::sync::Mutex;
 
@@ -255,6 +257,74 @@ pub fn platform_share_text(text: &str) {
 
     #[cfg(not(any(target_os = "ios", target_os = "android")))]
     println!("[Dala] share_text({}) stub", text);
+}
+
+// ============================================================================
+// Wakelock
+// ============================================================================
+
+pub fn platform_wakelock_enable() {
+    #[cfg(target_os = "ios")]
+    ios::wakelock_enable();
+
+    #[cfg(target_os = "android")]
+    super::android::wakelock_enable();
+
+    #[cfg(not(any(target_os = "ios", target_os = "android")))]
+    println!("[Dala] wakelock_enable() called (stub)");
+}
+
+#[cfg(target_os = "android")]
+pub fn platform_wakelock_enable_with_env(env: &mut JNIEnv) {
+    #[cfg(target_os = "android")]
+    super::android::wakelock_enable_with_env(env);
+
+    #[cfg(not(target_os = "android"))]
+    let _ = env;
+}
+
+pub fn platform_wakelock_disable() {
+    #[cfg(target_os = "ios")]
+    ios::wakelock_disable();
+
+    #[cfg(target_os = "android")]
+    super::android::wakelock_disable();
+
+    #[cfg(not(any(target_os = "ios", target_os = "android")))]
+    println!("[Dala] wakelock_disable() called (stub)");
+}
+
+#[cfg(target_os = "android")]
+pub fn platform_wakelock_disable_with_env(env: &mut JNIEnv) {
+    #[cfg(target_os = "android")]
+    super::android::wakelock_disable_with_env(env);
+
+    #[cfg(not(target_os = "android"))]
+    let _ = env;
+}
+
+pub fn platform_wakelock_enabled() -> bool {
+    #[cfg(target_os = "ios")]
+    return ios::wakelock_enabled();
+
+    #[cfg(target_os = "android")]
+    return super::android::wakelock_enabled();
+
+    #[cfg(not(any(target_os = "ios", target_os = "android")))]
+    return false;
+}
+
+#[cfg(target_os = "android")]
+pub fn platform_wakelock_enabled_with_env(env: &mut JNIEnv) -> bool {
+    #[cfg(target_os = "android")]
+    {
+        return super::android::wakelock_enabled_with_env(env);
+    }
+    #[cfg(not(target_os = "android"))]
+    {
+        let _ = env;
+        false
+    }
 }
 
 // ============================================================================
