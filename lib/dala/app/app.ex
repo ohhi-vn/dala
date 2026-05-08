@@ -90,6 +90,12 @@ defmodule Dala.App.App do
         # Adaptive theme watcher depends on Dala.DeviceDevice
         ensure_started(Dala.Theme.AdaptiveWatcher)
 
+        # Start plugin registry for dynamic component loading
+        ensure_started(Dala.Plugin.Registry)
+
+        # Auto-register plugins from dependencies
+        Dala.Plugin.auto_register()
+
         __MODULE__.on_start()
       end
 
