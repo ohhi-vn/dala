@@ -33,15 +33,7 @@ defmodule Dala.Screen.Manager do
   Generates a unique screen ID.
   """
   def next_id do
-    if :ets.whereis(@id_counter) == :undefined do
-      :ets.new(@id_counter, [:set, :public, :named_table, {:keypos, 1}])
-      :ets.insert(@id_counter, {:counter, 1})
-      0
-    else
-      [{:counter, id}] = :ets.lookup(@id_counter, :counter)
-      :ets.insert(@id_counter, {:counter, id + 1})
-      id
-    end
+    :ets.update_counter(@id_counter, :counter, {2, 1}, {2, 0})
   end
 
   @doc """
@@ -53,20 +45,13 @@ defmodule Dala.Screen.Manager do
   - `module`: screen module (e.g., `MyApp.HomeScreen`)
   """
   def register(id, name, pid, module) when is_integer(id) and is_pid(pid) do
-    if :ets.whereis(@table) == :undefined do
-      :ets.new(@table, [:set, :public, :named_table, {:keypos, 1}])
-    end
-
     :ets.insert(@table, {id, name, pid, module})
     :ok
   end
 
   @doc "Unregisters a screen by its PID (called when screen stops)."
   def unregister(pid) when is_pid(pid) do
-    case :ets.match_object(@table, {:_, :_, pid, :_}) do
-      [entry] -> :ets.delete_object(@table, entry)
-      [] -> :ok
-    end
+    :ets.match_delete(@table, {:_, :_, pid, :_})
 
     :ok
   end
