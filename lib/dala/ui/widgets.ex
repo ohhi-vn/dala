@@ -87,7 +87,7 @@ defmodule Dala.Ui.Widgets do
   def column(props, children) when is_list(props), do: column(Map.new(props), children)
 
   def column(%{} = props, children) when is_list(children) do
-    allowed = @layout_props ++ @gesture_props ++ @accessibility_props
+    allowed = @layout_props ++ @gesture_props ++ @accessibility_props ++ [:alignment, :justify]
 
     %{
       type: :column,
@@ -106,7 +106,7 @@ defmodule Dala.Ui.Widgets do
   def row(props, children) when is_list(props), do: row(Map.new(props), children)
 
   def row(%{} = props, children) when is_list(children) do
-    allowed = @layout_props ++ @gesture_props ++ @accessibility_props
+    allowed = @layout_props ++ @gesture_props ++ @accessibility_props ++ [:alignment, :justify]
 
     %{
       type: :row,
@@ -209,7 +209,8 @@ defmodule Dala.Ui.Widgets do
       [:text, :on_tap, :disabled] ++
         [:text_color, :text_size, :font_weight] ++
         [:background, :padding, :padding_top, :padding_right, :padding_bottom, :padding_left] ++
-        [:corner_radius, :fill_width, :accessibility_id]
+        [:corner_radius, :fill_width, :accessibility_id] ++
+        [:variant, :icon, :elevation]
 
     %{
       type: :button,
@@ -347,7 +348,8 @@ defmodule Dala.Ui.Widgets do
         [:keyboard_type, :return_key] ++
         [:text_color, :text_size] ++
         [:background, :padding, :corner_radius] ++
-        @accessibility_props
+        @accessibility_props ++
+        [:secure, :max_length, :auto_capitalize, :auto_correct, :min_lines, :max_lines]
 
     %{
       type: :text_field,
@@ -507,7 +509,9 @@ defmodule Dala.Ui.Widgets do
           :height,
           :corner_radius,
           :placeholder_color,
-          :accessibility_id
+          :accessibility_id,
+          :on_error,
+          :on_load
         ]),
       children: []
     }
@@ -581,7 +585,8 @@ defmodule Dala.Ui.Widgets do
   def modal(%{} = props, children) when is_list(children) do
     %{
       type: :modal,
-      props: Map.take(props, [:visible, :on_dismiss, :presentation_style]),
+      props:
+        Map.take(props, [:visible, :on_dismiss, :presentation_style, :animation, :drag_indicator]),
       children: children
     }
   end
@@ -633,7 +638,8 @@ defmodule Dala.Ui.Widgets do
   def scroll(%{} = props, children) when is_list(children) do
     allowed =
       [:horizontal, :show_indicator, :on_end_reached, :on_scroll] ++
-        [:padding, :background]
+        [:padding, :background] ++
+        [:paging]
 
     %{
       type: :scroll,
@@ -813,6 +819,622 @@ defmodule Dala.Ui.Widgets do
     %{
       type: :camera_preview,
       props: Map.take(props, [:facing, :width, :height]),
+      children: []
+    }
+  end
+
+  @doc """
+  Returns a `:checkbox` leaf node. A checkbox with an optional label.
+
+  ## Props
+
+    * `:value` — boolean, checked state (default: false)
+    * `:on_change` — `{pid, tag}` tuple; fired with new boolean value on change
+    * `:label` — string, label text displayed beside the checkbox
+    * `:color` — color token for the checkbox tint
+    * `:enabled` — boolean, whether the checkbox is interactive (default: true)
+    * `:accessibility_id` — test identifier
+
+  ## Examples
+
+      Dala.Ui.Widgets.checkbox(value: true, on_change: {self(), :agree_toggled}, label: "I agree")
+  """
+  @spec checkbox(keyword() | map()) :: map()
+  def checkbox(props \\ [])
+  def checkbox(props) when is_list(props), do: checkbox(Map.new(props))
+
+  def checkbox(%{} = props) do
+    %{
+      type: :checkbox,
+      props: Map.take(props, [:value, :on_change, :label, :color, :enabled, :accessibility_id]),
+      children: []
+    }
+  end
+
+  @doc """
+  Returns a `:radio` leaf node. A radio button within a group.
+
+  ## Props
+
+    * `:selected` — boolean, whether this radio is selected
+    * `:on_select` — `{pid, tag}` tuple; fired when this radio is selected
+    * `:label` — string, label text displayed beside the radio
+    * `:group` — string, radio group name (radios in the same group are mutually exclusive)
+    * `:enabled` — boolean, whether the radio is interactive
+    * `:color` — color token for the radio tint
+    * `:accessibility_id` — test identifier
+
+  ## Examples
+
+      Dala.Ui.Widgets.radio(selected: true, on_select: {self(), :option_a}, label: "Option A", group: "choices")
+  """
+  @spec radio(keyword() | map()) :: map()
+  def radio(props \\ [])
+  def radio(props) when is_list(props), do: radio(Map.new(props))
+
+  def radio(%{} = props) do
+    %{
+      type: :radio,
+      props: Map.take(props, [:selected, :on_select, :label, :group, :enabled, :color, :accessibility_id]),
+      children: []
+    }
+  end
+
+  @doc """
+  Returns a `:card` container node. A Material-style card with elevation and variants.
+
+  ## Props
+
+    * `:elevation` — float, shadow depth
+    * `:variant` — `:filled`, `:outlined`, or `:elevated`
+    * `:background` — background color
+    * `:padding`, `:padding_top`, `:padding_right`, `:padding_bottom`, `:padding_left`
+    * `:border_color`, `:border_width` — border styling
+    * `:corner_radius` — rounded corners
+    * `:on_tap` — `{pid, tag}` tuple; fired when card is tapped
+    * `:accessibility_id` — test identifier
+
+  ## Examples
+
+      Dala.Ui.Widgets.card([variant: :elevated, elevation: 2.0, corner_radius: 12], [
+        Dala.Ui.Widgets.text(text: "Card content")
+      ])
+  """
+  @spec card(keyword() | map(), list()) :: map()
+  def card(props \\ [], children \\ [])
+  def card(props, children) when is_list(props), do: card(Map.new(props), children)
+
+  def card(%{} = props, children) when is_list(children) do
+    %{
+      type: :card,
+      props:
+        Map.take(props, [
+          :elevation,
+          :variant,
+          :background,
+          :padding,
+          :padding_top,
+          :padding_right,
+          :padding_bottom,
+          :padding_left,
+          :border_color,
+          :border_width,
+          :corner_radius,
+          :on_tap,
+          :accessibility_id
+        ]),
+      children: children
+    }
+  end
+
+  @doc """
+  Returns a `:badge` container node. Displays a numeric badge over its children.
+
+  ## Props
+
+    * `:count` — integer, numeric badge value
+    * `:color` — badge background color
+    * `:text_color` — badge text color
+    * `:visible` — boolean, whether the badge is shown (default: true)
+
+  ## Examples
+
+      Dala.Ui.Widgets.badge([count: 5, color: :error], [
+        Dala.Ui.Widgets.icon(name: "notifications")
+      ])
+  """
+  @spec badge(keyword() | map(), list()) :: map()
+  def badge(props \\ [], children \\ [])
+  def badge(props, children) when is_list(props), do: badge(Map.new(props), children)
+
+  def badge(%{} = props, children) when is_list(children) do
+    %{
+      type: :badge,
+      props: Map.take(props, [:count, :color, :text_color, :visible]),
+      children: children
+    }
+  end
+
+  @doc """
+  Returns a `:chip` leaf node. A compact Material Design chip.
+
+  ## Props
+
+    * `:label` — string, chip text (required)
+    * `:variant` — `:assist`, `:filter`, `:input`, or `:suggestion`
+    * `:selected` — boolean, selected state (for filter chips)
+    * `:on_tap` — `{pid, tag}` tuple; fired when chip is tapped
+    * `:icon` — string, icon name displayed before the label
+    * `:on_remove` — `{pid, tag}` tuple; fired when remove icon is tapped (input chips)
+    * `:enabled` — boolean, whether the chip is interactive
+    * `:accessibility_id` — test identifier
+
+  ## Examples
+
+      Dala.Ui.Widgets.chip(label: "Filter", variant: :filter, selected: true, on_tap: {self(), :chip_tapped})
+  """
+  @spec chip(keyword() | map()) :: map()
+  def chip(props \\ [])
+  def chip(props) when is_list(props), do: chip(Map.new(props))
+
+  def chip(%{} = props) do
+    %{
+      type: :chip,
+      props:
+        Map.take(props, [:label, :variant, :selected, :on_tap, :icon, :on_remove, :enabled, :accessibility_id]),
+      children: []
+    }
+  end
+
+  @doc """
+  Returns a `:snackbar` leaf node. A transient message bar with an optional action.
+
+  ## Props
+
+    * `:message` — string, the message text (required)
+    * `:action_label` — string, label for the optional action button
+    * `:on_action` — `{pid, tag}` tuple; fired when the action button is tapped
+    * `:duration` — `:short` or `:long`
+    * `:visible` — boolean, whether the snackbar is shown
+
+  ## Examples
+
+      Dala.Ui.Widgets.snackbar(message: "Item deleted", action_label: "Undo", on_action: {self(), :undo})
+  """
+  @spec snackbar(keyword() | map()) :: map()
+  def snackbar(props \\ [])
+  def snackbar(props) when is_list(props), do: snackbar(Map.new(props))
+
+  def snackbar(%{} = props) do
+    %{
+      type: :snackbar,
+      props: Map.take(props, [:message, :action_label, :on_action, :duration, :visible]),
+      children: []
+    }
+  end
+
+  @doc """
+  Returns a `:bottom_sheet` container node. A slide-up panel anchored to the bottom.
+
+  ## Props
+
+    * `:visible` — boolean, whether the sheet is shown
+    * `:on_dismiss` — `{pid, tag}` tuple; fired when the sheet is dismissed
+    * `:drag_indicator` — boolean, show drag handle at top (default: false)
+    * `:peek_height` — float, height of the sheet when partially visible
+    * `:background` — background color
+    * `:corner_radius` — rounded corners at the top
+
+  ## Examples
+
+      Dala.Ui.Widgets.bottom_sheet([visible: true, on_dismiss: {self(), :dismissed}, drag_indicator: true], [
+        Dala.Ui.Widgets.text(text: "Sheet content")
+      ])
+  """
+  @spec bottom_sheet(keyword() | map(), list()) :: map()
+  def bottom_sheet(props \\ [], children \\ [])
+  def bottom_sheet(props, children) when is_list(props), do: bottom_sheet(Map.new(props), children)
+
+  def bottom_sheet(%{} = props, children) when is_list(children) do
+    %{
+      type: :bottom_sheet,
+      props: Map.take(props, [:visible, :on_dismiss, :drag_indicator, :peek_height, :background, :corner_radius]),
+      children: children
+    }
+  end
+
+  @doc """
+  Returns a `:tooltip` container node. Shows a tooltip over its children.
+
+  ## Props
+
+    * `:text` — string, tooltip text (required)
+    * `:position` — `:top`, `:bottom`, `:left`, or `:right`
+
+  ## Examples
+
+      Dala.Ui.Widgets.tooltip([text: "Save changes", position: :top], [
+        Dala.Ui.Widgets.icon(name: "save")
+      ])
+  """
+  @spec tooltip(keyword() | map(), list()) :: map()
+  def tooltip(props \\ [], children \\ [])
+  def tooltip(props, children) when is_list(props), do: tooltip(Map.new(props), children)
+
+  def tooltip(%{} = props, children) when is_list(children) do
+    %{
+      type: :tooltip,
+      props: Map.take(props, [:text, :position]),
+      children: children
+    }
+  end
+
+  @doc """
+  Returns a `:fab` leaf node. A Floating Action Button.
+
+  ## Props
+
+    * `:icon` — string, icon name (required)
+    * `:on_tap` — `{pid, tag}` tuple; fired when FAB is tapped
+    * `:text` — string, optional label for extended FAB
+    * `:background` — background color
+    * `:color` — icon color
+    * `:corner_radius` — rounded corners
+    * `:elevation` — float, shadow depth
+    * `:accessibility_id` — test identifier
+
+  ## Examples
+
+      Dala.Ui.Widgets.fab(icon: "add", on_tap: {self(), :add_item})
+      Dala.Ui.Widgets.fab(icon: "edit", text: "Compose", on_tap: {self(), :compose})
+  """
+  @spec fab(keyword() | map()) :: map()
+  def fab(props \\ [])
+  def fab(props) when is_list(props), do: fab(Map.new(props))
+
+  def fab(%{} = props) do
+    %{
+      type: :fab,
+      props: Map.take(props, [:icon, :on_tap, :text, :background, :color, :corner_radius, :elevation, :accessibility_id]),
+      children: []
+    }
+  end
+
+  @doc """
+  Returns a `:icon_button` leaf node. A clickable icon button.
+
+  ## Props
+
+    * `:icon` — string, icon name (required)
+    * `:on_tap` — `{pid, tag}` tuple; fired when button is tapped
+    * `:selected` — boolean, toggle state for toggle icon buttons
+    * `:enabled` — boolean, whether the button is interactive
+    * `:color` — icon color
+    * `:background` — background color
+    * `:accessibility_id` — test identifier
+
+  ## Examples
+
+      Dala.Ui.Widgets.icon_button(icon: "favorite", on_tap: {self(), :favorite_tapped})
+  """
+  @spec icon_button(keyword() | map()) :: map()
+  def icon_button(props \\ [])
+  def icon_button(props) when is_list(props), do: icon_button(Map.new(props))
+
+  def icon_button(%{} = props) do
+    %{
+      type: :icon_button,
+      props: Map.take(props, [:icon, :on_tap, :selected, :enabled, :color, :background, :accessibility_id]),
+      children: []
+    }
+  end
+
+  @doc """
+  Returns a `:segmented_button` leaf node. A segmented control with multiple segments.
+
+  ## Props
+
+    * `:segments` — list of maps, each with `:id`, `:label`, and optional `:icon`
+    * `:selected` — the id of the currently selected segment
+    * `:on_select` — `{pid, tag}` tuple; fired with selected segment id
+    * `:accessibility_id` — test identifier
+
+  ## Examples
+
+      Dala.Ui.Widgets.segmented_button(
+        segments: [%{id: "day", label: "Day"}, %{id: "week", label: "Week"}, %{id: "month", label: "Month"}],
+        selected: "week",
+        on_select: {self(), :range_changed}
+      )
+  """
+  @spec segmented_button(keyword() | map()) :: map()
+  def segmented_button(props \\ [])
+  def segmented_button(props) when is_list(props), do: segmented_button(Map.new(props))
+
+  def segmented_button(%{} = props) do
+    %{
+      type: :segmented_button,
+      props: Map.take(props, [:segments, :selected, :on_select, :accessibility_id]),
+      children: []
+    }
+  end
+
+  @doc """
+  Returns a `:app_bar` leaf node. A top app bar with title and action icons.
+
+  ## Props
+
+    * `:title` — string, app bar title
+    * `:leading_icon` — string, icon name for the leading navigation icon
+    * `:on_leading` — `{pid, tag}` tuple; fired when leading icon is tapped
+    * `:trailing_actions` — list of maps with `:icon` and `:on_tap`
+    * `:background` — background color
+    * `:text_color` — title and icon color
+    * `:accessibility_id` — test identifier
+
+  ## Examples
+
+      Dala.Ui.Widgets.app_bar(
+        title: "My App",
+        leading_icon: "back",
+        on_leading: {self(), :back_pressed},
+        trailing_actions: [%{icon: "search", on_tap: {self(), :search}}]
+      )
+  """
+  @spec app_bar(keyword() | map()) :: map()
+  def app_bar(props \\ [])
+  def app_bar(props) when is_list(props), do: app_bar(Map.new(props))
+
+  def app_bar(%{} = props) do
+    %{
+      type: :app_bar,
+      props: Map.take(props, [:title, :leading_icon, :on_leading, :trailing_actions, :background, :text_color, :accessibility_id]),
+      children: []
+    }
+  end
+
+  @doc """
+  Returns a `:nav_bar` leaf node. A bottom navigation bar.
+
+  ## Props
+
+    * `:items` — list of maps, each with `:id`, `:label`, and `:icon`
+    * `:active` — id of the currently active item
+    * `:on_select` — `{pid, tag}` tuple; fired with selected item id
+    * `:accessibility_id` — test identifier
+
+  ## Examples
+
+      Dala.Ui.Widgets.nav_bar(
+        items: [%{id: "home", label: "Home", icon: "home"}, %{id: "profile", label: "Profile", icon: "user"}],
+        active: "home",
+        on_select: {self(), :tab_changed}
+      )
+  """
+  @spec nav_bar(keyword() | map()) :: map()
+  def nav_bar(props \\ [])
+  def nav_bar(props) when is_list(props), do: nav_bar(Map.new(props))
+
+  def nav_bar(%{} = props) do
+    %{
+      type: :nav_bar,
+      props: Map.take(props, [:items, :active, :on_select, :accessibility_id]),
+      children: []
+    }
+  end
+
+  @doc """
+  Returns a `:nav_drawer` leaf node. A side navigation drawer.
+
+  ## Props
+
+    * `:visible` — boolean, whether the drawer is shown
+    * `:on_dismiss` — `{pid, tag}` tuple; fired when the drawer is dismissed
+    * `:items` — list of maps, each with `:id`, `:label`, and `:icon`
+    * `:active` — id of the currently active item
+    * `:on_select` — `{pid, tag}` tuple; fired with selected item id
+    * `:header` — string, optional header text at the top
+
+  ## Examples
+
+      Dala.Ui.Widgets.nav_drawer(
+        visible: true,
+        on_dismiss: {self(), :drawer_dismissed},
+        items: [%{id: "home", label: "Home", icon: "home"}],
+        active: "home",
+        on_select: {self(), :nav_changed}
+      )
+  """
+  @spec nav_drawer(keyword() | map()) :: map()
+  def nav_drawer(props \\ [])
+  def nav_drawer(props) when is_list(props), do: nav_drawer(Map.new(props))
+
+  def nav_drawer(%{} = props) do
+    %{
+      type: :nav_drawer,
+      props: Map.take(props, [:visible, :on_dismiss, :items, :active, :on_select, :header]),
+      children: []
+    }
+  end
+
+  @doc """
+  Returns a `:nav_rail` leaf node. A side navigation rail (for tablets/desktop).
+
+  ## Props
+
+    * `:items` — list of maps, each with `:id`, `:label`, and `:icon`
+    * `:active` — id of the currently active item
+    * `:on_select` — `{pid, tag}` tuple; fired with selected item id
+    * `:accessibility_id` — test identifier
+
+  ## Examples
+
+      Dala.Ui.Widgets.nav_rail(
+        items: [%{id: "home", label: "Home", icon: "home"}, %{id: "settings", label: "Settings", icon: "settings"}],
+        active: "home",
+        on_select: {self(), :rail_changed}
+      )
+  """
+  @spec nav_rail(keyword() | map()) :: map()
+  def nav_rail(props \\ [])
+  def nav_rail(props) when is_list(props), do: nav_rail(Map.new(props))
+
+  def nav_rail(%{} = props) do
+    %{
+      type: :nav_rail,
+      props: Map.take(props, [:items, :active, :on_select, :accessibility_id]),
+      children: []
+    }
+  end
+
+  @doc """
+  Returns a `:menu` leaf node. A popup menu with selectable items.
+
+  ## Props
+
+    * `:items` — list of maps, each with `:label`, `:action` (atom), and optional `:icon`
+    * `:visible` — boolean, whether the menu is shown
+    * `:on_dismiss` — `{pid, tag}` tuple; fired when the menu is dismissed
+    * `:on_select` — `{pid, tag}` tuple; fired with selected item's action atom
+    * `:accessibility_id` — test identifier
+
+  ## Examples
+
+      Dala.Ui.Widgets.menu(
+        items: [%{label: "Edit", action: :edit}, %{label: "Delete", action: :delete}],
+        visible: true,
+        on_select: {self(), :menu_selected}
+      )
+  """
+  @spec menu(keyword() | map()) :: map()
+  def menu(props \\ [])
+  def menu(props) when is_list(props), do: menu(Map.new(props))
+
+  def menu(%{} = props) do
+    %{
+      type: :menu,
+      props: Map.take(props, [:items, :visible, :on_dismiss, :on_select, :accessibility_id]),
+      children: []
+    }
+  end
+
+  @doc """
+  Returns a `:date_picker` leaf node. A date selection dialog.
+
+  ## Props
+
+    * `:visible` — boolean, whether the picker is shown
+    * `:on_select` — `{pid, tag}` tuple; fired with selected date string (ISO 8601)
+    * `:on_dismiss` — `{pid, tag}` tuple; fired when the picker is dismissed
+    * `:selected_date` — string, initial date in ISO 8601 format
+    * `:min_date` — string, earliest selectable date
+    * `:max_date` — string, latest selectable date
+    * `:title` — string, optional title text
+
+  ## Examples
+
+      Dala.Ui.Widgets.date_picker(
+        visible: true,
+        on_select: {self(), :date_picked},
+        selected_date: "2025-01-15"
+      )
+  """
+  @spec date_picker(keyword() | map()) :: map()
+  def date_picker(props \\ [])
+  def date_picker(props) when is_list(props), do: date_picker(Map.new(props))
+
+  def date_picker(%{} = props) do
+    %{
+      type: :date_picker,
+      props: Map.take(props, [:visible, :on_select, :on_dismiss, :selected_date, :min_date, :max_date, :title]),
+      children: []
+    }
+  end
+
+  @doc """
+  Returns a `:time_picker` leaf node. A time selection dialog.
+
+  ## Props
+
+    * `:visible` — boolean, whether the picker is shown
+    * `:on_select` — `{pid, tag}` tuple; fired with selected time string (HH:MM)
+    * `:on_dismiss` — `{pid, tag}` tuple; fired when the picker is dismissed
+    * `:selected_time` — string, initial time in HH:MM format
+    * `:title` — string, optional title text
+
+  ## Examples
+
+      Dala.Ui.Widgets.time_picker(
+        visible: true,
+        on_select: {self(), :time_picked},
+        selected_time: "09:30"
+      )
+  """
+  @spec time_picker(keyword() | map()) :: map()
+  def time_picker(props \\ [])
+  def time_picker(props) when is_list(props), do: time_picker(Map.new(props))
+
+  def time_picker(%{} = props) do
+    %{
+      type: :time_picker,
+      props: Map.take(props, [:visible, :on_select, :on_dismiss, :selected_time, :title]),
+      children: []
+    }
+  end
+
+  @doc """
+  Returns a `:search_bar` leaf node. A search input bar with placeholder and callbacks.
+
+  ## Props
+
+    * `:placeholder` — string, placeholder text when empty
+    * `:text` — string, current search text
+    * `:on_change` — `{pid, tag}` tuple; fired on every text change
+    * `:on_submit` — `{pid, tag}` tuple; fired when search is submitted
+    * `:on_focus` — `{pid, tag}` tuple; fired when the bar gains focus
+    * `:active` — boolean, whether the search bar is in active/expanded state
+    * `:on_tap` — `{pid, tag}` tuple; fired when the search bar is tapped
+    * `:accessibility_id` — test identifier
+
+  ## Examples
+
+      Dala.Ui.Widgets.search_bar(placeholder: "Search...", on_change: {self(), :search_changed}, on_submit: {self(), :search_submitted})
+  """
+  @spec search_bar(keyword() | map()) :: map()
+  def search_bar(props \\ [])
+  def search_bar(props) when is_list(props), do: search_bar(Map.new(props))
+
+  def search_bar(%{} = props) do
+    %{
+      type: :search_bar,
+      props: Map.take(props, [:placeholder, :text, :on_change, :on_submit, :on_focus, :active, :on_tap, :accessibility_id]),
+      children: []
+    }
+  end
+
+  @doc """
+  Returns a `:carousel` leaf node. A horizontally scrolling carousel of items.
+
+  ## Props
+
+    * `:data` — enumerable of items to render
+    * `:id` — atom identifier for the carousel
+    * `:on_page_change` — `{pid, tag}` tuple; fired with new page index on swipe
+    * `:loop` — boolean, enables infinite looping (default: false)
+    * `:peek` — float, peek width for adjacent items
+
+  ## Examples
+
+      Dala.Ui.Widgets.carousel(id: :photo_carousel, data: assigns.photos, on_page_change: {self(), :page_changed})
+  """
+  @spec carousel(keyword() | map()) :: map()
+  def carousel(props \\ [])
+  def carousel(props) when is_list(props), do: carousel(Map.new(props))
+
+  def carousel(%{} = props) do
+    %{
+      type: :carousel,
+      props: Map.take(props, [:data, :id, :on_page_change, :loop, :peek]),
       children: []
     }
   end
