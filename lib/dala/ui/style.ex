@@ -2,10 +2,9 @@ defmodule Dala.Ui.Style do
   @moduledoc """
   Thin wrapper around a props map for named, reusable styles.
 
-  The struct type lets the `~dala` sigil (and future tooling) distinguish a
-  style value from a plain data map. At serialisation time `Dala.Ui.Renderer`
-  merges a style's props into the node's own props — there is no runtime
-  overhead.
+  The struct type lets future tooling distinguish a style value from a plain
+  data map. At serialisation time `Dala.Ui.Renderer` merges a style's props
+  into the node's own props — there is no runtime overhead.
 
   ## Defining styles
 
@@ -32,7 +31,7 @@ defmodule Dala.Ui.Style do
       }
 
   Token values (`:primary`, `:xl`, `:white`, etc.) are resolved by
-  `Dala.Ui.Renderer` before JSON serialisation — the native side always
+  `Dala.Ui.Renderer` before binary serialisation — the native side always
   receives plain integers and floats.
   """
 

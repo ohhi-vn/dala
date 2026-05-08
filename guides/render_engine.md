@@ -34,13 +34,13 @@ Screens define UI using Elixir structs or Spark DSL:
 
 ```elixir
 # In your screen module
-def render(_assigns, _socket) do
-  ~V"""
-  <column>
-    <text text="Hello World" />
-    <button text="Tap me" on_tap: {self(), :tap}>
-  </column>
-  """
+dala do
+  screen name: :home do
+    column do
+      text "Hello World"
+      button "Tap me", on_tap: :tap
+    end
+  end
 end
 ```
 

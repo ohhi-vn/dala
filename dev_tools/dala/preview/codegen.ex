@@ -2,9 +2,7 @@ defmodule Dala.Preview.Codegen do
   @moduledoc """
   Generates Elixir screen module source code from Dala UI trees.
 
-  Supports two output styles:
-  - **Sigil style**: `~dala` templates with PascalCase tags
-  - **DSL style**: Spark DSL with snake_case entities
+  Outputs Spark DSL style with snake_case entities.
 
   UI trees use the map format: `%{type: :atom, props: %{...}, children: [...]}`.
   """
@@ -26,67 +24,10 @@ defmodule Dala.Preview.Codegen do
     :on_blur
   ]
 
-  @type_to_pascal %{
-    column: "Column",
-    row: "Row",
-    box: "Box",
-    text: "Text",
-    button: "Button",
-    icon: "Icon",
-    divider: "Divider",
-    spacer: "Spacer",
-    text_field: "TextField",
-    toggle: "Toggle",
-    slider: "Slider",
-    switch: "Switch",
-    image: "Image",
-    video: "Video",
-    activity_indicator: "ActivityIndicator",
-    progress_bar: "ProgressBar",
-    status_bar: "StatusBar",
-    refresh_control: "RefreshControl",
-    webview: "WebView",
-    camera_preview: "CameraPreview",
-    native_view: "NativeView",
-    tab_bar: "TabBar",
-    list: "List",
-    scroll: "Scroll",
-    modal: "Modal",
-    pressable: "Pressable",
-    safe_area: "SafeArea"
-  }
-
   # Components where the primary string content is a positional arg in DSL style
   @text_arg_types [:text, :button, :icon, :toggle, :text_field, :list_item]
 
   # ── Public API ──────────────────────────────────────────────────────────────
-
-  @doc "Generate sigil-style screen module source."
-  def generate_sigil(module_name, ui_tree, _opts \\ []) do
-    tree = normalize_tree(ui_tree)
-    handlers = extract_handlers(tree)
-    module_str = module_name_to_string(module_name)
-
-    sigil_body = render_sigil_node(tree, 0)
-    handler_clauses = render_sigil_handlers(handlers)
-
-    """
-    defmodule #{module_str} do
-      use Dala.Screen
-
-      def mount(_params, _session, socket) do
-        {:ok, socket}
-      end
-
-      def render(socket) do
-        ~dala\"\"\"
-    #{sigil_body}
-        \"\"\"
-      end
-    #{handler_clauses}end
-    """
-    |> String.trim_trailing()
-  end
 
   @doc "Generate DSL-style screen module source."
   def generate_dsl(module_name, ui_tree, opts \\ []) do
@@ -170,102 +111,6 @@ defmodule Dala.Preview.Codegen do
   defp extract_handler_tag(tag) when is_atom(tag), do: tag
   # anything else — best-effort string representation
   defp extract_handler_tag(other), do: other
-
-  # ── Sigil rendering ─────────────────────────────────────────────────────────
-
-  defp render_sigil_node(%{type: type, props: props, children: children}, depth) do
-    tag = Map.get(@type_to_pascal, type, capitalize_type(type))
-    indent = String.duplicate("  ", depth + 2)
-    rendered_props = render_sigil_props(props, type)
-    has_children = children != []
-
-    if has_children do
-      child_lines =
-        children
-        |> Enum.map(&render_sigil_node(&1, depth + 1))
-        |> Enum.join("\n")
-
-      opening = if rendered_props == "", do: tag, else: "#{tag} #{rendered_props}"
-
-      "#{indent}<#{opening}>\n#{child_lines}\n#{indent}</#{tag}>"
-    else
-      if rendered_props == "" do
-        "#{indent}<#{tag} />"
-      else
-        "#{indent}<#{tag} #{rendered_props} />"
-      end
-    end
-  end
-
-  defp render_sigil_props(props, type) do
-    text_key = if type == :text, do: :text, else: nil
-    text_key = if type == :button, do: :text, else: text_key
-
-    ordered =
-      props
-      |> Map.to_list()
-      |> Enum.sort_by(fn {k, _} ->
-        cond do
-          k == text_key -> -1
-          k in @event_handler_props -> 1
-          true -> 0
-        end
-      end)
-
-    rendered =
-      for {key, value} <- ordered,
-          value != nil and value != false,
-          reduce: [] do
-        acc -> [render_sigil_prop(key, value, type) | acc]
-      end
-      |> Enum.reverse()
-      |> Enum.filter(&(&1 != nil))
-
-    Enum.join(rendered, " ")
-  end
-
-  defp render_sigil_prop(key, value, _type) when is_binary(value) do
-    ~s(#{key}="#{escape_string(value)}")
-  end
-
-  defp render_sigil_prop(key, true, _type) do
-    "#{key}"
-  end
-
-  defp render_sigil_prop(_key, false, _type), do: nil
-
-  defp render_sigil_prop(key, value, _type) when is_atom(value) do
-    "#{key}={#{inspect(value)}}"
-  end
-
-  defp render_sigil_prop(key, value, _type) when is_integer(value) do
-    "#{key}={#{value}}"
-  end
-
-  defp render_sigil_prop(key, {_pid, tag}, _type) when is_atom(tag) do
-    # {self(), :tag} tuples render as {{self(), :tag}} in sigil syntax
-    "#{key}={{self(), #{inspect(tag)}}}"
-  end
-
-  defp render_sigil_prop(key, value, _type) do
-    "#{key}={#{inspect(value)}}"
-  end
-
-  defp render_sigil_handlers([]), do: ""
-
-  defp render_sigil_handlers(handlers) do
-    clauses =
-      for handler <- handlers do
-        """
-          def handle_event(#{inspect(handler)}, _params, socket) do
-            {:noreply, socket}
-          end
-        """
-      end
-      |> Enum.join("\n")
-
-    "\n#{clauses}\n"
-  end
 
   # ── DSL rendering ───────────────────────────────────────────────────────────
 
@@ -399,19 +244,5 @@ defmodule Dala.Preview.Codegen do
     |> List.last()
     |> Macro.underscore()
     |> String.to_atom()
-  end
-
-  defp capitalize_type(type) when is_atom(type) do
-    type
-    |> Atom.to_string()
-    |> String.split("_")
-    |> Enum.map(&String.capitalize/1)
-    |> Enum.join("")
-  end
-
-  defp escape_string(str) do
-    str
-    |> String.replace("\\", "\\\\")
-    |> String.replace("\"", "\\\"")
   end
 end

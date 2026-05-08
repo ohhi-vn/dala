@@ -83,19 +83,8 @@ pub fn get_transition_and_clear() -> String {
 }
 
 // ============================================================================
-// Public functions — set_root (UI update)
+// Public functions — Binary UI update
 // ============================================================================
-
-pub fn platform_set_root(_json: &str, _transition: &str) {
-    #[cfg(target_os = "ios")]
-    ios::set_root(_json, _transition);
-
-    #[cfg(target_os = "android")]
-    super::android::set_root(_json, _transition);
-
-    #[cfg(not(any(target_os = "ios", target_os = "android")))]
-    println!("[Dala] set_root({}) stub", _json);
-}
 
 pub fn platform_set_root_binary(_data: &[u8], _transition: &str) {
     #[cfg(target_os = "ios")]

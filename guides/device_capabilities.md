@@ -143,23 +143,31 @@ end
 Display a live camera feed inline (no OS permission dialog for preview):
 
 ```elixir
-def mount(_params, _session, socket) do
-  socket = Dala.Camera.start_preview(socket, facing: :back)
-  {:ok, socket}
-end
+defmodule MyApp.CameraScreen do
+  use Dala.Spark.Dsl
 
-def render(assigns) do
-  ~dala"""
-  <Column>
-    <CameraPreview facing={:back} weight={1} />
-    <Button text="Flip" on_tap={{self(), :flip}} />
-  </Column>
-  """
-end
+  dala do
+    screen name: :camera do
+      column do
+        camera_preview facing: :back, weight: 1
+        button "Flip", on_tap: :flip
+      end
+    end
+  end
 
-def terminate(_reason, socket) do
-  Dala.Camera.stop_preview(socket)
-  :ok
+  def mount(_params, _session, socket) do
+    socket = Dala.Camera.start_preview(socket, facing: :back)
+    {:ok, socket}
+  end
+
+  def handle_event(:flip, _params, socket) do
+    {:noreply, socket}
+  end
+
+  def terminate(_reason, socket) do
+    Dala.Camera.stop_preview(socket)
+    :ok
+  end
 end
 ```
 
@@ -383,10 +391,10 @@ For saving to the native media library (Camera Roll, Downloads), see `Dala.Stora
 Embed a native web view and communicate with it over a JS bridge. No permission needed.
 
 ```elixir
-def render(assigns) do
-  ~dala"""
-  <WebView url="https://example.com" allow={["https://example.com"]} show_url={true} weight={1} />
-  """
+dala do
+  screen name: :browser do
+    webview "https://example.com", allow: ["https://example.com"], show_url: true, weight: 1
+  end
 end
 
 # Send a message to Elixir from JS:
@@ -490,7 +498,7 @@ Props: `:url` (required), `:allow` (list of URL prefixes — blocks others), `:s
 Centered modal for confirmations and errors (iOS: `UIAlertController(.alert)`, Android: `AlertDialog`).
 
 ```elixir
-def handle_info({:tap, :delete}, socket) do
+def handle_event(:delete, _params, socket) do
   Dala.Ui.Feedback.Alert.alert(socket,
     title:   "Delete item?",
     message: "This cannot be undone.",

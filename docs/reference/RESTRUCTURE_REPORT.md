@@ -123,7 +123,6 @@ Comprehensive ML support with multiple backends:
 - List components
 - Motion/animation
 - Renderer (binary protocol)
-- Sigil (`~dala`)
 - WebView with interact API
 
 ### Theme (8 files)

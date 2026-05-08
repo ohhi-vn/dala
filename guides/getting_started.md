@@ -288,7 +288,7 @@ isolate a deploy while keeping others running.
 
 ## LiveView projects
 
-Instead of writing screens in Elixir with the `~dala` sigil, you can run a full
+Instead of writing screens in Elixir with the Spark DSL, you can run a full
 Phoenix LiveView app inside a native WebView. The native shell handles device
 APIs and distribution; your UI is a regular Phoenix web app.
 
@@ -637,32 +637,29 @@ Then define the screen:
 
 ```elixir
 defmodule MyApp.HomeScreen do
-  use Dala.Screen
+  use Dala.Spark.Dsl
 
-  def mount(_params, _session, socket) do
-    {:ok, Dala.Socket.assign(socket, :count, 0)}
+  dala do
+    attribute :count, :integer, default: 0
+
+    screen name: :home do
+      column padding: 24, gap: 16 do
+        text "Count: @count", text_size: :xl
+        button "Tap me", on_tap: :increment
+      end
+    end
   end
 
-  def render(assigns) do
-    ~dala"""
-    <Column padding={24} gap={16}>
-      <Text text={"Count: #{assigns.count}"} text_size={:xl} />
-      <Button text="Tap me" on_tap={tap(:increment)} />
-    </Column>
-    """
-  end
-
-  def handle_info({:tap, :increment}, socket) do
+  def handle_event(:increment, _params, socket) do
     {:noreply, Dala.Socket.assign(socket, :count, socket.assigns.count + 1)}
   end
-
-  def handle_info(_message, socket), do: {:noreply, socket}
 end
 ```
 
-`mount/3` initialises assigns. `render/1` returns the component tree via the `~dala`
-sigil. `handle_info/2` updates state in response to user events. After each update,
-the framework calls `render/1` again and pushes the diff to the native layer.
+`attribute` declares screen state. The `screen` block defines the UI — `mount/3` and
+`render/1` are generated automatically. `handle_event/3` updates state in response to
+user events. After each update, the framework re-renders and pushes the diff to the
+native layer.
 
 Use `Dala.Socket.changed?/2` to check if specific keys changed before triggering
 side effects. The `changed` map is tracked automatically — no manual bookkeeping.

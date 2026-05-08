@@ -89,7 +89,7 @@ These are automatically added in `mix.exs` - no work for you!
 # examples/simple_app/lib/simple_app.ex
 def on_start do
   # Pattern-match ensures failures crash loudly (AGENTS.md Rule #2)
-  {:ok, _pid} = Dala.Screen.start_root(SimpleApp.HomeScreen)
+  {:ok, _pid} = Dala.Screen.Screen.start_root(SimpleApp.HomeScreen)
   :ok
 end
 ```
@@ -107,7 +107,7 @@ def on_start do
       Dala.Native.log("MLApp: Using default Nx backend (non-iOS)")
   end
 
-  {:ok, _pid} = Dala.Screen.start_root(MLApp.HomeScreen)
+  {:ok, _pid} = Dala.Screen.Screen.start_root(MLApp.HomeScreen)
   :ok
 end
 ```

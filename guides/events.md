@@ -5,19 +5,19 @@ device. For the underlying design, see [`event_model.md`](event_model.md).
 
 ## TL;DR
 
-All events arrive as messages to `handle_info/2`. Two shapes:
+All events arrive as messages to `handle_event/3` (for UI events) or `handle_info/2` (for device API results). Two shapes:
 
 ```elixir
-# Simple (most common):
-{:tap, tag}
-{:change, tag, value}
-{:compose, tag, %{phase: :committed, text: text}}  # IME composition
+# UI events (most common) — arrive via handle_event/3:
+:save
+{:change, :email_changed, value}
+{:compose, :ime, %{phase: :committed, text: text}}  # IME composition
 
 # Canonical envelope (includes screen/component context):
 {:dala_event, %Dala.Event.Address{}, event_atom, payload}
 ```
 
-Use simple tuples for taps, text, gestures. Use canonical for advanced routing.
+Use simple atoms/tuples for taps, text, gestures. Use canonical for advanced routing.
 `Dala.Event.Bridge` converts simple → canonical automatically.
 
 ## Quick reference
@@ -25,40 +25,39 @@ Use simple tuples for taps, text, gestures. Use canonical for advanced routing.
 ### Taps and text input
 
 ```elixir
-button("Save", on_tap: {self(), :save})
+button "Save", on_tap: :save
 
-text_field(value: @email, on_change: {self(), :email_changed},
-                          on_focus:  {self(), :email_focused},
-                          on_blur:   {self(), :email_blurred},
-                          on_submit: {self(), :email_submitted})
+text_field text: @email, on_change: :email_changed,
+                    on_focus:  :email_focused,
+                    on_blur:   :email_blurred,
+                    on_submit: :email_submitted
 
-# In handle_info/2:
-def handle_info({:tap, :save}, socket), do: ...
-def handle_info({:change, :email_changed, value}, socket), do: ...
+# In handle_event/3:
+def handle_event(:save, _params, socket), do: ...
+def handle_event({:change, :email_changed, value}, _params, socket), do: ...
 ```
 
 ### Selection (pickers, menus)
 
 ```elixir
-picker(items: @options, on_select: {self(), :picked})
+picker items: @options, on_select: :picked
 
-def handle_info({:select, :picked}, socket), do: ...
+def handle_event({:select, :picked, index}, _params, socket), do: ...
 ```
 
 ### Gestures
 
 ```elixir
-button("Avatar",
-  on_long_press: {self(), :show_menu},
-  on_double_tap: {self(), :zoom})
+button "Avatar",
+  on_long_press: :show_menu,
+  on_double_tap: :zoom
 
-card(
-  on_swipe_left:  {self(), :delete},
-  on_swipe_right: {self(), :archive},
-  on_swipe:       {self(), :any_swipe})  # also fires; payload includes direction
+column on_swipe_left: :delete,
+       on_swipe_right: :archive,
+       on_swipe: :any_swipe  # also fires; payload includes direction
 
-def handle_info({:long_press, :show_menu}, socket), do: ...
-def handle_info({:swipe, :any_swipe, direction}, socket), do: ...   # :left | :right | :up | :down
+def handle_event({:long_press, :show_menu}, _params, socket), do: ...
+def handle_event({:swipe, :any_swipe, direction}, _params, socket), do: ...   # :left | :right | :up | :down
 ```
 
 ### Scroll — three tiers
@@ -66,33 +65,33 @@ def handle_info({:swipe, :any_swipe, direction}, socket), do: ...   # :left | :r
 **Tier 1 — raw deltas** (rarely needed; throttle defaults to 30 Hz):
 
 ```elixir
-scroll(on_scroll: {self(), :feed})
+scroll on_scroll: :feed
 
-def handle_info({:scroll, :feed, %{y: y, dy: dy, phase: phase}}, socket), do: ...
+def handle_event({:scroll, :feed, %{y: y, dy: dy, phase: phase}}, _params, socket), do: ...
 ```
 
 Override the throttle when you need higher fidelity:
 
 ```elixir
-scroll(on_scroll: {self(), :feed, throttle: 16})         # 60 Hz
-scroll(on_scroll: {self(), :feed, throttle: 0})          # raw firing rate (escape hatch)
-scroll(on_scroll: {self(), :feed, debounce: 200})        # only after stillness
-scroll(on_scroll: {self(), :feed, throttle: 50, delta: 8})  # 20 Hz + 8px deadzone
+scroll on_scroll: :feed, throttle: 16         # 60 Hz
+scroll on_scroll: :feed, throttle: 0          # raw firing rate (escape hatch)
+scroll on_scroll: :feed, debounce: 200        # only after stillness
+scroll on_scroll: :feed, throttle: 50, delta: 8  # 20 Hz + 8px deadzone
 ```
 
 **Tier 2 — semantic events** (use these by default):
 
 ```elixir
 scroll(
-  on_scroll_began:    {self(), :feed_began},
-  on_scroll_ended:    {self(), :feed_ended},
-  on_scroll_settled:  {self(), :feed_settled},   # fires after deceleration
-  on_top_reached:     {self(), :pull_to_refresh},
-  on_end_reached:     {self(), :load_more},      # already wired pre-Batch 5
-  on_scrolled_past:   {self(), :show_back_to_top, 600})  # threshold = 600 px
+  on_scroll_began:    :feed_began,
+  on_scroll_ended:    :feed_ended,
+  on_scroll_settled:  :feed_settled,   # fires after deceleration
+  on_top_reached:     :pull_to_refresh,
+  on_end_reached:     :load_more,      # already wired pre-Batch 5
+  on_scrolled_past:   {:show_back_to_top, 600})  # threshold = 600 px
 
-def handle_info({:scroll_began, :feed_began}, socket), do: ...
-def handle_info({:scrolled_past, :show_back_to_top}, socket), do: ...
+def handle_event({:scroll_began, :feed_began}, _params, socket), do: ...
+def handle_event({:scrolled_past, :show_back_to_top}, _params, socket), do: ...
 ```
 
 **Tier 3 — native-side, no BEAM round-trip** (parallax, sticky headers, fades):
@@ -119,9 +118,9 @@ before the user picks a final character. Apps that read text mid-keystroke
 avoid sending partial input.
 
 ```elixir
-text_field(value: @text,
-  on_change:  {self(), :text},      # fires on every change (including composing)
-  on_compose: {self(), :ime})       # fires on composition phase changes
+text_field text: @text,
+  on_change:  :text,      # fires on every change (including composing)
+  on_compose: :ime       # fires on composition phase changes
 
 # Events:
 # {:compose, :ime, %{phase: :began,     text: "n"}}     # composition started
@@ -133,21 +132,21 @@ text_field(value: @text,
 Commit-only handler pattern (the typical use case):
 
 ```elixir
-def handle_info({:compose, _id, %{phase: :began}}, socket),
+def handle_event({:compose, _id, %{phase: :began}}, _params, socket),
   do: {:noreply, assign(socket, :composing, true)}
 
-def handle_info({:compose, _id, %{phase: :committed, text: text}}, socket) do
+def handle_event({:compose, _id, %{phase: :committed, text: text}}, _params, socket) do
   # Real commit replaces whatever raw text we got during composition.
   {:noreply, assign(socket, composing: false, text: text)}
 end
 
-def handle_info({:compose, _id, %{phase: :cancelled}}, socket),
+def handle_event({:compose, _id, %{phase: :cancelled}}, _params, socket),
   do: {:noreply, assign(socket, :composing, false)}
 
-def handle_info({:change, _id, value}, %{assigns: %{composing: true}} = socket),
+def handle_event({:change, _id, value}, _params, %{assigns: %{composing: true}} = socket),
   do: {:noreply, socket}                 # ignore raw text while composing
 
-def handle_info({:change, _id, value}, socket),
+def handle_event({:change, _id, value}, _params, socket),
   do: {:noreply, assign(socket, :text, value)}
 ```
 
@@ -382,12 +381,12 @@ transparently for screens that opt in.
 ### Pull-to-refresh
 
 ```elixir
-scroll(on_top_reached: {self(), :refresh},
-       on_scroll: {self(), :feed, throttle: 100}) do
-  ...rows...
+scroll on_top_reached: :refresh,
+     on_scroll: {:feed, throttle: 100} do
+  text "Content"
 end
 
-def handle_info({:top_reached, :refresh}, socket) do
+def handle_event({:top_reached, :refresh}, _params, socket) do
   Task.async(fn -> reload_feed() end)
   {:noreply, assign(socket, :refreshing, true)}
 end
@@ -396,9 +395,11 @@ end
 ### Infinite scroll
 
 ```elixir
-scroll(on_end_reached: {self(), :load_more}) do ...end
+scroll on_end_reached: :load_more do
+  text "Content"
+end
 
-def handle_info({:end_reached, :load_more}, socket) do
+def handle_event({:end_reached, :load_more}, _params, socket) do
   if !socket.assigns.loading do
     Task.async(fn -> load_next_page() end)
     {:noreply, assign(socket, :loading, true)}
@@ -411,14 +412,14 @@ end
 ### Show "back to top" button
 
 ```elixir
-column(spacing: 0) do
+column spacing: 0 do
   scroll(
-    on_scrolled_past: {self(), :show_back_to_top, 600},
-    on_top_reached:   {self(), :hide_back_to_top}) do
-    ...long content...
+    on_scrolled_past: {:show_back_to_top, 600},
+    on_top_reached:   :hide_back_to_top) do
+    text "Long content"
   end
 
-  if @show_back_to_top, do: floating_button("↑", on_tap: {self(), :scroll_to_top})
+  if @show_back_to_top, do: button "↑", on_tap: :scroll_to_top
 end
 ```
 
@@ -426,30 +427,30 @@ end
 
 ```elixir
 for {card, idx} <- Enum.with_index(@cards) do
-  card(id: card.id,
-       on_swipe_left:  {self(), {:dismiss, card.id}},
-       on_swipe_right: {self(), {:save, card.id}}) do
-    ...card contents...
+  column id: card.id,
+       on_swipe_left:  {:dismiss, card.id},
+       on_swipe_right: {:save, card.id} do
+    text card.title
   end
 end
 
-def handle_info({:swipe_left, {:dismiss, id}}, socket), do: ...
-def handle_info({:swipe_right, {:save, id}}, socket), do: ...
+def handle_event({:swipe_left, {:dismiss, id}}, _params, socket), do: ...
+def handle_event({:swipe_right, {:save, id}}, _params, socket), do: ...
 ```
 
 ### Photo viewer with pinch-to-zoom and pan
 
 ```elixir
-image(src: @url,
-      on_pinch: {self(), :zoom},
-      on_drag:  {self(), :pan})
+image src: @url,
+      on_pinch: :zoom,
+      on_drag:  :pan
 
-def handle_info({:pinch, :zoom, %{scale: scale, phase: :ended}}, socket) do
+def handle_event({:pinch, :zoom, %{scale: scale, phase: :ended}}, _params, socket) do
   # Final zoom level — commit it.
   {:noreply, assign(socket, :zoom, scale)}
 end
 
-def handle_info({:pinch, :zoom, %{scale: scale, phase: :dragging}}, socket) do
+def handle_event({:pinch, :zoom, %{scale: scale, phase: :dragging}}, _params, socket) do
   # Live update — typically you'd render with this on the way to the final.
   {:noreply, assign(socket, :live_zoom, scale)}
 end
@@ -458,12 +459,11 @@ end
 ### Hero parallax with native-only animation
 
 ```elixir
-scroll(id: :main, on_scroll_began: {self(), :hide_chrome}) do
-  image(
-    src: "hero.jpg",
-    parallax: %{ratio: 0.5, container: :main})  # NEVER hits BEAM during scroll
+scroll id: :main, on_scroll_began: :hide_chrome do
+  image "hero.jpg",
+    parallax: %{ratio: 0.5, container: :main}  # NEVER hits BEAM during scroll
 
-  ...content...
+  text "Content"
 end
 ```
 
@@ -477,11 +477,11 @@ mailbox and lag the app. If you really need every frame, use Tier 3.
 not GC'd. Use binaries for data-derived IDs:
 ```elixir
 # ❌ leaks
-on_tap: {self(), String.to_atom("contact_#{contact.id}")}
+on_tap: String.to_atom("contact_#{contact.id}")
 
 # ✅ safe
-on_tap: {self(), {:contact, contact.id}}
-on_tap: {self(), "contact:#{contact.id}"}
+on_tap: {:contact, contact.id}
+on_tap: "contact:#{contact.id}"
 ```
 
 ❌ **Don't compute layout from scroll deltas in BEAM.** The frame budget is

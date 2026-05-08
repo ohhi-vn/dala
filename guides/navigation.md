@@ -158,7 +158,7 @@ Pass the parent pid as a param when pushing:
 
 ```elixir
 # In the parent screen — pass self() so the child can reply:
-def handle_info({:tap, :open_detail}, socket) do
+def handle_event(:open_detail, _params, socket) do
   {:noreply, Dala.Socket.push_screen(socket, MyApp.DetailScreen, %{
     id:         socket.assigns.selected_id,
     parent_pid: self()
@@ -178,7 +178,7 @@ def mount(%{id: id, parent_pid: parent_pid}, _session, socket) do
 end
 
 # Before popping — send the result back:
-def handle_info({:tap, :save}, socket) do
+def handle_event(:save, _params, socket) do
   send(socket.assigns.parent_pid, {:saved, socket.assigns.item})
   {:noreply, Dala.Socket.pop_screen(socket)}
 end

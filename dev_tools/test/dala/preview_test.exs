@@ -53,26 +53,6 @@ defmodule Dala.PreviewTest do
   end
 
   describe "generate_code/3" do
-    test "generates sigil-style code" do
-      ui_tree = %{
-        type: :column,
-        props: %{padding: :space_md, gap: :space_sm},
-        children: [
-          %{type: :text, props: %{text: "Hello"}, children: []},
-          %{type: :button, props: %{text: "Tap", on_tap: :tapped}, children: []}
-        ]
-      }
-
-      code = Dala.Preview.generate_code(ui_tree, :sigil, "MyApp.HomeScreen")
-      assert code =~ "defmodule MyApp.HomeScreen do"
-      assert code =~ "use Dala.Screen"
-      assert code =~ "~dala"
-      assert code =~ "<Column"
-      assert code =~ "<Text"
-      assert code =~ "<Button"
-      assert code =~ "handle_event(:tapped"
-    end
-
     test "generates DSL-style code" do
       ui_tree = %{
         type: :column,
@@ -83,7 +63,7 @@ defmodule Dala.PreviewTest do
         ]
       }
 
-      code = Dala.Preview.generate_code(ui_tree, :dsl, "MyApp.HomeScreen")
+      code = Dala.Preview.generate_code(ui_tree, "MyApp.HomeScreen")
       assert code =~ "defmodule MyApp.HomeScreen do"
       assert code =~ "use Dala.Spark.Dsl"
       assert code =~ "column"
@@ -382,82 +362,6 @@ end
 
 defmodule Dala.Preview.CodegenTest do
   use ExUnit.Case, async: true
-
-  describe "generate_sigil/3" do
-    test "generates basic sigil module" do
-      tree = %{
-        type: :column,
-        props: %{padding: :space_md},
-        children: [
-          %{type: :text, props: %{text: "Hello"}, children: []}
-        ]
-      }
-
-      code = Dala.Preview.Codegen.generate_sigil("MyApp.HomeScreen", tree)
-
-      assert code =~ "defmodule MyApp.HomeScreen do"
-      assert code =~ "use Dala.Screen"
-      assert code =~ "def mount(_params, _session, socket) do"
-      assert code =~ "~dala"
-      assert code =~ "<Column"
-      assert code =~ "<Text"
-      assert code =~ "padding={:space_md}"
-      assert code =~ ~s(text="Hello")
-    end
-
-    test "generates event handler stubs from on_tap" do
-      tree = %{
-        type: :button,
-        props: %{text: "Go", on_tap: :go_pressed},
-        children: []
-      }
-
-      code = Dala.Preview.Codegen.generate_sigil("MyApp.Screen", tree)
-      assert code =~ "handle_event(:go_pressed"
-    end
-
-    test "generates nested container with children" do
-      tree = %{
-        type: :column,
-        props: %{gap: :space_sm},
-        children: [
-          %{
-            type: :row,
-            props: %{},
-            children: [
-              %{type: :text, props: %{text: "A"}, children: []},
-              %{type: :text, props: %{text: "B"}, children: []}
-            ]
-          }
-        ]
-      }
-
-      code = Dala.Preview.Codegen.generate_sigil("MyApp.Screen", tree)
-      assert code =~ "<Column"
-      assert code =~ "<Row"
-      assert code =~ "</Row>"
-      assert code =~ "</Column>"
-    end
-
-    test "self-closing tags for leaf nodes" do
-      tree = %{type: :text, props: %{text: "Hi"}, children: []}
-      code = Dala.Preview.Codegen.generate_sigil("MyApp.Screen", tree)
-      assert code =~ "<Text"
-      assert code =~ "/>"
-    end
-
-    test "handles list of root nodes by wrapping in Column" do
-      tree = [
-        %{type: :text, props: %{text: "First"}, children: []},
-        %{type: :text, props: %{text: "Second"}, children: []}
-      ]
-
-      code = Dala.Preview.Codegen.generate_sigil("MyApp.Screen", tree)
-      assert code =~ "<Column"
-      assert code =~ "First"
-      assert code =~ "Second"
-    end
-  end
 
   describe "generate_dsl/3" do
     test "generates basic DSL module" do

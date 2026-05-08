@@ -43,7 +43,6 @@ defmodule Dala.Screen.Screen do
     quote do
       use Dala.Spark.Dsl
       @behaviour Dala.Screen
-      import Dala.Sigil
 
       # Default handle_info implementation
       def handle_info(_message, socket), do: {:noreply, socket}
@@ -121,7 +120,7 @@ defmodule Dala.Screen.Screen do
   # ── Navigation ────────────────────────────────────────────────────────────
   @doc """
   Start a screen as the root UI screen. Calls mount, renders the component tree
-  via `Dala.Ui.Renderer`, and calls `set_root` on the resulting view.
+  via `Dala.Ui.Renderer`, and calls `set_root_binary` on the resulting view.
 
   This is the main entry point for production use. `start_link/2` is for tests
   (no NIF calls).

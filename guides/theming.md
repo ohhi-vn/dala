@@ -107,7 +107,7 @@ def mount(_params, _session, socket) do
   {:ok, Dala.Socket.assign(socket, :theme, :obsidian)}
 end
 
-def handle_info({:tap, :theme_citrus}, socket) do
+def handle_event(:theme_citrus, _params, socket) do
   Dala.Theme.set(Dala.Theme.Citrus)
   {:noreply, Dala.Socket.assign(socket, :theme, :citrus)}
 end

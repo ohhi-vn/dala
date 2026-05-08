@@ -104,7 +104,7 @@ Dala.Test.inspect(node)
 Dala.Test.tap(node, :increment)
 ```
 
-The tag atom comes from `on_tap: {self(), :increment}` in the screen's `render/1`. Fire-and-forget — does not block.
+The tag atom comes from `on_tap: :increment` in the screen's DSL block. Fire-and-forget — does not block.
 
 ### Navigation
 

@@ -1,6 +1,6 @@
 # Dala Preview Designer
 
-Interactive drag-and-drop UI design tool for Dala screens. Design your UI visually, then generate Elixir screen module code in sigil or DSL style.
+Interactive drag-and-drop UI design tool for Dala screens. Design your UI visually, then generate Elixir screen module code in DSL style.
 
 ## Quick Start
 
@@ -39,7 +39,7 @@ Dala.Preview.preview_and_open(MyApp.HomeScreen)
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  ◆ Dala Preview Designer              [Sigil|DSL] [Code]   │
+│  ◆ Dala Preview Designer              [DSL] [Code]   │
 ├──────────┬──────────────────────────┬───────────────────────┤
 │ Palette  │      Design Canvas       │   Property Editor     │
 │          │                          │                       │
@@ -85,7 +85,6 @@ Dala.Preview.preview_and_open(MyApp.HomeScreen)
 
 ### Code Generation
 
-- Toggle between **Sigil** and **DSL** style in the header
 - The code panel at the bottom updates in real-time
 - Click **Copy** to copy the generated code
 
@@ -95,34 +94,7 @@ Dala.Preview.preview_and_open(MyApp.HomeScreen)
 - Containers (Column, Row, Box, Scroll, Modal, Pressable, SafeArea) show drop zones
 - Empty containers show a "Drop here" indicator
 
-## Code Generation Styles
-
-### Sigil Style (`~dala`)
-
-```elixir
-defmodule MyApp.HomeScreen do
-  use Dala.Screen
-
-  def mount(_params, _session, socket) do
-    {:ok, socket}
-  end
-
-  def render(socket) do
-    ~dala"""
-    <Column padding={:space_md} gap={:space_sm}>
-      <Text text="Hello" text_size={:xl} />
-      <Button text="Tap" on_tap={{self(), :tapped}} />
-    </Column>
-    """
-  end
-
-  def handle_event(:tapped, _params, socket) do
-    {:noreply, socket}
-  end
-end
-```
-
-### DSL Style (Spark DSL)
+## Code Generation Styles - DSL Style (Spark DSL)
 
 ```elixir
 defmodule MyApp.HomeScreen do
@@ -155,14 +127,10 @@ tree = %{
   ]
 }
 
-# Generate sigil style
-Dala.Preview.generate_code(tree, :sigil, "MyApp.HomeScreen")
-
 # Generate DSL style
-Dala.Preview.generate_code(tree, :dsl, "MyApp.HomeScreen")
+Dala.Preview.generate_code(tree, "MyApp.HomeScreen")
 
 # Direct Codegen module
-Dala.Preview.Codegen.generate_sigil("MyApp.HomeScreen", tree)
 Dala.Preview.Codegen.generate_dsl("MyApp.HomeScreen", tree, attributes: [{:count, :integer, 0}])
 
 # Extract event handlers
@@ -216,7 +184,7 @@ dev_tools/
 ├── dala/
 │   └── preview/
 │       ├──.ex              # Main module: static preview + start_designer/1
-│       ├── codegen.ex      # Code generation: sigil + DSL styles
+│       ├── codegen.ex      # Code generation: DSL style
 │       ├── canvas.ex       # LiveView: drag-and-drop designer
 │       ├── example.ex      # Example UI trees
 │       └── live/

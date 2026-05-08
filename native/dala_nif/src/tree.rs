@@ -157,6 +157,42 @@ pub struct Node {
     pub layout: Layout,
     pub dirty_layout: bool,
     pub dirty_paint: bool,
+    pub layout_hash: u64,
+}
+
+#[allow(dead_code)]
+impl Node {
+    /// Compute a layout hash from kind + props + children count.
+    /// This is used to skip layout recomputation when the node hasn't structurally changed.
+    pub fn compute_layout_hash(&self) -> u64 {
+        let mut hasher = std::collections::hash_map::DefaultHasher::new();
+
+        // Hash the kind
+        let kind_byte = match self.kind {
+            NodeKind::Column => 0u8,
+            NodeKind::Row => 1u8,
+            NodeKind::Text => 2u8,
+            NodeKind::Button => 3u8,
+            NodeKind::Image => 4u8,
+            NodeKind::Scroll => 5u8,
+            NodeKind::WebView => 6u8,
+        };
+        kind_byte.hash(&mut hasher);
+
+        // Hash layout-relevant props (f32 doesn't impl Hash, so use to_bits)
+        self.props.width.map(|v| v.to_bits()).hash(&mut hasher);
+        self.props.height.map(|v| v.to_bits()).hash(&mut hasher);
+        self.props.padding.map(|v| v.to_bits()).hash(&mut hasher);
+        self.props.flex_grow.map(|v| v.to_bits()).hash(&mut hasher);
+        std::mem::discriminant(&self.props.flex_direction).hash(&mut hasher);
+        std::mem::discriminant(&self.props.justify_content).hash(&mut hasher);
+        std::mem::discriminant(&self.props.align_items).hash(&mut hasher);
+
+        // Hash children count
+        (self.children.len() as u64).hash(&mut hasher);
+
+        hasher.finish()
+    }
 }
 
 // Patch - represents a change to apply to the tree
@@ -227,8 +263,13 @@ impl Tree {
             Patch::Insert {
                 parent,
                 index,
-                node,
+                mut node,
             } => {
+                // Compute layout_hash for the new node if not already set (v1/v2)
+                // For v3, the layout_hash is already set from the wire protocol
+                if node.layout_hash == 0 {
+                    node.layout_hash = node.compute_layout_hash();
+                }
                 self.insert(parent, index, node);
             }
             Patch::Remove { id } => {
@@ -281,13 +322,40 @@ impl Tree {
 
     // Update props on an existing node
     fn update_props(&mut self, id: NodeId, new_props: Props) {
+        // Check if props actually changed and compute layout hash
+        let (should_mark_dirty_layout, should_mark_dirty_paint) = {
+            if let Some(node) = self.nodes.get(&id) {
+                if node.props != new_props {
+                    let old_hash = node.layout_hash;
+                    let mut temp_node = node.clone();
+                    temp_node.props = new_props.clone();
+                    let new_hash = temp_node.compute_layout_hash();
+                    (old_hash != new_hash, true)
+                } else {
+                    (false, false)
+                }
+            } else {
+                return;
+            }
+        };
+
         if let Some(node) = self.nodes.get_mut(&id) {
             if node.props != new_props {
                 node.props = new_props;
-                node.dirty_layout = true;
-                node.dirty_paint = true;
-                self.mark_dirty_layout(id);
+                let new_hash = node.compute_layout_hash();
+                node.layout_hash = new_hash;
+
+                if should_mark_dirty_layout {
+                    node.dirty_layout = true;
+                }
+                if should_mark_dirty_paint {
+                    node.dirty_paint = true;
+                }
             }
+        }
+
+        if should_mark_dirty_layout {
+            self.mark_dirty_layout(id);
         }
     }
 

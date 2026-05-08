@@ -73,6 +73,8 @@ defmodule Dala.Nav.ScreenNavTest do
   end
 
   setup do
+    start_supervised!(Dala.Screen.Manager)
+
     case Process.whereis(Dala.Nav.Registry) do
       nil -> :ok
       pid -> GenServer.stop(pid)

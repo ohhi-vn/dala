@@ -190,14 +190,6 @@ fn set_transition<'a>(env: Env<'a>, transition: Term<'a>) -> NifResult<Term<'a>>
 }
 
 #[rustler::nif]
-fn set_root<'a>(env: Env<'a>, json: Term<'a>) -> NifResult<Term<'a>> {
-    let json_str: String = json.decode()?;
-    let transition = get_transition_and_clear();
-    platform_set_root(&json_str, &transition);
-    ok(env)
-}
-
-#[rustler::nif]
 fn set_root_binary<'a>(env: Env<'a>, binary: Binary<'a>) -> NifResult<Term<'a>> {
     let bytes = binary.as_slice();
     let transition = get_transition_and_clear();

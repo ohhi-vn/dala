@@ -38,16 +38,16 @@ If `mount/3` returns `{:error, reason}`, the GenServer stops with that reason.
 
 Returns the component tree as a plain Elixir map. Called after every callback that returns a modified socket. The renderer serialises the tree, resolves tokens, and calls the NIF — Compose or SwiftUI diffs and updates the display.
 
-The `~dala` sigil (imported automatically by `use Dala.Screen`) compiles to the same maps at compile time:
+In DSL style, the `screen` block compiles to the same maps at compile time:
 
 ```elixir
-def render(assigns) do
-  ~dala"""
-  <Column padding={:space_md} background={:background}>
-    <Text text={assigns.title} text_size={:xl} text_color={:on_background} />
-    <Button text="Save" on_tap={{self(), :save}} />
-  </Column>
-  """
+dala do
+  screen name: :home do
+    column padding: :space_md, background: :background do
+      text "@title", text_size: :xl, text_color: :on_background
+      button "Save", on_tap: :save
+    end
+  end
 end
 ```
 
@@ -62,14 +62,14 @@ Keep `render/1` pure. No side effects, no process sends. It may be called more t
 
 The primary callback for responding to user interaction and async results. All UI events — taps, text changes, list selections — arrive here as messages sent by the NIF directly to the screen process.
 
-**Tap events** are delivered as `{:tap, tag}` where `tag` is the second element of the `on_tap: {pid, tag}` tuple you specified in `render/1`:
+**Tap events** are delivered as atoms matching the `on_tap` handler you specified in the `screen` block:
 
 ```elixir
-# In render:
-~dala(<Button text="Save" on_tap={tap} />) # where tap = {self(), :save}
+# In the screen block:
+button "Save", on_tap: :save
 
-# In handle_info:
-def handle_info({:tap, :save}, socket) do
+# In handle_event:
+def handle_event(:save, _params, socket) do
   save_data(socket.assigns)
   {:noreply, socket}
 end
@@ -78,12 +78,11 @@ end
 **Text field changes** arrive as `{:change, tag, value}`:
 
 ```elixir
-# In render — pre-compute the handler tuple:
-name_change = {self(), :name_changed}
-~dala(<TextField value={assigns.name} on_change={name_change} />)
+# In the screen block:
+text_field text: @name, on_change: :name_changed
 
-# In handle_info:
-def handle_info({:change, :name_changed, value}, socket) do
+# In handle_event:
+def handle_event({:change, :name_changed, value}, _params, socket) do
   {:noreply, Dala.Socket.assign(socket, :name, value)}
 end
 ```
@@ -103,38 +102,40 @@ end
 Navigation is triggered by returning a modified socket:
 
 ```elixir
-def handle_info({:tap, :open_detail}, socket) do
+def handle_event(:open_detail, _params, socket) do
   {:noreply, Dala.Socket.push_screen(socket, MyApp.DetailScreen, %{id: socket.assigns.id})}
 end
 ```
 
-The default implementation (from `use Dala.Screen`) is a no-op that returns the socket unchanged. Always add a catch-all clause to handle messages you don't care about:
-
-```elixir
-def handle_info(_message, socket), do: {:noreply, socket}
-```
+The default implementation (from `use Dala.Spark.Dsl`) is a no-op that returns the socket unchanged.
 
 ### `handle_event/3`
 
 ```elixir
-@callback handle_event(event :: String.t(), params :: map(), socket :: Dala.Socket.t()) ::
+@callback handle_event(event :: term(), params :: map(), socket :: Dala.Socket.t()) ::
   {:noreply, Dala.Socket.t()} | {:reply, map(), socket :: Dala.Socket.t()}
 ```
 
-Dispatched programmatically via `Dala.Screen.Screen.dispatch/3` — used in tests to send string-keyed events to a screen process. Not called for normal UI interactions (those go through `handle_info/2`).
+The primary callback for responding to user interaction in DSL-style screens. All UI events — taps, text changes, list selections — arrive here.
 
 ```elixir
-# In tests:
-Dala.Screen.Screen.dispatch(pid, "increment", %{})
-Dala.Screen.Screen.dispatch(pid, "tap", %{"tag" => "save"})
+# Tap event:
+def handle_event(:save, _params, socket) do
+  save_data(socket.assigns)
+  {:noreply, socket}
+end
 
-# In the screen:
-def handle_event("increment", _params, socket) do
-  {:noreply, Dala.Socket.assign(socket, :count, socket.assigns.count + 1)}
+# Change event with value:
+def handle_event({:change, :name_changed, value}, _params, socket) do
+  {:noreply, Dala.Socket.assign(socket, :name, value)}
 end
 ```
 
-The default implementation (from `use Dala.Screen`) raises for any unhandled event, so only define clauses for events you explicitly dispatch.
+Can also be dispatched programmatically via `Dala.Screen.Screen.dispatch/3` for tests:
+
+```elixir
+Dala.Screen.Screen.dispatch(pid, :increment, %{})
+```
 
 ### `terminate/2`
 
@@ -153,7 +154,7 @@ The default is a no-op. Most screens don't need to implement this.
 Called by `Dala.App` to start the root screen of the navigation stack. This is the entry point for your app's UI. If it returns `{:error, reason}`, the app crashes loudly (see AGENTS.md rule #2).
 
 ```elixir
-{:ok, pid} = Dala.Screen.start_root(MyApp.HomeScreen, %{}, nil)
+{:ok, pid} = Dala.Screen.Screen.start_root(MyApp.HomeScreen, %{}, nil)
 ```
 
 ### `Dala.Screen.start_link/3`
@@ -168,34 +169,30 @@ Starts a screen in `:no_render` mode for testing. Skips NIF calls but runs all E
 
 Equivalent to `start_link/3` with `nil` as the third argument. Convenience for tests.
 
-## Event handling: handle_info vs handle_event
+## Event handling: handle_event vs handle_info
 
-### `handle_info/2` — Primary callback
+### `handle_event/3` — Primary callback for DSL screens
 
-All UI events (taps, text changes, device API results) arrive here as messages sent to the screen process. This is the main event callback for user interactions.
+All UI events (taps, text changes, list selections) arrive here. This is the main event callback for DSL-style screens.
 
 ```elixir
-def handle_info({:tap, :save}, socket) do
+def handle_event(:save, _params, socket) do
   save_data(socket.assigns)
   {:noreply, socket}
 end
 ```
 
-### `handle_event/3` — Programmatic dispatch
+### `handle_info/2` — Device API results and raw messages
 
-Called only via `Dala.Screen.Screen.dispatch/3` — used in tests to send string-keyed events. Not invoked for normal UI interactions (those go through `handle_info/2`).
+Device API results (camera, location, etc.) and other raw messages still arrive via `handle_info/2`:
 
 ```elixir
-# In tests:
-Dala.Screen.Screen.dispatch(pid, "tap", %{"tag" => "save"})
-
-# In the screen:
-def handle_event("tap", %{"tag" => tag}, socket) do
-  {:noreply, socket}
+def handle_info({:camera, :photo, %{path: path}}, socket) do
+  {:noreply, Dala.Socket.assign(socket, :photo_path, path)}
 end
 ```
 
-**Rule of thumb:** Use `handle_info/2` for UI events. Use `handle_event/3` only for test dispatch.
+**Rule of thumb:** Use `handle_event/3` for UI events. Use `handle_info/2` for device API results and raw process messages.
 
 ## Lifecycle flow
 
@@ -208,15 +205,13 @@ start_root/3 or start_link/3
         ▼                                                  │
    render/1  ─ NIF set_root / set_view                    │
         │                                                  │
-        ├── user taps button ────► handle_info/2  ──► render/1
+        ├── user taps button ────► handle_event/3  ──► render/1
         │                                                  │
-        ├── text field change ───► handle_info/2  ──► render/1
+        ├── text field change ───► handle_event/3  ──► render/1
         │                                                  │
         ├── device API result ───► handle_info/2  ──► render/1
         │                                                  │
         ├── send(pid, msg)  ──────► handle_info/2  ──► render/1
-        │                                                  │
-        ├── dispatch event ───────► handle_event/3  ──► render/1 (test only)
         │                                                  │
         └── screen popped from stack ─► terminate/2  ──────┘
 ```
@@ -265,15 +260,12 @@ assigns.safe_area
 Use it to avoid content being obscured by the notch, home indicator, or status bar:
 
 ```elixir
-def render(assigns) do
-  sa = assigns.safe_area
-  top    = {self(), :top}
-  bottom = {self(), :bottom}
-  ~dala"""
-  <Column padding_top={sa.top} padding_bottom={sa.bottom}>
-    ...
-  </Column>
-  """
+dala do
+  screen name: :home do
+    column padding_top: @safe_area.top, padding_bottom: @safe_area.bottom do
+      text "Content"
+    end
+  end
 end
 ```
 

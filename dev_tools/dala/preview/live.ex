@@ -7,7 +7,7 @@ defmodule Dala.Preview.Live do
   - Drag components from a palette onto a design canvas
   - Edit component properties in a sidebar
   - See a live phone-frame preview
-  - Generate screen module code in sigil or DSL style
+  - Generate screen module code in DSL style
 
   ## Usage
 
@@ -52,8 +52,7 @@ defmodule Dala.Preview.Live do
     │  #{url}                    │
     │                                                 │
     │  Drag components from the palette to design     │
-    │  your screen. Switch between Sigil and DSL      │
-    │  style code generation.                         │
+    │  your screen. DSL style code generation.        │
     │                                                 │
     │  Press Ctrl+C twice to stop.                    │
     └─────────────────────────────────────────────────┘

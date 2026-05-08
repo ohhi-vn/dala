@@ -81,7 +81,7 @@ defmodule MyApp do
   end
 
   def on_start do
-    Dala.Screen.start_root(MyApp.CounterScreen)
+    Dala.Screen.Screen.start_root(MyApp.CounterScreen)
     Dala.Dist.ensure_started(node: :"my_app@127.0.0.1", cookie: :secret)
   end
 end

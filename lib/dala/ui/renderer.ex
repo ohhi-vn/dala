@@ -1,8 +1,8 @@
 defmodule Dala.Ui.Renderer do
   @moduledoc """
-  Serializes a component tree to JSON and passes it to the platform NIF in
-  a single call. Compose (Android) and SwiftUI (iOS) handle diffing and
-  rendering internally.
+  Serializes a component tree to a binary command stream and passes it to the
+  platform NIF in a single call. Compose (Android) and SwiftUI (iOS) handle
+  diffing and rendering internally.
 
   ## Node format
 
@@ -67,6 +67,23 @@ defmodule Dala.Ui.Renderer do
   alias Dala.Theme.Theme
 
   @default_nif Dala.Platform.Native
+
+  # ── Protocol v3 constants ─────────────────────────────────────────────
+
+  @protocol_version 3
+  @magic_byte_0 0xDA
+  @magic_byte_1 0xA1
+
+  @op_frame_begin 0x00
+  @op_create_node 0x01
+  @op_remove 0x02
+  @op_update 0x03
+  @op_patch_node 0x04
+  @op_register_string 0x05
+  @op_set_text 0x06
+  @op_set_style 0x07
+  @op_event 0x08
+  @op_frame_end 0xFF
 
   # ── Base palette ──────────────────────────────────────────────────────────
   # Raw named colors. Semantic tokens (:primary, :surface, etc.) resolve
@@ -172,12 +189,14 @@ defmodule Dala.Ui.Renderer do
   Render a component tree for the given platform.
 
   Loads the active `Dala.Theme`, clears the tap registry, serialises the tree
-  to JSON, and calls `set_root/1` on the NIF. Returns `{:ok, :json_tree}`.
+  to a binary command stream, and calls `set_root_binary/1` on the NIF.
+  Returns `{:ok, :binary_tree}`.
 
   `transition` is an atom (`:push`, `:pop`, `:reset`, `:none`) for the nav
   animation. Defaults to `:none` (instant swap).
   """
-  @spec render(map(), atom(), module() | atom(), atom()) :: {:ok, :json_tree} | {:error, term()}
+  @spec render(map(), atom(), module() | atom(), atom()) ::
+          {:ok, :binary_tree} | {:error, term()}
   def render(tree, _platform, nif \\ @default_nif, _transition \\ :none) do
     theme = apply(Theme, :current, [])
 
@@ -266,7 +285,7 @@ defmodule Dala.Ui.Renderer do
       {:ok, []}
     else
       # Check if we have a full replacement (first render or root change)
-      has_replace? = Enum.any?(patches, fn {action, _} -> action == :replace end)
+      has_replace? = Enum.any?(patches, fn patch -> elem(patch, 0) == :replace end)
 
       if has_replace? do
         # Full render for replacements — use binary protocol
@@ -288,7 +307,7 @@ defmodule Dala.Ui.Renderer do
         # targets). The binary protocol encodes on_tap as a NIF handle, but
         # Dala.Ui.Node props still have raw {pid, tag} tuples. Until the patch
         # encoder resolves these, fall back to full render for structural changes.
-        has_structural? = Enum.any?(patches, fn {action, _} -> action in [:insert, :remove] end)
+        has_structural? = Enum.any?(patches, fn patch -> elem(patch, 0) in [:insert, :remove] end)
 
         if has_structural? do
           # Structural change — full render with binary protocol
@@ -335,29 +354,45 @@ defmodule Dala.Ui.Renderer do
     end
   end
 
-  # ── Binary protocol v2 encoder ──────────────────────────────────────
+  # ── Binary protocol v3 encoder ───────────────────────────────────────
   #
-  # Full tree format:
-  #   Header:  [u16 version=2][u16 flags=0][u64 node_count]
+  # Full tree format (v3):
+  #   Header:  [0xDA][0xA1][0x0003][flags::little-16][node_count::little-64]
   #   Nodes:   repeat [u64 id][u8 type][PROPS][u32 child_count][u64 child_ids...]
   #
-  # Patch frame format:
-  #   Header:  [u16 version=1][u16 patch_count]
-  #   Opcodes:
-  #     0x01 INSERT  [u64 id][u64 parent][u32 index][u8 type][PROPS]
-  #     0x02 REMOVE  [u64 id]
-  #     0x03 UPDATE  [u64 id][PROPS]
+  # Patch frame format (v3):
+  #   Header:  [0xDA][0xA1][0x0003][patch_count::little-16]
+  #   Body:    [FRAME_BEGIN][patches...][FRAME_END]
+  #
+  # Opcodes:
+  #   0x00 FRAME_BEGIN       (no payload)
+  #   0x01 CREATE_NODE       [u64 id][u64 parent][u32 index][u8 type][u64 layout_hash][PROPS][u32 child_count][u64 child_ids...]
+  #   0x02 REMOVE            [u64 id]
+  #   0x03 UPDATE            [u64 id][PROPS]
+  #   0x04 PATCH_NODE        [u64 id][u16 field_mask][changed fields only]
+  #   0x05 REGISTER_STRING   [u16 string_id][u16 len][bytes...]
+  #   0x06 SET_TEXT           [u64 id][u16 len][bytes...]
+  #   0x07 SET_STYLE          [u64 id][PROPS]
+  #   0x08 EVENT              [u64 target_id][u8 event_type][u64 timestamp][u16 payload_len][payload_bytes]
+  #   0xFF FRAME_END          (no payload)
   #
   # PROPS:   [u8 field_count] repeat [u8 tag][value...]
   #   1=text[u16 len][bytes]  2=title[u16 len][bytes]  3=color[u16 len][bytes]
   #   4=background[u16 len][bytes]  5=on_tap[u64]
   #   6=width[f32]  7=height[f32]  8=padding[f32]  9=flex_grow[f32]
   #   10=flex_direction[u8]  11=justify_content[u8]  12=align_items[u8]
+  #   13=text_interned[u16 string_id]  14=title_interned[u16 string_id]
+  #   15=color_interned[u16 string_id]  16=background_interned[u16 string_id]
 
-  @doc "Encode a full Dala.Ui.Node tree to binary format"
+  @doc "Encode a full Dala.Ui.Node tree to binary format (v3)"
   def encode_tree(%Dala.Ui.Node{} = node) do
     {binary, node_count} = encode_tree_node(node)
-    IO.iodata_to_binary([<<2::little-16, 0::little-16, node_count::little-64>>, binary])
+
+    IO.iodata_to_binary([
+      <<@magic_byte_0::8, @magic_byte_1::8, @protocol_version::little-16, 0::little-16,
+        node_count::little-64>>,
+      binary
+    ])
   end
 
   defp encode_tree_node(%Dala.Ui.Node{id: id, type: type, props: props, children: children}) do
@@ -386,7 +421,12 @@ defmodule Dala.Ui.Renderer do
   def encode_tree_with_taps(%Dala.Ui.Node{} = node, nif, platform, ctx) do
     {binary, taps} = encode_tree_node_with_taps(node, nif, platform, ctx)
     node_count = count_nodes(node)
-    {IO.iodata_to_binary([<<2::little-16, 0::little-16, node_count::little-64>>, binary]), taps}
+
+    {IO.iodata_to_binary([
+       <<@magic_byte_0::8, @magic_byte_1::8, @protocol_version::little-16, 0::little-16,
+         node_count::little-64>>,
+       binary
+     ]), taps}
   end
 
   defp encode_tree_node_with_taps(
@@ -423,51 +463,142 @@ defmodule Dala.Ui.Renderer do
     1 + Enum.sum(Enum.map(children, &count_nodes/1))
   end
 
-  @doc "Encode patches to binary frame format for the native side"
+  @doc "Encode patches to binary frame format for the native side (v3)"
   def encode_frame(patches) when is_list(patches) do
     body = Enum.map(patches, &encode_patch/1)
 
     IO.iodata_to_binary([
-      <<1::little-16, length(patches)::little-16>>,
-      body
+      <<@magic_byte_0::8, @magic_byte_1::8, @protocol_version::little-16,
+        length(patches)::little-16>>,
+      <<@op_frame_begin::8>>,
+      body,
+      <<@op_frame_end::8>>
     ])
   end
 
   defp encode_patch({:insert, parent_id, index, %Dala.Ui.Node{} = node}) do
     id = hash_id(node.id)
     parent = hash_id(parent_id)
+    layout_hash = compute_layout_hash(node)
 
     [
-      <<0x01, id::little-64, parent::little-64, index::little-32, kind_to_byte(node.type)::8>>,
+      <<@op_create_node::8, id::little-64, parent::little-64, index::little-32,
+        kind_to_byte(node.type)::8, layout_hash::little-64>>,
       encode_props(node.props),
       encode_children(node.children)
     ]
   end
 
   defp encode_patch({:remove, id}) do
-    <<0x02, hash_id(id)::little-64>>
+    <<@op_remove::8, hash_id(id)::little-64>>
   end
 
   defp encode_patch({:update_props, id, props}) do
-    [<<0x03, hash_id(id)::little-64>>, encode_props(props)]
+    [<<@op_update::8, hash_id(id)::little-64>>, encode_props(props)]
   end
 
   defp encode_patch({:replace, id, %Dala.Ui.Node{} = node}) do
-    # Replace = remove old + insert new
+    # Replace = remove old + create new
     old_id = hash_id(id)
     new_id = hash_id(node.id)
+    layout_hash = compute_layout_hash(node)
     # Parent is unknown from replace alone; use 0 as sentinel (root)
     [
-      <<0x02, old_id::little-64>>,
-      <<0x01, new_id::little-64, 0::little-64, 0::little-32, kind_to_byte(node.type)::8>>,
+      <<@op_remove::8, old_id::little-64>>,
+      <<@op_create_node::8, new_id::little-64, 0::little-64, 0::little-32,
+        kind_to_byte(node.type)::8, layout_hash::little-64>>,
       encode_props(node.props),
       encode_children(node.children)
     ]
   end
 
+  defp encode_patch({:patch_node, id, field_mask, changed_props}) do
+    [
+      <<@op_patch_node::8, hash_id(id)::little-64, field_mask::little-16>>,
+      encode_masked_props(changed_props)
+    ]
+  end
+
+  @doc "Encode a PATCH_NODE command with field mask"
+  @spec encode_patch_node(String.t() | atom(), non_neg_integer(), map()) :: binary()
+  def encode_patch_node(id, field_mask, changed_props) do
+    IO.iodata_to_binary([
+      <<@op_patch_node::8, hash_id(id)::little-64, field_mask::little-16>>,
+      encode_masked_props(changed_props)
+    ])
+  end
+
+  @doc "Encode a SET_TEXT command"
+  @spec encode_set_text(String.t() | atom(), binary()) :: binary()
+  def encode_set_text(id, text) when is_binary(text) do
+    IO.iodata_to_binary([
+      <<@op_set_text::8, hash_id(id)::little-64, byte_size(text)::little-16>>,
+      text
+    ])
+  end
+
+  @doc "Encode a REGISTER_STRING command"
+  @spec encode_register_string(non_neg_integer(), binary()) :: binary()
+  def encode_register_string(string_id, text) when is_integer(string_id) and is_binary(text) do
+    IO.iodata_to_binary([
+      <<@op_register_string::8, string_id::little-16, byte_size(text)::little-16>>,
+      text
+    ])
+  end
+
+  @doc "Encode a SET_STYLE command for style-only updates"
+  @spec encode_set_style(String.t() | atom(), map()) :: binary()
+  def encode_set_style(id, props) when is_map(props) do
+    IO.iodata_to_binary([
+      <<@op_set_style::8, hash_id(id)::little-64>>,
+      encode_props(props)
+    ])
+  end
+
+  @doc "Encode an EVENT command"
+  @spec encode_event(String.t() | atom(), non_neg_integer(), non_neg_integer(), binary()) ::
+          binary()
+  def encode_event(target_id, event_type, timestamp, payload) when is_binary(payload) do
+    IO.iodata_to_binary([
+      <<@op_event::8, hash_id(target_id)::little-64, event_type::8, timestamp::little-64,
+        byte_size(payload)::little-16>>,
+      payload
+    ])
+  end
+
+  @doc "Compute the layout hash for a node"
+  @spec compute_layout_hash(Dala.Ui.Node.t()) :: non_neg_integer()
+  def compute_layout_hash(%Dala.Ui.Node{type: type, props: props, children: children}) do
+    # Gather layout-relevant props in a deterministic order
+    layout_props = [
+      to_string(type),
+      format_layout_prop(:width, props),
+      format_layout_prop(:height, props),
+      format_layout_prop(:padding, props),
+      format_layout_prop(:flex_grow, props),
+      format_layout_prop(:flex_direction, props),
+      format_layout_prop(:justify_content, props),
+      format_layout_prop(:align_items, props),
+      to_string(length(children))
+    ]
+
+    data = Enum.join(layout_props, "|")
+    <<hash::unsigned-64-big, _rest::binary>> = :crypto.hash(:sha256, data)
+    hash
+  end
+
+  defp format_layout_prop(key, props) do
+    case Map.get(props, key) do
+      nil -> ""
+      val -> to_string(val)
+    end
+  end
+
   # ── ID hashing ─────────────────────────────────────────────────────
 
-  defp hash_id(id) do
+  @doc "Hash a node ID to a stable u64"
+  @spec hash_id(String.t() | atom()) :: non_neg_integer()
+  def hash_id(id) do
     id_str = to_string(id)
     <<hash::unsigned-64-big, _rest::binary>> = :crypto.hash(:sha256, id_str)
     hash
@@ -597,6 +728,42 @@ defmodule Dala.Ui.Renderer do
   # Skip keys that aren't in the protocol
   defp collect_prop_fields([_ | rest], acc, count) do
     collect_prop_fields(rest, acc, count)
+  end
+
+  # ── Masked props encoder (for PATCH_NODE) ────────────────────────────
+  # Encodes only the changed fields, in tag order, without a field count prefix.
+  # The field mask already tells the decoder which fields are present.
+
+  defp encode_masked_props(changed_props) when is_map(changed_props) do
+    # Encode fields in tag order (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)
+    # Only include fields that are present in changed_props
+    fields =
+      []
+      |> maybe_encode_field(:text, changed_props)
+      |> maybe_encode_field(:title, changed_props)
+      |> maybe_encode_field(:color, changed_props)
+      |> maybe_encode_field(:background, changed_props)
+      |> maybe_encode_field(:on_tap, changed_props)
+      |> maybe_encode_field(:width, changed_props)
+      |> maybe_encode_field(:height, changed_props)
+      |> maybe_encode_field(:padding, changed_props)
+      |> maybe_encode_field(:flex_grow, changed_props)
+      |> maybe_encode_field(:flex_direction, changed_props)
+      |> maybe_encode_field(:justify_content, changed_props)
+      |> maybe_encode_field(:align_items, changed_props)
+
+    IO.iodata_to_binary(fields)
+  end
+
+  defp maybe_encode_field(acc, tag, changed_props) do
+    case Map.get(changed_props, tag) do
+      nil ->
+        acc
+
+      value ->
+        {encoded, _count} = encode_single_prop(tag, value)
+        if encoded, do: acc ++ [encoded], else: acc
+    end
   end
 
   # ── Children encoder ───────────────────────────────────────────────
