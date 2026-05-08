@@ -164,6 +164,16 @@ defmodule Dala.Platform.Native do
   # QR/barcode scanner
   def scanner_scan(_formats_json), do: :erlang.nif_error(:nif_not_loaded)
 
+  # Wakelock
+  @doc "Enable screen wakelock"
+  def wakelock_enable, do: :erlang.nif_error(:nif_not_loaded)
+
+  @doc "Disable screen wakelock"
+  def wakelock_disable, do: :erlang.nif_error(:nif_not_loaded)
+
+  @doc "Check if screen wakelock is enabled"
+  def wakelock_enabled?, do: :erlang.nif_error(:nif_not_loaded)
+
   # Notifications
   def notify_schedule(_opts_json), do: :erlang.nif_error(:nif_not_loaded)
   def notify_cancel(_id), do: :erlang.nif_error(:nif_not_loaded)

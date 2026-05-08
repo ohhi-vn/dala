@@ -593,4 +593,60 @@ public class DalaBridge {
             Log.e(TAG, "Permission denied for setWifiEnabled", e);
         }
     }
+
+    // ========================================================================
+    // Wakelock
+    // ========================================================================
+
+    private static PowerManager.WakeLock wakeLock = null;
+
+    /**
+     * Enable wakelock to keep the screen on
+     * Requires WAKE_LOCK permission
+     */
+    public static void wakelockEnable() {
+        try {
+            Context context = getContext();
+            if (context == null) {
+                Log.e(TAG, "Context is null in wakelockEnable");
+                return;
+            }
+            PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
+            if (pm == null) {
+                Log.e(TAG, "PowerManager is null");
+                return;
+            }
+            if (wakeLock == null) {
+                wakeLock = pm.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP,
+                        "Dala::WakeLock");
+            }
+            if (!wakeLock.isHeld()) {
+                wakeLock.acquire();
+                Log.d(TAG, "Wakelock enabled");
+            }
+        } catch (SecurityException e) {
+            Log.e(TAG, "Permission denied for wakelockEnable", e);
+        }
+    }
+
+    /**
+     * Disable wakelock to allow the screen to sleep
+     */
+    public static void wakelockDisable() {
+        if (wakeLock != null && wakeLock.isHeld()) {
+            try {
+                wakeLock.release();
+                Log.d(TAG, "Wakelock disabled");
+            } catch (Exception e) {
+                Log.e(TAG, "Error releasing wakelock", e);
+            }
+        }
+    }
+
+    /**
+     * Check if wakelock is currently enabled
+     */
+    public static boolean wakelockIsEnabled() {
+        return wakeLock != null && wakeLock.isHeld();
+    }
 }

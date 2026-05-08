@@ -203,6 +203,54 @@ pub fn share_text(_text: &str) {
 }
 
 // ============================================================================
+// Wakelock
+// ============================================================================
+
+pub fn wakelock_enable() {
+    // Stub - requires JNIEnv from JavaVM
+    eprintln!("[Dala] wakelock_enable called (requires JNIEnv)");
+}
+
+pub fn wakelock_enable_with_env(env: &mut JNIEnv) {
+    if let Some(class) = get_bridge_class(env) {
+        let method = "wakelockEnable";
+        let sig = "()V";
+        let _ = env.call_static_method(class, method, sig, &[]);
+    }
+}
+
+pub fn wakelock_disable() {
+    // Stub - requires JNIEnv from JavaVM
+    eprintln!("[Dala] wakelock_disable called (requires JNIEnv)");
+}
+
+pub fn wakelock_disable_with_env(env: &mut JNIEnv) {
+    if let Some(class) = get_bridge_class(env) {
+        let method = "wakelockDisable";
+        let sig = "()V";
+        let _ = env.call_static_method(class, method, sig, &[]);
+    }
+}
+
+pub fn wakelock_enabled() -> bool {
+    // Stub - requires JNIEnv from JavaVM
+    false
+}
+
+pub fn wakelock_enabled_with_env(env: &mut JNIEnv) -> bool {
+    if let Some(class) = get_bridge_class(env) {
+        let method = "wakelockIsEnabled";
+        let sig = "()Z";
+        if let Ok(val) = env.call_static_method(class, method, sig, &[]) {
+            if let Ok(b) = val.z() {
+                return b != 0;
+            }
+        }
+    }
+    false
+}
+
+// ============================================================================
 // WebView
 // ============================================================================
 // Note: Android WebView operations require JNIEnv from JavaVM.

@@ -1,0 +1,18 @@
+@@ -321,9 +321,15 @@
+     #[cfg(target_os = "android")]
+     {
+         if let Some(mut jni_env) = crate::android::get_jni_env() {
+             let enabled = crate::common::platform_wakelock_enabled_with_env(&mut jni_env);
+-            return Ok(rustler::types::atom::true_or_false(env, enabled).to_term(env));
++            return if enabled {
++                Ok(atom(env, "true"))
++            } else {
++                Ok(atom(env, "false"))
++            };
+         }
+     }
+     let enabled = platform_wakelock_enabled();
+-    Ok(rustler::types::atom::true_or_false(env, enabled).to_term(env))
++    if enabled {
++        Ok(atom(env, "true"))
++    } else {
