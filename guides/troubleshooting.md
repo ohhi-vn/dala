@@ -57,7 +57,7 @@ If you don't pattern-match the return value, the screen never renders and the fa
 
 ```elixir
 # lib/my_app/application.ex
-{:ok, _pid} = Dala.Screen.start_root(MyApp.HomeScreen)
+{:ok, _pid} = Dala.Screen.Screen.start_root(MyApp.HomeScreen)
 ```
 
 If it crashes, the `= ` forces a loud failure. Check device logs:

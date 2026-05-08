@@ -116,7 +116,6 @@ The `lib/dala/` folder has been restructured to group files by feature, improvin
   - `motion.ex` - Motion/animation
   - `node.ex` - UI node structure
   - `renderer.ex` - UI renderer (binary protocol)
-  - `sigil.ex` - Dala sigil (~dala)
   - `socket.ex` - UI socket
   - `style.ex` - Styling system
   - `webview.ex` - WebView component

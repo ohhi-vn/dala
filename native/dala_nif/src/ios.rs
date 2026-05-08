@@ -355,20 +355,6 @@ pub fn share_text(text: &str) {
 // UI / Rendering
 // ============================================================================
 
-pub fn set_root(json: &str, transition: &str) {
-    // SAFETY: DalaViewModel::shared returns a valid object or nil.
-    // setRootFromJSON:transition: is a DalaViewModel method safe to call from any thread.
-    unsafe {
-        let vm: *mut Object = msg_send![class!(DalaViewModel), shared];
-        if vm.is_null() {
-            return;
-        }
-        let ns_json = ns_string_from_str(json);
-        let ns_transition = ns_string_from_str(transition);
-        let _: () = msg_send![vm, setRootFromJSON: ns_json, transition: ns_transition];
-    }
-}
-
 pub fn set_root_binary(data: &[u8], transition: &str) {
     unsafe {
         let vm: *mut Object = msg_send![class!(DalaViewModel), shared];

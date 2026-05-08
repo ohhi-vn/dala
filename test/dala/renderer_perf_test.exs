@@ -1,6 +1,5 @@
 defmodule Dala.RendererPerfTest do
   use ExUnit.Case, async: true
-  import Dala.Renderer
 
   @moduledoc """
   Performance tests for Dala.Renderer module.
@@ -20,11 +19,11 @@ defmodule Dala.RendererPerfTest do
     def set_transition(t),
       do: Agent.update(__MODULE__, fn s -> %{s | calls: [{:set_transition, [t]} | s.calls]} end)
 
-    def set_root(b),
-      do: Agent.update(__MODULE__, fn s -> %{s | calls: [{:set_root, [b]} | s.calls]} end)
-
     def set_root_binary(b),
       do: Agent.update(__MODULE__, fn s -> %{s | calls: [{:set_root_binary, [b]} | s.calls]} end)
+
+    def apply_patches(b),
+      do: Agent.update(__MODULE__, fn s -> %{s | calls: [{:apply_patches, [b]} | s.calls]} end)
 
     def register_tap(pid),
       do:
@@ -71,17 +70,12 @@ defmodule Dala.RendererPerfTest do
 
       start = System.monotonic_time(:millisecond)
       Dala.Renderer.render(tree, :android, MockNIF)
-      {_, [json]} = Enum.find(MockNIF.calls(), fn {f, _} -> f == :set_root_binary end)
+      {_, [_binary]} = Enum.find(MockNIF.calls(), fn {f, _} -> f == :set_root_binary end)
       stop = System.monotonic_time(:millisecond)
 
       duration = stop - start
       # Should complete within 5 seconds for 1000 nodes
       assert duration < 5000, "render/4 took #{duration}ms for 1000 nodes"
-
-      # Verify the JSON is valid
-      # Binary protocol - decoded = Jason.decode!(json)
-      # Binary protocol - assert decoded["type"] == "column"
-      # Binary protocol - assert length(decoded["children"]) == 1000
     end
 
     test "render_fast/4 handles large trees efficiently" do
@@ -103,17 +97,12 @@ defmodule Dala.RendererPerfTest do
 
       start = System.monotonic_time(:millisecond)
       Dala.Renderer.render_fast(tree, :android, MockNIF)
-      {_, [json]} = Enum.find(MockNIF.calls(), fn {f, _} -> f == :set_root_binary end)
+      {_, [_binary]} = Enum.find(MockNIF.calls(), fn {f, _} -> f == :set_root_binary end)
       stop = System.monotonic_time(:millisecond)
 
       duration = stop - start
       # render_fast should be faster due to batch tap registration
       assert duration < 5000, "render_fast/4 took #{duration}ms for 1000 nodes"
-
-      # Verify the JSON is valid
-      # Binary protocol - decoded = Jason.decode!(json)
-      # Binary protocol - assert decoded["type"] == "column"
-      # Binary protocol - assert length(decoded["children"]) == 1000
     end
 
     test "render/4 performance regression baseline" do
@@ -159,14 +148,11 @@ defmodule Dala.RendererPerfTest do
 
       start = System.monotonic_time(:millisecond)
       Dala.Renderer.render(tree, :android, MockNIF)
-      {_, [json]} = Enum.find(MockNIF.calls(), fn {f, _} -> f == :set_root_binary end)
+      {_, [_binary]} = Enum.find(MockNIF.calls(), fn {f, _} -> f == :set_root_binary end)
       stop = System.monotonic_time(:millisecond)
 
       duration = stop - start
       assert duration < 5000, "Deep tree (100 levels) took #{duration}ms"
-
-      # Binary protocol - decoded = Jason.decode!(json)
-      # Binary protocol - assert decoded["type"] == "column"
     end
 
     test "wide tree (1000 children) performance" do
@@ -188,13 +174,12 @@ defmodule Dala.RendererPerfTest do
 
       start = System.monotonic_time(:millisecond)
       Dala.Renderer.render(tree, :android, MockNIF)
-      {_, [json]} = Enum.find(MockNIF.calls(), fn {f, _} -> f == :set_root_binary end)
+      {_, [binary]} = Enum.find(MockNIF.calls(), fn {f, _} -> f == :set_root_binary end)
       stop = System.monotonic_time(:millisecond)
 
       duration = stop - start
       assert duration < 5000, "Wide tree (1000 children) took #{duration}ms"
-      assert is_binary(json)
-      # Binary protocol - children check not available
+      assert is_binary(binary)
     end
 
     test "mixed component tree performance" do
@@ -221,13 +206,12 @@ defmodule Dala.RendererPerfTest do
 
       start = System.monotonic_time(:millisecond)
       Dala.Renderer.render(tree, :android, MockNIF)
-      {_, [json]} = Enum.find(MockNIF.calls(), fn {f, _} -> f == :set_root_binary end)
+      {_, [binary]} = Enum.find(MockNIF.calls(), fn {f, _} -> f == :set_root_binary end)
       stop = System.monotonic_time(:millisecond)
 
       duration = stop - start
       assert duration < 5000, "Mixed tree (500 nodes) took #{duration}ms"
-      assert is_binary(json)
-      # Binary protocol - children check not available
+      assert is_binary(binary)
     end
 
     test "render with large text content" do
@@ -249,7 +233,7 @@ defmodule Dala.RendererPerfTest do
 
       start = System.monotonic_time(:millisecond)
       Dala.Renderer.render(tree, :android, MockNIF)
-      {_, [json]} = Enum.find(MockNIF.calls(), fn {f, _} -> f == :set_root_binary end)
+      {_, [_binary]} = Enum.find(MockNIF.calls(), fn {f, _} -> f == :set_root_binary end)
       stop = System.monotonic_time(:millisecond)
 
       duration = stop - start

@@ -42,7 +42,7 @@ defmodule MLApp do
         Dala.Native.log("MLApp: Using default Nx backend (non-iOS)")
     end
 
-    {:ok, _pid} = Dala.Screen.start_root(MLApp.HomeScreen)
+    {:ok, _pid} = Dala.Screen.Screen.start_root(MLApp.HomeScreen)
     :ok
   end
 end

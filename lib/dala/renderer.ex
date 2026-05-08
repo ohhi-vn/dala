@@ -13,7 +13,7 @@ defmodule Dala.Renderer do
   Render a UI tree for the given platform.
   """
   @spec render(Dala.Node.t() | map(), atom(), term(), atom()) ::
-          {:ok, [Dala.Diff.patch()]} | {:error, term()}
+          {:ok, :binary_tree} | {:error, term()}
   def render(tree, platform, nif \\ @default_nif, transition \\ :none)
 
   def render(%Dala.Node{} = tree, platform, nif, transition) do
@@ -30,7 +30,7 @@ defmodule Dala.Renderer do
   Fast render path for simple updates.
   """
   @spec render_fast(Dala.Node.t() | map(), atom(), term(), atom()) ::
-          {:ok, [Dala.Diff.patch()]} | {:error, term()}
+          {:ok, :binary_tree} | {:error, term()}
   def render_fast(tree, platform, nif \\ @default_nif, transition \\ :none)
 
   def render_fast(%Dala.Node{} = tree, platform, nif, transition) do
@@ -90,6 +90,10 @@ defmodule Dala.Renderer do
 
   defp to_ui_patch({:update_props, id, props}) do
     {:update_props, id, props}
+  end
+
+  defp to_ui_patch({:patch_node, id, mask, props}) do
+    {:patch_node, id, mask, props}
   end
 
   defp to_ui_patch({:insert, parent_id, index, %Dala.Node{} = node}) do

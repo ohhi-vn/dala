@@ -24,20 +24,12 @@ defmodule Dala.Preview.Example do
           props: %{text: "This is a demonstration of the preview system."},
           children: []
         },
-        %{
-          type: :divider,
-          props: %{},
-          children: []
-        },
+        %{type: :divider, props: %{}, children: []},
         %{
           type: :row,
           props: %{gap: :space_sm},
           children: [
-            %{
-              type: :button,
-              props: %{text: "Tap Me", on_tap: :button_tapped},
-              children: []
-            },
+            %{type: :button, props: %{text: "Tap Me", on_tap: :button_tapped}, children: []},
             %{
               type: :button,
               props: %{text: "Another Button", on_tap: :other_button},
@@ -50,16 +42,8 @@ defmodule Dala.Preview.Example do
           props: %{placeholder: "Type something...", on_change: :text_changed},
           children: []
         },
-        %{
-          type: :toggle,
-          props: %{on_tap: :toggle_changed},
-          children: []
-        },
-        %{
-          type: :slider,
-          props: %{value: 50, on_change: :slider_changed},
-          children: []
-        },
+        %{type: :toggle, props: %{on_tap: :toggle_changed}, children: []},
+        %{type: :slider, props: %{value: 50, on_change: :slider_changed}, children: []},
         %{
           type: :list,
           props: %{},
@@ -95,7 +79,7 @@ defmodule Dala.Preview.Example do
       children: [
         %{
           type: :text,
-          props: %{text: "Welcome Back", text_size: :xl, font_weight: "bold"},
+          props: %{text: "Welcome Back", text_size: :xl, font_weight: :bold},
           children: []
         },
         %{
@@ -145,7 +129,7 @@ defmodule Dala.Preview.Example do
             %{type: :icon, props: %{name: :settings, text_size: 24}, children: []},
             %{
               type: :text,
-              props: %{text: "Settings", text_size: :xl, font_weight: "bold"},
+              props: %{text: "Settings", text_size: :xl, font_weight: :bold},
               children: []
             }
           ]

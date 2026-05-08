@@ -36,7 +36,7 @@ defmodule Dala.Node do
   defstruct [
     :id,
     :type,
-    props: %{},  
+    props: %{},
     children: []
   ]
 
@@ -52,10 +52,57 @@ defmodule Dala.Node do
   end
 
   @doc """
-  Converts a node to a map.
+  Convert a node struct back to a map representation.
   """
   @spec to_map(t()) :: map()
   def to_map(node) do
     Dala.Ui.Node.to_map(node)
+  end
+
+  @doc """
+  Compute a stable numeric u64 ID by hashing the string/atom ID.
+
+  Uses SHA-256 and takes the first 8 bytes as a big-endian unsigned 64-bit integer.
+  This matches the `hash_id` function in `Dala.Ui.Renderer`.
+  """
+  @spec stable_id(String.t() | atom()) :: non_neg_integer()
+  def stable_id(id) do
+    id_str = to_string(id)
+    <<hash::unsigned-64-big, _rest::binary>> = :crypto.hash(:sha256, id_str)
+    hash
+  end
+
+  @doc """
+  Compute the layout hash for a node.
+
+  The layout hash is computed from the node type, layout-relevant props
+  (width, height, padding, flex_grow, flex_direction, justify_content, align_items),
+  and the number of children. Uses SHA-256 and takes the first 8 bytes as
+  a big-endian unsigned 64-bit integer.
+  """
+  @spec compute_layout_hash(t()) :: non_neg_integer()
+  def compute_layout_hash(%__MODULE__{type: type, props: props, children: children}) do
+    layout_props = [
+      to_string(type),
+      format_layout_prop(:width, props),
+      format_layout_prop(:height, props),
+      format_layout_prop(:padding, props),
+      format_layout_prop(:flex_grow, props),
+      format_layout_prop(:flex_direction, props),
+      format_layout_prop(:justify_content, props),
+      format_layout_prop(:align_items, props),
+      to_string(length(children))
+    ]
+
+    data = Enum.join(layout_props, "|")
+    <<hash::unsigned-64-big, _rest::binary>> = :crypto.hash(:sha256, data)
+    hash
+  end
+
+  defp format_layout_prop(key, props) do
+    case Map.get(props, key) do
+      nil -> ""
+      val -> to_string(val)
+    end
   end
 end

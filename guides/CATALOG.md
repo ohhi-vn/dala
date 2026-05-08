@@ -86,7 +86,7 @@ Guides for building user interfaces with Dala.
 
 ### [UI Design](ui_design.md)
 **File**: `guides/ui_design.md`  
-**Description**: Design patterns, sigil syntax vs Spark DSL, and UI best practices.
+**Description**: Design patterns, Spark DSL, and UI best practices.
 
 ---
 

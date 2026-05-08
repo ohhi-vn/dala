@@ -3,8 +3,7 @@ defmodule Dala.Ui.Widgets do
   UI component constructors for the Dala framework.
 
   Each function returns a node map compatible with `Dala.Ui.Renderer`. These can
-  be used directly, via the `~dala` sigil, or mixed freely — they produce the
-  same map format.
+  be used directly or mixed freely — they produce the same map format.
 
       # Native map literal
       %{type: :text, props: %{text: "Hello"}, children: []}
@@ -12,10 +11,7 @@ defmodule Dala.Ui.Widgets do
       # Component function (keyword list or map)
       Dala.Ui.Widgets.text(text: "Hello")
 
-      # Sigil (import Dala.Sigil or use Dala.Screen)
-      ~dala(<Text text="Hello" />)
-
-  All three forms produce identical output and are accepted by `Dala.Ui.Renderer`.
+  Both forms produce identical output and are accepted by `Dala.Ui.Renderer`.
   """
 
   # ── Shared prop sets ──────────────────────────────────────────────────────

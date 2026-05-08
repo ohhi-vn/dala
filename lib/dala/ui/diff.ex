@@ -1,4 +1,6 @@
 defmodule Dala.Ui.Diff do
+  import Bitwise
+
   @moduledoc """
   Diff engine for incremental UI updates.
 
@@ -10,7 +12,8 @@ defmodule Dala.Ui.Diff do
   Patches are tuples tagged with an action:
 
       {:replace, id, node}           # Replace entire node
-      {:update_props, id, props}     # Update props on existing node
+      {:update_props, id, props}     # Update props on existing node (full replacement)
+      {:patch_node, id, mask, props}  # Patch only changed fields (field-mask based)
       {:insert, parent_id, index, node}  # Insert new node
       {:remove, id}                  # Remove node
 
@@ -24,13 +27,53 @@ defmodule Dala.Ui.Diff do
 
   Nodes are identified by the `:id` field in `Dala.Ui.Node`. This must be
   stable across renders for proper reconciliation.
+
+  ## Field masks
+
+  When only a few props change, `{:patch_node, id, mask, props}` is emitted
+  instead of `{:update_props, id, props}`. The mask is a 16-bit bitmask
+  where bit N corresponds to field tag (N+1). If more than half the fields
+  changed, a full `{:update_props, ...}` is sent instead.
   """
+
+  # Mapping from prop keys to field mask bits
+  @field_mask_bits %{
+    text: 0x0001,
+    title: 0x0002,
+    color: 0x0004,
+    background: 0x0008,
+    on_tap: 0x0010,
+    width: 0x0020,
+    height: 0x0040,
+    padding: 0x0080,
+    flex_grow: 0x0100,
+    flex_direction: 0x0200,
+    justify_content: 0x0400,
+    align_items: 0x0800
+  }
+
+  # Known prop keys that participate in field masks
+  @known_props [
+    :text,
+    :title,
+    :color,
+    :background,
+    :on_tap,
+    :width,
+    :height,
+    :padding,
+    :flex_grow,
+    :flex_direction,
+    :justify_content,
+    :align_items
+  ]
 
   @type node_id :: String.t() | atom()
 
   @type patch ::
           {:replace, node_id(), Dala.Ui.Node.t()}
           | {:update_props, node_id(), map()}
+          | {:patch_node, node_id(), non_neg_integer(), map()}
           | {:insert, node_id(), non_neg_integer(), Dala.Ui.Node.t()}
           | {:remove, node_id()}
 
@@ -61,13 +104,52 @@ defmodule Dala.Ui.Diff do
     [{:replace, id, new}]
   end
 
-  # Props diff - send full props when changed
+  # Props diff - use field-mask based patching when few fields changed,
+  # full update when many fields changed
   defp diff_props(%Dala.Ui.Node{id: id, props: old_props}, %Dala.Ui.Node{props: new_props}) do
     if old_props == new_props do
       []
     else
-      [{:update_props, id, new_props}]
+      {mask, changed} = compute_field_mask(old_props, new_props)
+      known_count = Enum.count(@known_props, &Map.has_key?(new_props, &1))
+      changed_count = map_size(changed)
+
+      # If more than half the known fields changed, send full update
+      if known_count > 0 and changed_count > known_count / 2 do
+        [{:update_props, id, new_props}]
+      else
+        [{:patch_node, id, mask, changed}]
+      end
     end
+  end
+
+  @doc """
+  Compute a field mask and changed props map from old and new props.
+
+  Returns a `{mask, changed_map}` tuple where `mask` is a 16-bit bitmask
+  and `changed_map` contains only the props that differ.
+  """
+  @spec compute_field_mask(map(), map()) :: {non_neg_integer(), map()}
+  def compute_field_mask(old_props, new_props) when is_map(old_props) and is_map(new_props) do
+    all_keys = MapSet.union(MapSet.new(Map.keys(old_props)), MapSet.new(Map.keys(new_props)))
+
+    Enum.reduce(all_keys, {0, %{}}, fn key, {mask, changed} ->
+      old_val = Map.get(old_props, key)
+      new_val = Map.get(new_props, key)
+
+      if old_val != new_val do
+        bit = Map.get(@field_mask_bits, key, 0)
+
+        if bit != 0 do
+          {mask ||| bit, Map.put(changed, key, new_val)}
+        else
+          # Unknown prop key — include in changed map but no mask bit
+          {mask, Map.put(changed, key, new_val)}
+        end
+      else
+        {mask, changed}
+      end
+    end)
   end
 
   # Children diff with keyed reconciliation

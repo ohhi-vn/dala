@@ -337,7 +337,7 @@ defmodule MyApp.Counter do
   def render(assigns) do
     Dala.Ui.Widgets.column([padding: :space_md, gap: :space_sm], [
       Dala.Ui.Widgets.text(text: "Count: #{assigns.count}"),
-      Dala.Ui.Widgets.button(text: "Increment", on_tap: {self(), :increment})
+      Dala.Ui.Widgets.button(text: "Increment", on_tap: :increment)
     ])
   end
 

@@ -98,7 +98,7 @@ def mount(_params, _session, socket) do
   {:ok, Dala.Socket.assign(socket, :notes, notes)}
 end
 
-def handle_info({:tap, :pin}, socket) do
+def handle_event(:pin, _params, socket) do
   note = hd(socket.assigns.notes)
   {:ok, _} = MyApp.Repo.update(MyApp.Note.changeset(note, %{pinned: true}))
   {:noreply, socket}
@@ -125,7 +125,7 @@ def on_start do
   Application.ensure_all_started(:ecto_sqlite3)
   {:ok, _} = MyApp.Repo.start_link()
   Ecto.Migrator.with_repo(MyApp.Repo, &Ecto.Migrator.run(&1, :up, all: true))
-  Dala.Screen.start_root(MyApp.HomeScreen)
+  Dala.Screen.Screen.start_root(MyApp.HomeScreen)
 end
 ```
 

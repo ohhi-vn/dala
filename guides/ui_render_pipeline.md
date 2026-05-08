@@ -71,18 +71,20 @@ Elixir Screen
 
 ```elixir
 defmodule MyApp.HomeScreen do
-  use Dala.Screen
+  use Dala.Spark.Dsl
 
-  def render(%{assigns: %{count: count}}) do
-    ~H"""
-    <Column padding={:md}>
-      <Text text="Count: #{count}" />
-      <Button title="Tap" on_tap={{self(), :tap}} />
-    </Column>
-    """
+  dala do
+    attribute :count, :integer, default: 0
+
+    screen name: :home do
+      column padding: :md do
+        text "Count: @count"
+        button "Tap", on_tap: :tap
+      end
+    end
   end
 
-  def handle_event(:tap, _, socket) do
+  def handle_event(:tap, _params, socket) do
     new_count = Dala.Socket.get_assign(socket, :count) + 1
     socket = Dala.Socket.assign(socket, :count, new_count)
     {:noreply, socket}
@@ -702,7 +704,7 @@ Similar flow via JNI → Kotlin/Compose.
 3. Rust NIF: `platform_tap(handle)` in `common.rs`
 4. `common.rs` looks up the tap handle → Erlang pid
 5. `erlang:send(pid, {:webview, :eval_result, ...})` or similar
-6. Elixir: `handle_info({:tap, handle}, socket)`
+6. Elixir: `handle_event(:tap, %{}, socket)`
 7. User's `handle_event(:tap, handle, socket)` is called
 8. State updates: `socket = assign(socket, :count, count + 1)`
 9. `Dala.Screen` calls `render/2` with new state

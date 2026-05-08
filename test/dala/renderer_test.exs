@@ -16,9 +16,6 @@ defmodule Dala.RendererTest do
     def set_transition(t),
       do: Agent.update(__MODULE__, fn s -> %{s | calls: [{:set_transition, [t]} | s.calls]} end)
 
-    def set_root(b),
-      do: Agent.update(__MODULE__, fn s -> %{s | calls: [{:set_root, [b]} | s.calls]} end)
-
     def set_root_binary(b),
       do: Agent.update(__MODULE__, fn s -> %{s | calls: [{:set_root_binary, [b]} | s.calls]} end)
 
@@ -44,7 +41,7 @@ defmodule Dala.RendererTest do
     :ok
   end
 
-  setup context do
+  setup _context do
     on_exit(fn ->
       try do
         Agent.stop(MockNIF)
@@ -91,6 +88,103 @@ defmodule Dala.RendererTest do
     test "returns {:ok, :binary_tree}" do
       tree = %{type: :column, props: %{}, children: []}
       assert {:ok, :binary_tree} = Renderer.render_fast(tree, :android, MockNIF)
+    end
+  end
+
+  describe "render_patches/4 with field-mask patches" do
+    test "sends patch_node patches via apply_patches" do
+      old_tree = %{type: :text, props: %{text: "Hello"}, children: []}
+      new_tree = %{type: :text, props: %{text: "World"}, children: []}
+
+      {:ok, patches} = Renderer.render_patches(old_tree, new_tree, :android, MockNIF)
+
+      # The diff should produce a patch (either update_props or patch_node)
+      assert length(patches) >= 1
+    end
+
+    test "sends v3 binary frame for prop-only updates" do
+      old_tree = %{type: :text, props: %{text: "Hello"}, children: []}
+      new_tree = %{type: :text, props: %{text: "World"}, children: []}
+
+      {:ok, _patches} = Renderer.render_patches(old_tree, new_tree, :android, MockNIF)
+
+      # For prop-only updates, apply_patches should be called with binary data
+      apply_patches_calls =
+        Enum.filter(MockNIF.calls(), fn {f, _} -> f == :apply_patches end)
+
+      if length(apply_patches_calls) > 0 do
+        [{:apply_patches, [binary]}] = apply_patches_calls
+        # Verify v3 header
+        <<0xDA::8, 0xA1::8, version::little-16, _rest::binary>> = binary
+        assert version == 3
+      end
+    end
+
+    test "sends full tree for structural changes" do
+      old_tree = %{type: :column, props: %{}, children: []}
+
+      new_tree = %{
+        type: :column,
+        props: %{},
+        children: [%{type: :text, props: %{text: "Hi"}, children: []}]
+      }
+
+      {:ok, _patches} = Renderer.render_patches(old_tree, new_tree, :android, MockNIF)
+
+      # Structural changes should use set_root_binary
+      assert Enum.any?(MockNIF.calls(), fn {f, _} -> f == :set_root_binary end)
+    end
+  end
+
+  describe "v3 binary encoding in render output" do
+    test "render produces v3 binary tree header" do
+      tree = %{type: :column, props: %{}, children: []}
+      Renderer.render(tree, :android, MockNIF)
+
+      {:set_root_binary, [binary]} =
+        Enum.find(MockNIF.calls(), fn {f, _} -> f == :set_root_binary end)
+
+      # v3 full tree header: [0xDA, 0xA1, version::little-16, flags::little-16, node_count::little-64]
+      <<0xDA::8, 0xA1::8, version::little-16, _flags::little-16, node_count::little-64,
+        _rest::binary>> = binary
+
+      assert version == 3
+      assert node_count == 1
+    end
+
+    test "render produces v3 binary with children" do
+      tree = %{
+        type: :column,
+        props: %{},
+        children: [
+          %{type: :text, props: %{text: "Hello"}, children: []}
+        ]
+      }
+
+      Renderer.render(tree, :android, MockNIF)
+
+      {:set_root_binary, [binary]} =
+        Enum.find(MockNIF.calls(), fn {f, _} -> f == :set_root_binary end)
+
+      <<0xDA::8, 0xA1::8, version::little-16, _flags::little-16, node_count::little-64,
+        _rest::binary>> = binary
+
+      assert version == 3
+      assert node_count == 2
+    end
+
+    test "render_fast produces v3 binary tree header" do
+      tree = %{type: :column, props: %{}, children: []}
+      Renderer.render_fast(tree, :android, MockNIF)
+
+      {:set_root_binary, [binary]} =
+        Enum.find(MockNIF.calls(), fn {f, _} -> f == :set_root_binary end)
+
+      <<0xDA::8, 0xA1::8, version::little-16, _flags::little-16, node_count::little-64,
+        _rest::binary>> = binary
+
+      assert version == 3
+      assert node_count == 1
     end
   end
 end

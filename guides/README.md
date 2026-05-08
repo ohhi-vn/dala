@@ -24,9 +24,9 @@ Quick reference for all Dala documentation. Files are in `dala/guides/`.
 
 | Guide | Description |
 |-------|-------------|
-| [ui_design.md](ui_design.md) | Sigil vs Spark DSL comparison, patterns |
+| [ui_design.md](ui_design.md) | Spark DSL patterns and UI best practices |
 | [spark_dsl.md](spark_dsl.md) | Spark DSL deep dive: attributes, @ref, handlers |
-| [components.md](components.md) | Sigil syntax, component reference |
+| [components.md](components.md) | DSL component reference |
 | [theming.md](theming.md) | Colors, spacing, typography tokens |
 | [styling.md](styling.md) | `Dala.Style` usage, reusable styles |
 | [navigation.md](navigation.md) | Stack navigation, push/pop/reset |

@@ -9,7 +9,7 @@ defmodule Mix.Tasks.Dala.Preview do
 
   2. **Live designer** — starts a Phoenix LiveView server with an interactive
      drag-and-drop component palette, property editor, live phone-frame preview,
-     and code generation (sigil or DSL style).
+     and DSL-style code generation.
 
   ## Usage
 

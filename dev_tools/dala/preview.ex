@@ -9,7 +9,7 @@ defmodule Dala.Preview do
 
   2. **Live designer** — starts a Phoenix LiveView server with a
      drag-and-drop component palette, property editor, live phone-frame
-     preview, and code generation (sigil or DSL style).
+     preview, and DSL-style code generation.
 
   ## Static preview
 
@@ -24,8 +24,7 @@ defmodule Dala.Preview do
 
   ## Code generation
 
-      Dala.Preview.generate_code(ui_tree, :sigil, "MyApp.HomeScreen")
-      Dala.Preview.generate_code(ui_tree, :dsl, "MyApp.HomeScreen")
+      Dala.Preview.generate_code(ui_tree, "MyApp.HomeScreen")
 
   ## Options (static preview)
 
@@ -86,22 +85,15 @@ defmodule Dala.Preview do
   @doc """
   Generate Elixir screen module source code from a UI tree.
 
-  `style` is `:sigil` for `~dala` templates or `:dsl` for Spark DSL.
   `module_name` is a string like `"MyApp.HomeScreen"`.
 
   ## Examples
 
-      iex> Dala.Preview.generate_code(tree, :sigil, "MyApp.HomeScreen")
-      "defmodule MyApp.HomeScreen do\n  use Dala.Screen\n  ..."
-
-      iex> Dala.Preview.generate_code(tree, :dsl, "MyApp.HomeScreen")
+      iex> Dala.Preview.generate_code(tree, "MyApp.HomeScreen")
       "defmodule MyApp.HomeScreen do\n  use Dala.Spark.Dsl\n  ..."
   """
-  def generate_code(ui_tree, style, module_name) when style in [:sigil, :dsl] do
-    case style do
-      :sigil -> Dala.Preview.Codegen.generate_sigil(module_name, ui_tree)
-      :dsl -> Dala.Preview.Codegen.generate_dsl(module_name, ui_tree)
-    end
+  def generate_code(ui_tree, module_name) do
+    Dala.Preview.Codegen.generate_dsl(module_name, ui_tree)
   end
 
   defp resolve_ui_tree(module) when is_atom(module) do

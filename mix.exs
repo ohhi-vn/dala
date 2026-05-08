@@ -4,7 +4,7 @@ defmodule Dala.MixProject do
   def project do
     [
       app: :dala,
-      version: "0.0.8",
+      version: "0.0.9",
       elixir: "~> 1.18",
       erlang: ">= 27.0",
       start_permanent: Mix.env() == :prod,
@@ -83,7 +83,6 @@ defmodule Dala.MixProject do
           Dala.Ui.Renderer,
           Dala.Ui.Socket,
           Dala.Ui.Style,
-          Dala.Ui.Sigil,
           Dala.Ui.List,
           Dala.Ui.NativeView,
           Dala.Ui.NativeView.Registry,
@@ -114,7 +113,7 @@ defmodule Dala.MixProject do
           Dala.Notify
         ],
         "Testing & Debugging": [Dala.Test],
-        Internals: [Dala.Dist, Dala.NativeLogger, Dala.List, Dala.Sigil]
+        Internals: [Dala.Dist, Dala.NativeLogger, Dala.List]
       ],
       before_closing_body_tag: &before_closing_body_tag/1
     ]

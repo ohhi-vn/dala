@@ -241,7 +241,7 @@ defmodule Dala.Preview.Canvas do
      assign(socket,
        tree: empty_root(),
        selected_id: nil,
-       code_style: :sigil,
+       code_style: :dsl,
        module_name: "MyApp.HomeScreen",
        show_code: true,
        drag_type: nil,
@@ -254,7 +254,7 @@ defmodule Dala.Preview.Canvas do
     ~H"""
     <div id="design-canvas" class="design-canvas-root" phx-hook="DesignCanvas">
       <style><%= raw(canvas_css()) %></style>
-      <.header_bar code_style={@code_style} show_code={@show_code} module_name={@module_name} />
+      <.header_bar show_code={@show_code} module_name={@module_name} />
       <div class="canvas-body">
         <.palette />
         <.design_canvas tree={@tree} selected_id={@selected_id} />
@@ -270,7 +270,6 @@ defmodule Dala.Preview.Canvas do
 
   # ── Component: Header Bar ────────────────────────────────────────────────────
 
-  attr(:code_style, :atom, required: true)
   attr(:show_code, :boolean, required: true)
   attr(:module_name, :string, required: true)
 
@@ -282,22 +281,7 @@ defmodule Dala.Preview.Canvas do
         <span class="canvas-title">Dala Preview Designer</span>
       </div>
       <div class="canvas-header-right">
-        <div class="code-style-toggle">
-          <button
-            class={"toggle-btn #{if @code_style == :sigil, do: "active", else: ""}"}
-            phx-click="set_code_style"
-            phx-value-style="sigil"
-          >
-            Sigil
-          </button>
-          <button
-            class={"toggle-btn #{if @code_style == :dsl, do: "active", else: ""}"}
-            phx-click="set_code_style"
-            phx-value-style="dsl"
-          >
-            DSL
-          </button>
-        </div>
+        <span class="code-style-label">DSL</span>
         <button class="header-btn" phx-click="toggle_code">
           <%= if @show_code, do: "Hide Code", else: "Show Code" %>
         </button>
@@ -719,11 +703,6 @@ defmodule Dala.Preview.Canvas do
     {:noreply, assign(socket, show_code: !socket.assigns.show_code)}
   end
 
-  def handle_event("set_code_style", %{"style" => style_str}, socket) do
-    style = if style_str == "dsl", do: :dsl, else: :sigil
-    {:noreply, assign(socket, code_style: style)}
-  end
-
   def handle_event("set_module_name", params, socket) do
     name = params["value"] || params["module_name"] || socket.assigns.module_name
 
@@ -907,10 +886,6 @@ defmodule Dala.Preview.Canvas do
       {n, ""} -> n
       _ -> str
     end
-  end
-
-  defp generate_code(tree, :sigil, module_name) do
-    Codegen.generate_sigil(module_name, strip_ids(tree))
   end
 
   defp generate_code(tree, :dsl, module_name) do
@@ -1186,13 +1161,10 @@ defmodule Dala.Preview.Canvas do
     .canvas-title { font-size: 14px; font-weight: 600; color: #e0e0e0; }
     .canvas-header-right { display: flex; align-items: center; gap: 8px; }
 
-    .code-style-toggle { display: flex; background: #0f3460; border-radius: 6px; overflow: hidden; }
-    .toggle-btn {
-      padding: 4px 12px; border: none; background: transparent; color: #aaa;
-      cursor: pointer; font-size: 12px; transition: all 0.2s;
+    .code-style-label {
+      padding: 4px 12px; background: #2196F3; color: white;
+      border-radius: 6px; font-size: 12px; font-weight: 600;
     }
-    .toggle-btn.active { background: #2196F3; color: white; }
-    .toggle-btn:hover { color: white; }
 
     .header-btn {
       padding: 4px 12px; border: 1px solid #0f3460; background: transparent;

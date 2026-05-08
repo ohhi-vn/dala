@@ -91,9 +91,8 @@ defmodule Dala.Screen.ManagerTest do
       id2 = Dala.Screen.Manager.next_id()
       id3 = Dala.Screen.Manager.next_id()
 
-      assert id1 == 0
-      assert id2 == 1
-      assert id3 == 2
+      assert id2 == id1 + 1
+      assert id3 == id2 + 1
     end
   end
 

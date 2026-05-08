@@ -419,7 +419,7 @@ Summary: `dala/ML_INTEGRATION_SUMMARY.md`
     - Not included in Hex package (excluded via `mix.exs` package/0 filter)
     - Static preview works without any server
     - Live designer starts a Phoenix endpoint with LiveView
-    - Code generation supports `~dala` sigil style and Spark DSL style
+    - Code generation supports Spark DSL style
 
     **Static preview:**
     ```elixir
@@ -431,7 +431,6 @@ Summary: `dala/ML_INTEGRATION_SUMMARY.md`
     **Live designer:**
     ```elixir
     Dala.Preview.start_designer(port: 4200)
-    Dala.Preview.generate_code(tree, :sigil, "MyApp.HomeScreen")
     Dala.Preview.generate_code(tree, :dsl, "MyApp.HomeScreen")
     ```
 
@@ -455,7 +454,6 @@ Summary: `dala/ML_INTEGRATION_SUMMARY.md`
     - `dev_tools/mix/tasks/dala/preview.ex` — Mix task with `--live` flag
 
     **Code generation:**
-    - `Dala.Preview.Codegen.generate_sigil/3` — `~dala` sigil style with PascalCase tags
     - `Dala.Preview.Codegen.generate_dsl/3` — Spark DSL style with snake_case entities
     - `Dala.Preview.Codegen.extract_handlers/1` — Extract event handler atoms from UI tree
     - Auto-generates `handle_event/3` stubs for all event handlers found in the tree
