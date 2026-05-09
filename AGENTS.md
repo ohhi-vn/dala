@@ -230,6 +230,9 @@ These are the things we've burned ourselves on. Following them isn't optional.
     for complete WebView navigation control.
 
 ## 16. **Spark DSL for declarative screens.**
+
+    **Read [`skill-generate-screen-dsl.md`](skill-generate-screen-dsl.md) first** — it's guide for define screens by DSL with ui components, props.
+
     Dala supports a Spark DSL for defining screens declaratively. The DSL mirrors
     `Dala.Ui.Widgets` one-to-one — every component and prop available in `Dala.Ui.Widgets` has
     a DSL equivalent.
