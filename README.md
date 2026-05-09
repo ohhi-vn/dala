@@ -1,32 +1,73 @@
-# Dala
-
-Mobile framework for Elixir. OTP runs inside your iOS and Android apps — embedded directly in the app bundle, no server required. Screens are GenServers; the UI is rendered by Compose and SwiftUI via Rust.
-
 [![Hex.pm](https://img.shields.io/hexpm/v/dala.svg)](https://hex.pm/packages/dala)
 [![Docs](https://img.shields.io/badge/docs-hexdocs-blue.svg)](https://hexdocs.pm/dala)
 
 > **Status:** Early development. Not yet ready for production use.
 
-original repo [mob](https://github.com/GenericJam/mob)
+# Dala
 
-**Dual licensed under:**
-- **MIT License** (for original Mob project portions) - see [LICENSE](LICENSE)
-- **Apache License 2.0** (for new contributions) - see [LICENSE-APACHE](LICENSE-APACHE)
+Dala is a native mobile framework for Elixir and Erlang powered by the BEAM VM.
 
+It brings OTP, lightweight processes, fault tolerance, and the actor model to iOS and Android development while using a Rust-powered native runtime for rendering and platform integration.
 
-## What it is
+Unlike WebView-based frameworks, Dala focuses on native execution, concurrent application architecture, and local-first intelligent applications.
 
+## Why Dala?
+
+Modern mobile applications are becoming increasingly complex:
+
+- AI/ML pipelines running on-device
+- realtime synchronization
+- local-first data systems
+- streaming workloads
+- background processing
+- highly concurrent state management
+
+These problems look more like distributed systems than traditional frontend applications.
+
+Dala uses the strengths of the BEAM ecosystem to solve them naturally.
+
+## Features
+
+- Native iOS and Android runtime
+- Real BEAM VM on mobile devices
+- OTP and actor-model concurrency
+- Rust-powered rendering and native integrations
+- Declarative UI API
+- Designed for local-first and AI-powered applications
+- High-concurrency architecture
+- Binary protocol bridge for low-overhead communication
+- Future-focused AOT experimentation inspired by HiPE concepts
+
+## Architecture
+
+```text
+Elixir/Erlang
+        ↓
+     BEAM VM
+        ↓
+Rust Native Runtime
+        ↓
+iOS / Android
 ```
-Your Elixir app (GenServers, OTP supervision, pattern matching, pipes)
-          ↓
-     Dala.Screen  (GenServer — your logic lives here)
-          ↓
-    Dala.Renderer  (component tree → binary protocol → NIF call)
-          ↓
-Compose (Android)   SwiftUI (iOS)   ← native rendering, native gestures
-```
 
-You write Elixir. The native layer handles rendering. The BEAM node runs on the device — connect your dev machine to the running app over Erlang distribution, inspect state, and hot-push new bytecode without a restart.
+Dala keeps the BEAM runtime as the core execution engine while using Rust for performance-critical systems such as rendering, layout, native APIs, and ML integrations.
+
+## Vision
+
+Dala is not trying to be another web wrapper for mobile apps.
+
+The goal is to build an OTP-native runtime for modern mobile applications — especially apps that require:
+
+- concurrency
+- realtime coordination
+- offline-first architecture
+- resilient background systems
+- on-device AI/ML
+- complex local data flows
+
+## Status
+
+Dala is experimental and evolving rapidly.
 
 ## Installation
 
@@ -48,7 +89,7 @@ mix archive.install hex dala_new
 
 ```elixir
 defmodule MyApp.CounterScreen do
-  use Dala.Screen
+  use Dala.Screen.Screen
 
   def mount(_params, _session, socket) do
     {:ok, Dala.Socket.assign(socket, :count, 0)}
@@ -189,4 +230,4 @@ Full documentation at [hexdocs.pm/dala](https://hexdocs.pm/dala), including:
 
 ## License
 
-MIT
+MPL-2.0
