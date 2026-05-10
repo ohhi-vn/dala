@@ -21,7 +21,7 @@ defmodule Dala.Plugin do
   - VSCode extension host
   - Browser DOM
 
-  ## Example
+  ## Example (top-level DSL)
 
       defmodule MyApp.VideoPlugin do
         use Dala.Plugin
@@ -45,39 +45,40 @@ defmodule Dala.Plugin do
         end
       end
 
-  This is NOT UI code. This is metadata.
+  ## Example (plugin do block)
 
-  Core Dala automatically generates:
-  - Protocol encoders/decoders
-  - Validators
-  - Documentation
-  - Registry entries
+      defmodule MyApp.VideoPlugin do
+        use Dala.Plugin
 
-  ## Plugin Package Structure
+        plugin do
+          plugin_description "Video playback plugin"
 
-      my_plugin/
-       ├── lib/
-       │    └── my_plugin.ex          # Plugin schema definitions
-       ├── native/
-       │    ├── rust/                 # Rust NIF extensions (optional)
-       │    ├── ios/                  # iOS native views
-       │    └── android/              # Android native views
-       ├── protocol/                  # Generated binary protocol
-       └── assets/                    # Static assets
+          component "video", MyApp.VideoComponent
+          plugin_event "video_zoom", MyApp.Video.Events.Zoom
 
-  ## Schema-First Architecture
+          plugin_native :ios, MyApp.Video.IOS
+          plugin_native :android, MyApp.Video.Android
 
-  Designing around **schema-first** (not widget-first, not native-view-first,
-  not protocol-first) unlocks:
+          plugin_permission :camera
+          plugin_dependency {:maps, "~> 1.0"}
+          plugin_platform :ios
+          plugin_platform :android
+        end
+      end
 
-  - Tooling and validation
-  - Code generation
-  - Compatibility guarantees
-  - Visual editors
-  - Plugin ecosystems
-  - AI-generated UIs
-  - Hot reload
-  - Documentation
+  ## Behaviour
+
+  Modules using `Dala.Plugin` must implement (or get defaults for) these callbacks:
+
+  - `init(opts)` → `{:ok, state}` | `{:error, reason}` — resource allocation (required)
+  - `components()` → `[Component.t()]` — declare components (required)
+  - `capabilities()` → `[atom()]` — what this plugin provides (required)
+  - `permissions()` → `[atom()]` — declare required permissions (optional, default `[]`)
+  - `native_modules(platform)` → `[module()]` — platform-specific native modules (optional, default `[]`)
+  - `dependencies()` → `[{atom(), String.t()}]` — dependency ordering (optional, default `[]`)
+  - `validate_config(config)` → `:ok` | `{:error, reason}` — compile-time hooks (optional, default `:ok`)
+  - `handle_event(event, payload, state)` → `{:ok, state}` | `{:error, reason}` — runtime hooks (optional, default `{:ok, state}`)
+  - `cleanup(state)` → `:ok` — resource deallocation / hot reload (optional, default `:ok`)
 
   ## Versioning
 
@@ -163,14 +164,75 @@ defmodule Dala.Plugin do
           | :touch
           | :keyboard
           | :focus
+  @type platform :: :ios | :android | :web
+  @type status :: :registered | :initialized | :active | :error | :unloaded
 
   defstruct [
     :name,
+    :description,
     :schema_version,
     :protocol_version,
     :native_api_version,
-    components: %{}
+    components: %{},
+    permissions: [],
+    dependencies: [],
+    platforms: [],
+    capabilities: [],
+    state: nil,
+    status: :registered,
+    native_modules: %{}
   ]
+
+  # ── Behaviour ──────────────────────────────────────────────────────────────
+
+  @doc """
+  Initializes the plugin. Allocates resources, starts processes, etc.
+  Returns `{:ok, state}` on success or `{:error, reason}` on failure.
+  """
+  @callback init(opts :: keyword()) :: {:ok, state :: term()} | {:error, reason :: term()}
+
+  @doc """
+  Returns the list of component schemas this plugin provides.
+  """
+  @callback components() :: [Dala.Plugin.Component.t()]
+
+  @doc """
+  Returns the list of capabilities this plugin provides.
+  """
+  @callback capabilities() :: [atom()]
+
+  @doc """
+  Returns the list of permissions this plugin requires.
+  """
+  @callback permissions() :: [atom()]
+
+  @doc """
+  Returns platform-specific native modules for the given platform.
+  """
+  @callback native_modules(platform :: platform()) :: [module()]
+
+  @doc """
+  Returns dependency specifications: `{plugin_name, version_requirement}`.
+  """
+  @callback dependencies() :: [{atom(), String.t()}]
+
+  @doc """
+  Validates plugin configuration at compile-time.
+  """
+  @callback validate_config(config :: map()) :: :ok | {:error, reason :: term()}
+
+  @doc """
+  Handles runtime events sent to the plugin.
+  """
+  @callback handle_event(event :: atom(), payload :: map(), state :: term()) ::
+              {:ok, state :: term()} | {:error, reason :: term()}
+
+  @doc """
+  Cleans up resources before hot reload or unload.
+  """
+  @callback cleanup(state :: term()) :: :ok
+
+  # ── use macro ──────────────────────────────────────────────────────────────
 
   @doc """
   Defines a new plugin module.
@@ -183,6 +245,8 @@ defmodule Dala.Plugin do
   """
   defmacro __using__(opts \\ []) do
     quote bind_quoted: [opts: opts] do
+      @behaviour Dala.Plugin
+
       import Dala.Plugin
       import Dala.Plugin.ComponentDSL
 
@@ -193,12 +257,29 @@ defmodule Dala.Plugin do
       Module.register_attribute(__MODULE__, :plugin_schema_version, accumulate: false)
       Module.register_attribute(__MODULE__, :plugin_protocol_version, accumulate: false)
       Module.register_attribute(__MODULE__, :plugin_native_api_version, accumulate: false)
+      Module.register_attribute(__MODULE__, :plugin_description, accumulate: false)
+      Module.register_attribute(__MODULE__, :plugin_permissions, accumulate: true)
+      Module.register_attribute(__MODULE__, :plugin_dependencies, accumulate: true)
+      Module.register_attribute(__MODULE__, :plugin_platforms, accumulate: true)
+      Module.register_attribute(__MODULE__, :plugin_native_module_decls, accumulate: true)
+      Module.register_attribute(__MODULE__, :plugin_block_used, accumulate: false)
+
+      # Plugin block declarations (from `plugin do ... end`)
+      Module.register_attribute(__MODULE__, :plugin_block_components, accumulate: true)
+      Module.register_attribute(__MODULE__, :plugin_block_events, accumulate: true)
+      Module.register_attribute(__MODULE__, :plugin_block_natives, accumulate: true)
+      Module.register_attribute(__MODULE__, :plugin_block_permissions, accumulate: true)
+      Module.register_attribute(__MODULE__, :plugin_block_dependencies, accumulate: true)
+      Module.register_attribute(__MODULE__, :plugin_block_platforms, accumulate: true)
+      Module.register_attribute(__MODULE__, :plugin_block_description, accumulate: false)
 
       schema_version("1.0.0")
       protocol_version(3)
       native_api_version("2.0.0")
     end
   end
+
+  # ── Top-level DSL macros ───────────────────────────────────────────────────
 
   @doc """
   Defines a new component within the plugin.
@@ -227,18 +308,27 @@ defmodule Dala.Plugin do
         plugin: __MODULE__
       }
 
-      # Store component in module attribute for DSL to access
       Module.register_attribute(__MODULE__, :__dala_component, [])
       Module.put_attribute(__MODULE__, :__dala_component, component_schema)
 
-      # Evaluate the block - DSL macros will modify the component
       unquote(block)
 
-      # Retrieve the modified component
       component_schema = Module.get_attribute(__MODULE__, :__dala_component)
       Module.delete_attribute(__MODULE__, :__dala_component)
 
       @plugin_components component_schema
+    end
+  end
+
+  defmacro component(name, module) when is_atom(name) do
+    quote do
+      Dala.Plugin.plugin_component(unquote(name), unquote(module))
+    end
+  end
+
+  defmacro component(name, module) when is_binary(name) do
+    quote do
+      Dala.Plugin.plugin_component(unquote(name), unquote(module))
     end
   end
 
@@ -270,54 +360,271 @@ defmodule Dala.Plugin do
   end
 
   @doc """
-  Auto-registers all plugins found in loaded applications.
+  Sets the plugin description.
   """
-  def auto_register do
-    # Get all loaded applications
-    apps = Application.loaded_applications()
-    |> Enum.map(fn {app, _, _} -> app end)
-
-    # Find all modules that use Dala.Plugin
-    for app <- apps do
-      try do
-        app_modules = Application.spec(app, :modules) || []
-        for module <- app_modules do
-          try do
-            behaviours = module.module_info(:attributes)
-            |> Enum.find_value([], fn
-              {:__behaviour__, [Dala.Plugin]} -> true
-              _ -> false
-            end)
-            if behaviours do
-              module.__auto_register__()
-            end
-          rescue
-            _ -> :ok
-          end
-        end
-      rescue
-        _ -> :ok
-      end
+  defmacro description(text) when is_binary(text) do
+    quote do
+      @plugin_description unquote(text)
     end
-
-    :ok
   end
 
   @doc """
-  Macro callback - registers the plugin after module compilation.
+  Declares a permission the plugin requires.
+  """
+  defmacro permission(name) when is_atom(name) do
+    quote do
+      @plugin_permissions unquote(name)
+    end
+  end
+
+  @doc """
+  Declares a dependency on another plugin with a version requirement.
+  """
+  defmacro dependency({name, version_req}) do
+    quote do
+      @plugin_dependencies {unquote(name), unquote(version_req)}
+    end
+  end
+
+  @doc """
+  Declares platform support.
+  """
+  defmacro platform(name) when name in [:ios, :android, :web] do
+    quote do
+      @plugin_platforms unquote(name)
+    end
+  end
+
+  @doc """
+  Declares a native module for a specific platform.
+  """
+  defmacro native_module(platform, module) when platform in [:ios, :android, :web] do
+    quote do
+      @plugin_native_module_decls {unquote(platform), unquote(module)}
+    end
+  end
+
+  # ── plugin do block DSL ────────────────────────────────────────────────────
+
+  @doc """
+  Main entry point for the plugin DSL block.
+
+  Inside a `plugin do` block, you can declare:
+
+  - `component :chart, MyPlugin.ChartComponent`
+  - `plugin_event :chart_zoom, MyPlugin.Events.Zoom`
+  - `plugin_native :ios, MyPlugin.IOS`
+  - `plugin_native :android, MyPlugin.Android`
+  - `plugin_permission :camera`
+  - `plugin_dependency {:maps, "~> 1.0"}`
+  - `plugin_platform :ios`
+  - `plugin_platform :android`
+  - `plugin_description "My chart plugin"`
+
+  If `plugin do` is used, it takes precedence for those declarations.
+  """
+  defmacro plugin(do: block) do
+    quote do
+      @plugin_block_used true
+
+      unquote(block)
+    end
+  end
+
+  @doc false
+  defmacro plugin_component(name, module) when is_binary(name) do
+    quote do
+      component_schema = %Dala.Plugin.Component{
+        name: unquote(name),
+        plugin: __MODULE__
+      }
+
+      @plugin_block_components {unquote(name), unquote(module), component_schema}
+      @plugin_components component_schema
+    end
+  end
+
+  @doc false
+  defmacro plugin_component(name, module) when is_atom(name) do
+    quote do
+      component_name = Atom.to_string(unquote(name))
+
+      component_schema = %Dala.Plugin.Component{
+        name: component_name,
+        plugin: __MODULE__
+      }
+
+      @plugin_block_components {component_name, unquote(module), component_schema}
+      @plugin_components component_schema
+    end
+  end
+
+  @doc false
+  defmacro plugin_event(name, module) when is_atom(name) do
+    quote do
+      @plugin_block_events {unquote(name), unquote(module)}
+    end
+  end
+
+  @doc false
+  defmacro plugin_native(platform, module) when platform in [:ios, :android, :web] do
+    quote do
+      @plugin_block_natives {unquote(platform), unquote(module)}
+      @plugin_native_module_decls {unquote(platform), unquote(module)}
+    end
+  end
+
+  @doc false
+  defmacro plugin_permission(name) when is_atom(name) do
+    quote do
+      @plugin_block_permissions unquote(name)
+      @plugin_permissions unquote(name)
+    end
+  end
+
+  @doc false
+  defmacro plugin_dependency({name, version_req}) when is_atom(name) and is_binary(version_req) do
+    quote do
+      @plugin_block_dependencies {unquote(name), unquote(version_req)}
+      @plugin_dependencies {unquote(name), unquote(version_req)}
+    end
+  end
+
+  @doc false
+  defmacro plugin_platform(name) when name in [:ios, :android, :web] do
+    quote do
+      @plugin_block_platforms unquote(name)
+      @plugin_platforms unquote(name)
+    end
+  end
+
+  @doc false
+  defmacro plugin_description(text) when is_binary(text) do
+    quote do
+      @plugin_block_description unquote(text)
+      @plugin_description unquote(text)
+    end
+  end
+
+  # ── __before_compile__ ─────────────────────────────────────────────────────
+
+  @doc """
+  Macro callback - builds the full plugin struct and generates default
+  behaviour implementations.
   """
   defmacro __before_compile__(_env) do
     quote do
+      # ── Compute and store all derived values as module attributes ────────
+
+      _native_modules_map =
+        case Module.get_attribute(__MODULE__, :plugin_block_used) do
+          true ->
+            block_natives = Module.get_attribute(__MODULE__, :plugin_block_natives) || []
+
+            Enum.reduce(block_natives, %{}, fn {platform, module}, acc ->
+              Map.update(acc, platform, [module], fn existing -> existing ++ [module] end)
+            end)
+
+          _ ->
+            decls = Module.get_attribute(__MODULE__, :plugin_native_module_decls) || []
+
+            Enum.reduce(decls, %{}, fn {platform, module}, acc ->
+              Map.update(acc, platform, [module], fn existing -> existing ++ [module] end)
+            end)
+        end
+
+      Module.register_attribute(__MODULE__, :__dala_native_modules_map, accumulate: false)
+      Module.put_attribute(__MODULE__, :__dala_native_modules_map, _native_modules_map)
+
+      _permissions_list =
+        case Module.get_attribute(__MODULE__, :plugin_block_used) do
+          true ->
+            block_perms = Module.get_attribute(__MODULE__, :plugin_block_permissions) || []
+            Enum.reverse(block_perms)
+
+          _ ->
+            top_perms = Module.get_attribute(__MODULE__, :plugin_permissions) || []
+            Enum.reverse(top_perms)
+        end
+
+      Module.register_attribute(__MODULE__, :__dala_permissions_list, accumulate: false)
+      Module.put_attribute(__MODULE__, :__dala_permissions_list, _permissions_list)
+
+      _dependencies_list =
+        case Module.get_attribute(__MODULE__, :plugin_block_used) do
+          true ->
+            block_deps = Module.get_attribute(__MODULE__, :plugin_block_dependencies) || []
+            Enum.reverse(block_deps)
+
+          _ ->
+            top_deps = Module.get_attribute(__MODULE__, :plugin_dependencies) || []
+            Enum.reverse(top_deps)
+        end
+
+      Module.register_attribute(__MODULE__, :__dala_dependencies_list, accumulate: false)
+      Module.put_attribute(__MODULE__, :__dala_dependencies_list, _dependencies_list)
+
+      _platforms_list =
+        case Module.get_attribute(__MODULE__, :plugin_block_used) do
+          true ->
+            block_platforms = Module.get_attribute(__MODULE__, :plugin_block_platforms) || []
+            Enum.reverse(block_platforms)
+
+          _ ->
+            top_platforms = Module.get_attribute(__MODULE__, :plugin_platforms) || []
+            Enum.reverse(top_platforms)
+        end
+
+      Module.register_attribute(__MODULE__, :__dala_platforms_list, accumulate: false)
+      Module.put_attribute(__MODULE__, :__dala_platforms_list, _platforms_list)
+
+      _description_val =
+        case Module.get_attribute(__MODULE__, :plugin_block_used) do
+          true -> Module.get_attribute(__MODULE__, :plugin_block_description)
+          _ -> Module.get_attribute(__MODULE__, :plugin_description)
+        end
+
+      Module.register_attribute(__MODULE__, :__dala_description_val, accumulate: false)
+      Module.put_attribute(__MODULE__, :__dala_description_val, _description_val)
+
+      _components_map =
+        case Module.get_attribute(__MODULE__, :plugin_components) do
+          nil -> %{}
+          comps -> Enum.into(Enum.reverse(comps), %{}, &{&1.name, &1})
+        end
+
+      Module.register_attribute(__MODULE__, :__dala_components_map, accumulate: false)
+      Module.put_attribute(__MODULE__, :__dala_components_map, _components_map)
+
+      _all_capabilities =
+        _components_map
+        |> Enum.flat_map(fn {_name, comp} -> comp.capabilities end)
+        |> Enum.uniq()
+
+      Module.register_attribute(__MODULE__, :__dala_all_capabilities, accumulate: false)
+      Module.put_attribute(__MODULE__, :__dala_all_capabilities, _all_capabilities)
+
+      # ── Plugin info struct ────────────────────────────────────────────────
       @doc false
       def __plugin_info__ do
         %Dala.Plugin{
           name: __MODULE__,
+          description: @__dala_description_val,
           schema_version: @plugin_schema_version,
           protocol_version: @plugin_protocol_version,
           native_api_version: @plugin_native_api_version,
-          components: Enum.into(@plugin_components, %{}, &{&1.name, &1})
+          components: @__dala_components_map,
+          permissions: @__dala_permissions_list,
+          dependencies: @__dala_dependencies_list,
+          platforms: @__dala_platforms_list,
+          capabilities: @__dala_all_capabilities,
+          state: nil,
+          status: :registered,
+          native_modules: @__dala_native_modules_map
         }
       end
+
+      # ── Behaviour implementations ─────────────────────────────────────────
 
       @doc """
       Registers this plugin with the Dala runtime.
@@ -334,11 +641,66 @@ defmodule Dala.Plugin do
       end
 
       @doc """
-      Returns all component schemas.
+      Returns all component schemas as a map.
       """
       def components do
         __plugin_info__().components
       end
+
+      @doc """
+      Returns all component schemas as a list (behaviour callback).
+      """
+      def components_list do
+        __plugin_info__().components |> Map.values()
+      end
+
+      @doc """
+      Returns the list of capabilities this plugin provides (behaviour callback).
+      """
+      def capabilities do
+        __plugin_info__().capabilities
+      end
+
+      @doc """
+      Returns the list of permissions this plugin requires (behaviour callback).
+      """
+      def permissions do
+        __plugin_info__().permissions
+      end
+
+      @doc """
+      Returns platform-specific native modules (behaviour callback).
+      """
+      def native_modules(platform) when platform in [:ios, :android, :web] do
+        Map.get(__plugin_info__().native_modules, platform, [])
+      end
+
+      @doc """
+      Returns dependency specifications (behaviour callback).
+      """
+      def dependencies do
+        __plugin_info__().dependencies
+      end
+
+      @doc """
+      Validates plugin configuration (behaviour callback, default: :ok).
+      """
+      def validate_config(_config), do: :ok
+
+      @doc """
+      Handles runtime events (behaviour callback, default: {:ok, state}).
+      """
+      def handle_event(_event, _payload, state), do: {:ok, state}
+
+      @doc """
+      Initializes the plugin (behaviour callback, default: {:ok, nil}).
+      """
+      def init(_opts), do: {:ok, nil}
+
+      @doc """
+      Cleans up resources (behaviour callback, default: :ok).
+      """
+      def cleanup(_state), do: :ok
 
       @doc """
       Generates the binary protocol specification for this plugin.
@@ -362,6 +724,53 @@ defmodule Dala.Plugin do
           register()
         end
       end
+
+      # Allow user overrides of optional callbacks
+      defoverridable init: 1,
+                     components: 0,
+                     capabilities: 0,
+                     permissions: 0,
+                     native_modules: 1,
+                     dependencies: 0,
+                     validate_config: 1,
+                     handle_event: 3,
+                     cleanup: 1
     end
+  end
+
+  # ── Utility ────────────────────────────────────────────────────────────────
+
+  @doc """
+  Auto-registers all plugins found in loaded applications.
+  """
+  def auto_register do
+    apps = Application.loaded_applications() |> Enum.map(fn {app, _, _} -> app end)
+
+    for app <- apps do
+      try do
+        app_modules = Application.spec(app, :modules) || []
+
+        for module <- app_modules do
+          try do
+            behaviours =
+              module.module_info(:attributes)
+              |> Enum.find_value([], fn
+                {:__behaviour__, [Dala.Plugin]} -> true
+                _ -> false
+              end)
+
+            if behaviours do
+              module.__auto_register__()
+            end
+          rescue
+            _ -> :ok
+          end
+        end
+      rescue
+        _ -> :ok
+      end
+    end
+
+    :ok
   end
 end

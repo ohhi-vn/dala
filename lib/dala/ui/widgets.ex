@@ -875,7 +875,16 @@ defmodule Dala.Ui.Widgets do
   def radio(%{} = props) do
     %{
       type: :radio,
-      props: Map.take(props, [:selected, :on_select, :label, :group, :enabled, :color, :accessibility_id]),
+      props:
+        Map.take(props, [
+          :selected,
+          :on_select,
+          :label,
+          :group,
+          :enabled,
+          :color,
+          :accessibility_id
+        ]),
       children: []
     }
   end
@@ -981,7 +990,16 @@ defmodule Dala.Ui.Widgets do
     %{
       type: :chip,
       props:
-        Map.take(props, [:label, :variant, :selected, :on_tap, :icon, :on_remove, :enabled, :accessibility_id]),
+        Map.take(props, [
+          :label,
+          :variant,
+          :selected,
+          :on_tap,
+          :icon,
+          :on_remove,
+          :enabled,
+          :accessibility_id
+        ]),
       children: []
     }
   end
@@ -1033,12 +1051,22 @@ defmodule Dala.Ui.Widgets do
   """
   @spec bottom_sheet(keyword() | map(), list()) :: map()
   def bottom_sheet(props \\ [], children \\ [])
-  def bottom_sheet(props, children) when is_list(props), do: bottom_sheet(Map.new(props), children)
+
+  def bottom_sheet(props, children) when is_list(props),
+    do: bottom_sheet(Map.new(props), children)
 
   def bottom_sheet(%{} = props, children) when is_list(children) do
     %{
       type: :bottom_sheet,
-      props: Map.take(props, [:visible, :on_dismiss, :drag_indicator, :peek_height, :background, :corner_radius]),
+      props:
+        Map.take(props, [
+          :visible,
+          :on_dismiss,
+          :drag_indicator,
+          :peek_height,
+          :background,
+          :corner_radius
+        ]),
       children: children
     }
   end
@@ -1095,7 +1123,17 @@ defmodule Dala.Ui.Widgets do
   def fab(%{} = props) do
     %{
       type: :fab,
-      props: Map.take(props, [:icon, :on_tap, :text, :background, :color, :corner_radius, :elevation, :accessibility_id]),
+      props:
+        Map.take(props, [
+          :icon,
+          :on_tap,
+          :text,
+          :background,
+          :color,
+          :corner_radius,
+          :elevation,
+          :accessibility_id
+        ]),
       children: []
     }
   end
@@ -1124,7 +1162,16 @@ defmodule Dala.Ui.Widgets do
   def icon_button(%{} = props) do
     %{
       type: :icon_button,
-      props: Map.take(props, [:icon, :on_tap, :selected, :enabled, :color, :background, :accessibility_id]),
+      props:
+        Map.take(props, [
+          :icon,
+          :on_tap,
+          :selected,
+          :enabled,
+          :color,
+          :background,
+          :accessibility_id
+        ]),
       children: []
     }
   end
@@ -1188,7 +1235,16 @@ defmodule Dala.Ui.Widgets do
   def app_bar(%{} = props) do
     %{
       type: :app_bar,
-      props: Map.take(props, [:title, :leading_icon, :on_leading, :trailing_actions, :background, :text_color, :accessibility_id]),
+      props:
+        Map.take(props, [
+          :title,
+          :leading_icon,
+          :on_leading,
+          :trailing_actions,
+          :background,
+          :text_color,
+          :accessibility_id
+        ]),
       children: []
     }
   end
@@ -1346,7 +1402,16 @@ defmodule Dala.Ui.Widgets do
   def date_picker(%{} = props) do
     %{
       type: :date_picker,
-      props: Map.take(props, [:visible, :on_select, :on_dismiss, :selected_date, :min_date, :max_date, :title]),
+      props:
+        Map.take(props, [
+          :visible,
+          :on_select,
+          :on_dismiss,
+          :selected_date,
+          :min_date,
+          :max_date,
+          :title
+        ]),
       children: []
     }
   end
@@ -1407,7 +1472,17 @@ defmodule Dala.Ui.Widgets do
   def search_bar(%{} = props) do
     %{
       type: :search_bar,
-      props: Map.take(props, [:placeholder, :text, :on_change, :on_submit, :on_focus, :active, :on_tap, :accessibility_id]),
+      props:
+        Map.take(props, [
+          :placeholder,
+          :text,
+          :on_change,
+          :on_submit,
+          :on_focus,
+          :active,
+          :on_tap,
+          :accessibility_id
+        ]),
       children: []
     }
   end

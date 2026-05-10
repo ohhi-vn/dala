@@ -44,6 +44,19 @@ defmodule Dala.Plugin.Protocol do
   | color | 0x07| 4    | ARGB         |
   | binary| 0x08| var  | len + data   |
 
+  ## Capability Negotiation & Lifecycle Events
+
+  The protocol also encodes capability negotiation and lifecycle events:
+
+      # Capability negotiation
+      encode_capability_negotiation([:gestures, :animation], [:gestures, :accessibility, :animation])
+      # → binary with requested + provided capabilities
+
+      # Lifecycle events
+      encode_lifecycle_event(:init, %{opts: []})
+      encode_lifecycle_event(:activate, %{})
+      encode_lifecycle_event(:cleanup, %{})
+
   ## Example
 
       defmodule MyApp.VideoPlugin do
@@ -93,6 +106,10 @@ defmodule Dala.Plugin.Protocol do
           | 0x09
           # map
           | 0x0A
+
+  # Lifecycle opcodes
+  @lifecycle_opcode 0xF0
+  @capability_opcode 0xF1
 
   @doc """
   Generates protocol specification for a plugin.
@@ -234,11 +251,64 @@ defmodule Dala.Plugin.Protocol do
   end
 
   @doc """
+  Encodes a capability negotiation message.
+
+  The binary format is:
+    - 1 byte: capability opcode (0xF1)
+    - 2 bytes: count of requested capabilities
+    - For each capability: 2 bytes length + UTF-8 name
+    - 2 bytes: count of provided capabilities
+    - For each capability: 2 bytes length + UTF-8 name
+  """
+  @spec encode_capability_negotiation([atom()], [atom()]) :: binary()
+  def encode_capability_negotiation(requested, provided) do
+    requested_bin = encode_capability_list(requested)
+    provided_bin = encode_capability_list(provided)
+
+    <<@capability_opcode, requested_bin::binary, provided_bin::binary>>
+  end
+
+  @doc """
+  Encodes a lifecycle event message.
+
+  The binary format is:
+    - 1 byte: lifecycle opcode (0xF0)
+    - 2 bytes: event name length
+    - N bytes: event name (UTF-8)
+    - 4 bytes: payload length
+    - M bytes: payload (JSON-encoded)
+  """
+  @spec encode_lifecycle_event(atom(), map()) :: binary()
+  def encode_lifecycle_event(event, payload) do
+    event_name = Atom.to_string(event)
+    payload_json = Jason.encode!(payload)
+
+    <<@lifecycle_opcode, byte_size(event_name)::16, event_name::binary,
+      byte_size(payload_json)::32, payload_json::binary>>
+  end
+
+  @doc """
   Generates example encoded data for documentation.
   """
   @spec example_encoding(Component.t()) :: String.t()
   def example_encoding(component) do
     IO.inspect(component, label: "Component #{component.name}")
     "Example encoding for #{component.name}"
+  end
+
+  # ── Private ────────────────────────────────────────────────────────────────
+
+  defp encode_capability_list(caps) do
+    count = length(caps)
+
+    items =
+      IO.iodata_to_binary(
+        Enum.map(caps, fn cap ->
+          name = Atom.to_string(cap)
+          <<byte_size(name)::16, name::binary>>
+        end)
+      )
+
+    <<count::16, items::binary>>
   end
 end

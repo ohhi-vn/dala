@@ -150,7 +150,8 @@ defmodule Dala.PluginTest do
       assert manifest["protocol_version"] == 3
       assert manifest["native_api_version"] == "2.0.0"
       assert is_map(manifest["components"])
-      assert is_map(manifest["capabilities"])
+      assert is_list(manifest["capabilities"])
+      assert is_map(manifest["capabilities_by_component"])
       assert Map.has_key?(manifest["components"], "video")
     end
   end
@@ -375,15 +376,16 @@ defmodule Dala.PluginTest do
       assert manifest["protocol_version"] == 5
       assert manifest["native_api_version"] == "3.0.0"
       assert is_map(manifest["components"])
-      assert is_map(manifest["capabilities"])
+      assert is_map(manifest["capabilities_by_component"])
+      assert is_list(manifest["capabilities"])
 
       assert manifest["components"]["chart"] == %{
                "ios" => "DalaChartView",
                "android" => "com.dala.chart.ChartView"
              }
 
-      assert :animation in manifest["capabilities"]["chart"]
-      assert :textures in manifest["capabilities"]["chart"]
+      assert :animation in manifest["capabilities_by_component"]["chart"]
+      assert :textures in manifest["capabilities_by_component"]["chart"]
     end
 
     test "to_json/1 encodes manifest as JSON" do
@@ -503,6 +505,417 @@ defmodule Dala.PluginTest do
       assert :touch in component.capabilities
       assert :keyboard in component.capabilities
       assert :focus in component.capabilities
+    end
+  end
+
+  describe "Plugin lifecycle DSL" do
+    defmodule LifecyclePlugin do
+      use Dala.Plugin
+
+      import Dala.Plugin
+
+      description("A plugin with full lifecycle support")
+      permission(:camera)
+      permission(:bluetooth)
+      dependency({:maps, "~> 1.0"})
+      platform(:ios)
+      platform(:android)
+      native_module(:ios, __MODULE__.IOS)
+      native_module(:android, __MODULE__.Android)
+
+      component "camera" do
+        prop("facing", :string)
+        capability(:gestures)
+        capability(:textures)
+      end
+    end
+
+    test "description is set" do
+      info = LifecyclePlugin.__plugin_info__()
+      assert info.description == "A plugin with full lifecycle support"
+    end
+
+    test "permissions are set" do
+      info = LifecyclePlugin.__plugin_info__()
+      assert :camera in info.permissions
+      assert :bluetooth in info.permissions
+    end
+
+    test "dependencies are set" do
+      info = LifecyclePlugin.__plugin_info__()
+      assert {:maps, "~> 1.0"} in info.dependencies
+    end
+
+    test "platforms are set" do
+      info = LifecyclePlugin.__plugin_info__()
+      assert :ios in info.platforms
+      assert :android in info.platforms
+    end
+
+    test "native_modules are set" do
+      info = LifecyclePlugin.__plugin_info__()
+      assert Dala.PluginTest.LifecyclePlugin.IOS in info.native_modules[:ios]
+      assert Dala.PluginTest.LifecyclePlugin.Android in info.native_modules[:android]
+    end
+
+    test "capabilities are derived from components" do
+      info = LifecyclePlugin.__plugin_info__()
+      assert :gestures in info.capabilities
+      assert :textures in info.capabilities
+    end
+
+    test "default status is :registered" do
+      info = LifecyclePlugin.__plugin_info__()
+      assert info.status == :registered
+    end
+
+    test "default state is nil" do
+      info = LifecyclePlugin.__plugin_info__()
+      assert info.state == nil
+    end
+
+    test "behaviour callbacks have defaults" do
+      assert {:ok, nil} = LifecyclePlugin.init([])
+      assert LifecyclePlugin.permissions() == [:camera, :bluetooth]
+      assert Dala.PluginTest.LifecyclePlugin.IOS in LifecyclePlugin.native_modules(:ios)
+      assert Dala.PluginTest.LifecyclePlugin.Android in LifecyclePlugin.native_modules(:android)
+      assert LifecyclePlugin.dependencies() == [{:maps, "~> 1.0"}]
+      assert :ok = LifecyclePlugin.validate_config(%{})
+      assert {:ok, nil} = LifecyclePlugin.handle_event(:test, %{}, nil)
+      assert :ok = LifecyclePlugin.cleanup(nil)
+    end
+  end
+
+  describe "Plugin do block DSL" do
+    defmodule PluginBlockPlugin do
+      use Dala.Plugin
+
+      plugin do
+        plugin_description("Chart plugin via plugin do block")
+        component(:chart, Dala.PluginTest.PluginBlockPlugin.ChartComponent)
+        plugin_event(:chart_zoom, Dala.PluginTest.PluginBlockPlugin.Events.Zoom)
+        plugin_native(:ios, Dala.PluginTest.PluginBlockPlugin.IOS)
+        plugin_native(:android, Dala.PluginTest.PluginBlockPlugin.Android)
+        plugin_permission(:storage)
+        plugin_dependency({:video, "~> 2.0"})
+        plugin_platform(:ios)
+        plugin_platform(:android)
+      end
+    end
+
+    test "plugin do block sets description" do
+      info = PluginBlockPlugin.__plugin_info__()
+      assert info.description == "Chart plugin via plugin do block"
+    end
+
+    test "plugin do block sets permissions" do
+      info = PluginBlockPlugin.__plugin_info__()
+      assert :storage in info.permissions
+    end
+
+    test "plugin do block sets dependencies" do
+      info = PluginBlockPlugin.__plugin_info__()
+      assert {:video, "~> 2.0"} in info.dependencies
+    end
+
+    test "plugin do block sets platforms" do
+      info = PluginBlockPlugin.__plugin_info__()
+      assert :ios in info.platforms
+      assert :android in info.platforms
+    end
+
+    test "plugin do block sets native modules" do
+      info = PluginBlockPlugin.__plugin_info__()
+      assert Dala.PluginTest.PluginBlockPlugin.IOS in info.native_modules[:ios]
+      assert Dala.PluginTest.PluginBlockPlugin.Android in info.native_modules[:android]
+    end
+  end
+
+  describe "Plugin lifecycle management" do
+    alias Dala.Plugin.Lifecycle
+
+    defmodule LifecycleManagedPlugin do
+      use Dala.Plugin
+
+      import Dala.Plugin
+
+      description("Managed plugin")
+      platform(:ios)
+      platform(:android)
+
+      component "widget" do
+        prop("label", :string)
+        capability(:gestures)
+        capability(:animation)
+      end
+
+      @impl true
+      def init(_opts) do
+        {:ok, %{initialized: true}}
+      end
+
+      @impl true
+      def cleanup(_state) do
+        :ok
+      end
+    end
+
+    test "init/2 transitions :registered → :initialized" do
+      LifecycleManagedPlugin.register()
+      assert {:ok, %{initialized: true}} = Lifecycle.init(LifecycleManagedPlugin)
+      assert :initialized = Lifecycle.status(LifecycleManagedPlugin)
+    end
+
+    test "activate/1 transitions :initialized → :active" do
+      LifecycleManagedPlugin.register()
+      {:ok, _} = Lifecycle.init(LifecycleManagedPlugin)
+      assert :ok = Lifecycle.activate(LifecycleManagedPlugin)
+      assert :active = Lifecycle.status(LifecycleManagedPlugin)
+    end
+
+    test "deactivate/1 transitions :active → :registered" do
+      LifecycleManagedPlugin.register()
+      {:ok, _} = Lifecycle.init(LifecycleManagedPlugin)
+      :ok = Lifecycle.activate(LifecycleManagedPlugin)
+      assert :ok = Lifecycle.deactivate(LifecycleManagedPlugin)
+      assert :registered = Lifecycle.status(LifecycleManagedPlugin)
+    end
+
+    test "cleanup/1 transitions to :unloaded" do
+      LifecycleManagedPlugin.register()
+      {:ok, _} = Lifecycle.init(LifecycleManagedPlugin)
+      assert :ok = Lifecycle.cleanup(LifecycleManagedPlugin)
+      assert :unloaded = Lifecycle.status(LifecycleManagedPlugin)
+    end
+
+    test "init/2 rejects invalid transition" do
+      LifecycleManagedPlugin.register()
+      {:ok, _} = Lifecycle.init(LifecycleManagedPlugin)
+
+      assert {:error, {:invalid_transition, :initialized, :initialized}} =
+               Lifecycle.init(LifecycleManagedPlugin)
+    end
+
+    test "activate/1 rejects invalid transition from :registered" do
+      LifecycleManagedPlugin.register()
+
+      assert {:error, {:invalid_transition, :registered, :active}} =
+               Lifecycle.activate(LifecycleManagedPlugin)
+    end
+
+    test "negotiate_capabilities/2 returns available caps when all provided" do
+      LifecycleManagedPlugin.register()
+
+      assert {:ok, [:gestures, :animation]} =
+               Lifecycle.negotiate_capabilities(LifecycleManagedPlugin, [:gestures, :animation])
+    end
+
+    test "negotiate_capabilities/2 returns missing caps" do
+      LifecycleManagedPlugin.register()
+
+      assert {:error, {:missing, [:textures]}} =
+               Lifecycle.negotiate_capabilities(LifecycleManagedPlugin, [:gestures, :textures])
+    end
+
+    test "supports_platform?/2 checks platform support" do
+      LifecycleManagedPlugin.register()
+      assert Lifecycle.supports_platform?(LifecycleManagedPlugin, :ios)
+      assert Lifecycle.supports_platform?(LifecycleManagedPlugin, :android)
+      refute Lifecycle.supports_platform?(LifecycleManagedPlugin, :web)
+    end
+
+    test "status/1 returns :not_registered for unknown plugin" do
+      assert :not_registered = Lifecycle.status(NonexistentPlugin)
+    end
+  end
+
+  describe "Plugin dependency resolution" do
+    defmodule BasePlugin do
+      use Dala.Plugin
+
+      import Dala.Plugin
+
+      schema_version("1.0.0")
+      description("Base plugin with no deps")
+
+      component "base_widget" do
+        prop("value", :string)
+        capability(:gestures)
+      end
+    end
+
+    defmodule DependentPlugin do
+      use Dala.Plugin
+
+      import Dala.Plugin
+
+      schema_version("2.0.0")
+      description("Plugin that depends on base")
+      dependency({Dala.PluginTest.BasePlugin, "~> 1.0"})
+
+      component "fancy_widget" do
+        prop("data", :map)
+        capability(:animation)
+      end
+    end
+
+    test "check_dependencies/1 succeeds when deps are registered" do
+      BasePlugin.register()
+      DependentPlugin.register()
+      assert :ok = Dala.Plugin.Lifecycle.check_dependencies(DependentPlugin)
+    end
+
+    test "check_dependencies/1 fails when deps are missing" do
+      DependentPlugin.register()
+
+      assert {:error, {:unsatisfied, _}} =
+               Dala.Plugin.Lifecycle.check_dependencies(DependentPlugin)
+    end
+
+    test "resolve_dependency_order/0 returns topological order" do
+      BasePlugin.register()
+      DependentPlugin.register()
+      order = Registry.resolve_dependency_order()
+      assert is_list(order)
+      base_idx = Enum.find_index(order, &(&1 == Dala.PluginTest.BasePlugin))
+      dep_idx = Enum.find_index(order, &(&1 == Dala.PluginTest.DependentPlugin))
+      assert base_idx < dep_idx
+    end
+
+    test "init_all/0 initializes plugins in dependency order" do
+      BasePlugin.register()
+      DependentPlugin.register()
+      assert :ok = Registry.init_all()
+      assert :initialized = Dala.Plugin.Lifecycle.status(BasePlugin)
+      assert :initialized = Dala.Plugin.Lifecycle.status(DependentPlugin)
+    end
+
+    test "cleanup_all/0 cleans up in reverse dependency order" do
+      BasePlugin.register()
+      DependentPlugin.register()
+      :ok = Registry.init_all()
+      assert :ok = Registry.cleanup_all()
+    end
+  end
+
+  describe "Registry status and state tracking" do
+    defmodule StatusPlugin do
+      use Dala.Plugin
+
+      import Dala.Plugin
+
+      component "status_widget" do
+        prop("text", :string)
+      end
+    end
+
+    test "get_status/1 returns initial status" do
+      StatusPlugin.register()
+      assert :registered = Registry.get_status(StatusPlugin)
+    end
+
+    test "set_status/2 updates status" do
+      StatusPlugin.register()
+      :ok = Registry.set_status(StatusPlugin, :active)
+      assert :active = Registry.get_status(StatusPlugin)
+    end
+
+    test "get_state/1 returns nil initially" do
+      StatusPlugin.register()
+      assert nil == Registry.get_state(StatusPlugin)
+    end
+
+    test "set_state/2 updates state" do
+      StatusPlugin.register()
+      :ok = Registry.set_state(StatusPlugin, %{foo: :bar})
+      assert %{foo: :bar} = Registry.get_state(StatusPlugin)
+    end
+
+    test "find_by_capability/1 returns matching plugins" do
+      StatusPlugin.register()
+      plugins = Registry.find_by_capability(:gestures)
+      assert is_list(plugins)
+    end
+
+    test "find_by_platform/1 returns matching plugins" do
+      StatusPlugin.register()
+      plugins = Registry.find_by_platform(:ios)
+      assert is_list(plugins)
+    end
+  end
+
+  describe "Component lifecycle and optional capabilities" do
+    test "component has default lifecycle" do
+      component = %Component{name: "test", plugin: TestPlugin}
+      assert :create in component.lifecycle
+      assert :update in component.lifecycle
+      assert :layout in component.lifecycle
+      assert :event in component.lifecycle
+      assert :dispose in component.lifecycle
+    end
+
+    test "component has empty optional_capabilities by default" do
+      component = %Component{name: "test", plugin: TestPlugin}
+      assert component.optional_capabilities == []
+    end
+
+    test "add_optional_capability/2 adds optional capability" do
+      component = %Component{name: "test", plugin: TestPlugin}
+      updated = Component.add_optional_capability(component, :gpu)
+      assert :gpu in updated.optional_capabilities
+    end
+  end
+
+  describe "Protocol capability negotiation and lifecycle encoding" do
+    test "encode_capability_negotiation/2 encodes binary message" do
+      encoded =
+        Protocol.encode_capability_negotiation([:gestures, :animation], [
+          :gestures,
+          :accessibility
+        ])
+
+      assert is_binary(encoded)
+      # First byte is capability opcode
+      assert :binary.first(encoded) == 0xF1
+    end
+
+    test "encode_lifecycle_event/2 encodes binary message" do
+      encoded = Protocol.encode_lifecycle_event(:init, %{opts: []})
+      assert is_binary(encoded)
+      # First byte is lifecycle opcode
+      assert :binary.first(encoded) == 0xF0
+    end
+  end
+
+  describe "Manifest with lifecycle fields" do
+    defmodule ManifestLifecyclePlugin do
+      use Dala.Plugin
+
+      import Dala.Plugin
+
+      description("Plugin with lifecycle manifest fields")
+      permission(:camera)
+      dependency({:maps, "~> 1.0"})
+      platform(:ios)
+      platform(:android)
+
+      component "scanner" do
+        prop("mode", :string)
+        capability(:gestures)
+      end
+    end
+
+    test "manifest includes lifecycle fields" do
+      plugin = ManifestLifecyclePlugin.__plugin_info__()
+      manifest = Manifest.generate(plugin)
+
+      assert manifest["description"] == "Plugin with lifecycle manifest fields"
+      assert "camera" in manifest["permissions"]
+      assert is_list(manifest["dependencies"])
+      assert "ios" in manifest["platforms"]
+      assert "android" in manifest["platforms"]
+      assert "gestures" in manifest["capabilities"]
+      assert manifest["status"] == "registered"
     end
   end
 end

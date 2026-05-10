@@ -149,7 +149,9 @@ defmodule Dala.Plugin.ComponentDSL do
             nil -> raise "Component not initialized. Call component/2 first."
             comp -> comp
           end
-        comp -> comp
+
+        comp ->
+          comp
       end
 
     new_component = Component.add_prop(component, name, type, opts)
@@ -174,7 +176,9 @@ defmodule Dala.Plugin.ComponentDSL do
             nil -> raise "Component not initialized. Call component/2 first."
             comp -> comp
           end
-        comp -> comp
+
+        comp ->
+          comp
       end
 
     new_component = Component.add_event(component, name, opts)
@@ -198,7 +202,9 @@ defmodule Dala.Plugin.ComponentDSL do
             nil -> raise "Component not initialized. Call component/2 first."
             comp -> comp
           end
-        comp -> comp
+
+        comp ->
+          comp
       end
 
     new_component = Component.add_native(component, platform, class_name)
@@ -222,7 +228,9 @@ defmodule Dala.Plugin.ComponentDSL do
             nil -> raise "Component not initialized. Call component/2 first."
             comp -> comp
           end
-        comp -> comp
+
+        comp ->
+          comp
       end
 
     new_component = Component.add_capability(component, capability)
@@ -243,7 +251,9 @@ defmodule Dala.Plugin.ComponentDSL do
           nil -> raise "Component not initialized. Call component/2 first."
           comp -> comp
         end
-      comp -> comp
+
+      comp ->
+        comp
     end
   end
 
