@@ -331,6 +331,76 @@ These are the things we've burned ourselves on. Following them isn't optional.
     `ensure_bluetooth_permissions/1`, `ensure_wifi_permissions/1`, and `diagnostic/0`.
     Call from app startup or screens to verify permissions at runtime.
 
+## 21. **Plugin lifecycle and capability registration.**
+    Plugins now follow a full lifecycle with capability-based registration.
+
+    **Lifecycle states:** `:registered` → `:initialized` → `:active` → `:registered` → `:unloaded`
+
+    **Behaviour callbacks** (`@behaviour Dala.Plugin`):
+    - `init/1` (required) — resource allocation, returns `{:ok, state}` | `{:error, reason}`
+    - `components/0` (required) — declare components
+    - `capabilities/0` (required) — declare what the plugin provides
+    - `permissions/0` — declare required permissions
+    - `native_modules/1` — platform-specific native modules
+    - `dependencies/0` — dependency ordering `[{plugin_name, version_req}]`
+    - `validate_config/1` — compile-time config validation
+    - `handle_event/3` — runtime event hooks
+    - `cleanup/1` — resource deallocation / hot reload
+
+    **Two DSL styles:**
+    ```elixir
+    # Style 1: Top-level declarations
+    defmodule MyPlugin do
+      use Dala.Plugin
+      import Dala.Plugin
+
+      description "My plugin"
+      permission :camera
+      dependency {:maps, "~> 1.0"}
+      platform :ios
+      native_module :ios, MyPlugin.IOS
+
+      component "video" do
+        prop "source", :string
+        capability :gestures
+      end
+    end
+
+    # Style 2: plugin do block
+    defmodule MyPlugin do
+      use Dala.Plugin
+
+      plugin do
+        plugin_description "My plugin"
+        component :chart, MyPlugin.ChartComponent
+        plugin_native :ios, MyPlugin.IOS
+        plugin_permission :camera
+        plugin_dependency {:maps, "~> 1.0"}
+        plugin_platform :ios
+      end
+    end
+    ```
+
+    **Lifecycle management** (`Dala.Plugin.Lifecycle`):
+    - `init/2` — calls `plugin.init/1`, transitions `:registered` → `:initialized`
+    - `activate/1` — checks dependencies, transitions `:initialized` → `:active`
+    - `deactivate/1` — transitions `:active` → `:registered`
+    - `cleanup/1` — calls `plugin.cleanup/1`, transitions to `:unloaded`
+    - `check_dependencies/1` — validates deps are registered and version-compatible
+    - `negotiate_capabilities/2` — `{:ok, available}` | `{:error, {:missing, caps}}`
+    - `supports_platform?/2` — checks platform metadata
+
+    **Registry enhancements** (`Dala.Plugin.Registry`):
+    - `get_status/1`, `set_status/2` — plugin status tracking
+    - `get_state/1`, `set_state/2` — runtime state tracking
+    - `resolve_dependency_order/0` — topological sort, detects cycles
+    - `init_all/0` — initializes all plugins in dependency order
+    - `cleanup_all/0` — cleans up in reverse dependency order
+    - `find_by_capability/1`, `find_by_platform/1` — discovery queries
+
+    **Key files:** `lib/dala/plugin.ex`, `lib/dala/plugin/lifecycle.ex`, `lib/dala/plugin/registry.ex`,
+    `lib/dala/plugin/component.ex`, `lib/dala/plugin/manifest.ex`, `lib/dala/plugin/protocol.ex`
+
 ## Where to look
 
 | Question | File |
@@ -354,6 +424,7 @@ These are the things we've burned ourselves on. Following them isn't optional.
 | Android Bluetooth/WiFi bridge | `android/src/main/java/com/example/dala/DalaBridge.java` |
 | Generator templates (dala_new) | `dala_new/priv/templates/dala.new/` |
 | Build / release tooling | `dala_dev/scripts/release/`, `dala_dev/build_release.md` |
+| Plugin lifecycle, capabilities, registry | `lib/dala/plugin.ex`, `lib/dala/plugin/lifecycle.ex`, `lib/dala/plugin/registry.ex` |
 
 ## iOS ML Support (Nx ecosystem + CoreML + ONNX)
 

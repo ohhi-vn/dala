@@ -8,6 +8,8 @@ defmodule Dala.Plugin.Component do
 
   alias Dala.Plugin
 
+  @type lifecycle_event :: :create | :update | :layout | :event | :dispose
+
   @type t :: %__MODULE__{
           name: Plugin.component_name(),
           plugin: Plugin.plugin_name(),
@@ -15,6 +17,8 @@ defmodule Dala.Plugin.Component do
           events: [event()],
           natives: %{String.t() => String.t()},
           capabilities: [Plugin.capability()],
+          optional_capabilities: [atom()],
+          lifecycle: [lifecycle_event()],
           doc: String.t() | nil
         }
 
@@ -39,6 +43,8 @@ defmodule Dala.Plugin.Component do
     events: [],
     natives: %{},
     capabilities: [],
+    optional_capabilities: [],
+    lifecycle: [:create, :update, :layout, :event, :dispose],
     doc: nil
   ]
 
@@ -83,5 +89,15 @@ defmodule Dala.Plugin.Component do
   """
   def add_capability(component, capability) do
     %{component | capabilities: [capability | component.capabilities]}
+  end
+
+  @doc """
+  Adds an optional capability to the component schema.
+
+  Optional capabilities enhance the component but are not required for
+  basic functionality.
+  """
+  def add_optional_capability(component, capability) do
+    %{component | optional_capabilities: [capability | component.optional_capabilities]}
   end
 end

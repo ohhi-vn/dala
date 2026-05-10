@@ -63,13 +63,19 @@ defmodule Dala.Connectivity.Dist do
     case System.get_env(env_var) do
       nil ->
         # Development fallback: derive from app name
-        Dala.Platform.Native.log("Dala.Dist: no " <> env_var <> " set, deriving cookie from app name")
+        Dala.Platform.Native.log(
+          "Dala.Dist: no " <> env_var <> " set, deriving cookie from app name"
+        )
+
         :crypto.hash(:sha256, app_name) |> Base.encode16() |> String.to_atom()
 
       cookie_str ->
         # Validate cookie format to prevent issues
         if String.length(cookie_str) == 0 or String.length(cookie_str) > 255 do
-          Dala.Platform.Native.log("Dala.Dist: invalid cookie length in " <> env_var <> ", using fallback")
+          Dala.Platform.Native.log(
+            "Dala.Dist: invalid cookie length in " <> env_var <> ", using fallback"
+          )
+
           :crypto.hash(:sha256, app_name) |> Base.encode16() |> String.to_atom()
         else
           # Log warning about atom creation (atoms are not GC'd)

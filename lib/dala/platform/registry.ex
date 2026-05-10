@@ -26,11 +26,26 @@ defmodule Dala.Platform.Registry do
 
   # Built-in component mappings — same NIF module for both platforms for now
   @builtins [
-    column: [android: {Dala.Platform.Native, :create_column, []}, ios: {Dala.Platform.Native, :create_column, []}],
-    row: [android: {Dala.Platform.Native, :create_row, []}, ios: {Dala.Platform.Native, :create_row, []}],
-    text: [android: {Dala.Platform.Native, :create_label, []}, ios: {Dala.Platform.Native, :create_label, []}],
-    button: [android: {Dala.Platform.Native, :create_button, []}, ios: {Dala.Platform.Native, :create_button, []}],
-    scroll: [android: {Dala.Platform.Native, :create_scroll, []}, ios: {Dala.Platform.Native, :create_scroll, []}]
+    column: [
+      android: {Dala.Platform.Native, :create_column, []},
+      ios: {Dala.Platform.Native, :create_column, []}
+    ],
+    row: [
+      android: {Dala.Platform.Native, :create_row, []},
+      ios: {Dala.Platform.Native, :create_row, []}
+    ],
+    text: [
+      android: {Dala.Platform.Native, :create_label, []},
+      ios: {Dala.Platform.Native, :create_label, []}
+    ],
+    button: [
+      android: {Dala.Platform.Native, :create_button, []},
+      ios: {Dala.Platform.Native, :create_button, []}
+    ],
+    scroll: [
+      android: {Dala.Platform.Native, :create_scroll, []},
+      ios: {Dala.Platform.Native, :create_scroll, []}
+    ]
   ]
 
   @doc """

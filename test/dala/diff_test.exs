@@ -504,8 +504,9 @@ defmodule Dala.DiffTest do
 
       patches = [{:insert, "root", 0, node}]
       binary = Dala.Renderer.encode_frame(patches)
-      <<0xDA::8, 0xA1::8, _version::little-16, _count::little-16, _frame_begin::8,
-      _rest::binary>> = binary
+
+      <<0xDA::8, 0xA1::8, _version::little-16, _count::little-16, _frame_begin::8, _rest::binary>> =
+        binary
 
       # Should encode without error and contain the padding float
       assert byte_size(binary) > 8

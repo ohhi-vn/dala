@@ -104,7 +104,12 @@ defmodule Dala.Hardware.Bluetooth do
   """
   @spec read_characteristic(Dala.Ui.Socket.t(), device_id(), uuid(), uuid()) :: Dala.Ui.Socket.t()
   def read_characteristic(socket, device_id, service_uuid, characteristic_uuid) do
-    Dala.Platform.Native.bluetooth_read_characteristic(device_id, service_uuid, characteristic_uuid)
+    Dala.Platform.Native.bluetooth_read_characteristic(
+      device_id,
+      service_uuid,
+      characteristic_uuid
+    )
+
     socket
   end
 
