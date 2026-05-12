@@ -257,58 +257,70 @@ defmodule Dala.Plugin do
     plugin_platforms = opts[:platforms] || []
     plugin_dala_requires = opts[:dala_requires]
     plugin_capabilities = opts[:capabilities] || []
-    plugin_metadata = opts[:metadata] || %{}
+    plugin_metadata = opts[:metadata]
 
-    quote bind_quoted: [
-            plugin_name: plugin_name,
-            plugin_version: plugin_version,
-            plugin_platforms: plugin_platforms,
-            plugin_dala_requires: plugin_dala_requires,
-            plugin_capabilities: plugin_capabilities,
-            plugin_metadata: plugin_metadata
-          ] do
-      @behaviour Dala.Plugin
+    base_quote =
+      quote bind_quoted: [
+              plugin_name: plugin_name,
+              plugin_version: plugin_version,
+              plugin_platforms: plugin_platforms,
+              plugin_dala_requires: plugin_dala_requires,
+              plugin_capabilities: plugin_capabilities
+            ] do
+        @behaviour Dala.Plugin
 
-      import Dala.Plugin
-      import Dala.Plugin.ComponentDSL
+        import Dala.Plugin
+        import Dala.Plugin.ComponentDSL
 
-      @before_compile Dala.Plugin
+        @before_compile Dala.Plugin
 
-      @plugin_opts []
-      Module.register_attribute(__MODULE__, :plugin_components, accumulate: true)
-      Module.register_attribute(__MODULE__, :plugin_schema_version, accumulate: false)
-      Module.register_attribute(__MODULE__, :plugin_protocol_version, accumulate: false)
-      Module.register_attribute(__MODULE__, :plugin_native_api_version, accumulate: false)
-      Module.register_attribute(__MODULE__, :plugin_description, accumulate: false)
-      Module.register_attribute(__MODULE__, :plugin_permissions, accumulate: true)
-      Module.register_attribute(__MODULE__, :plugin_dependencies, accumulate: true)
-      Module.register_attribute(__MODULE__, :plugin_platforms, accumulate: true)
-      Module.register_attribute(__MODULE__, :plugin_native_module_decls, accumulate: true)
-      Module.register_attribute(__MODULE__, :plugin_block_used, accumulate: false)
-      Module.register_attribute(__MODULE__, :plugin_events, accumulate: true)
+        @plugin_opts []
+        Module.register_attribute(__MODULE__, :plugin_components, accumulate: true)
+        Module.register_attribute(__MODULE__, :plugin_schema_version, accumulate: false)
+        Module.register_attribute(__MODULE__, :plugin_protocol_version, accumulate: false)
+        Module.register_attribute(__MODULE__, :plugin_native_api_version, accumulate: false)
+        Module.register_attribute(__MODULE__, :plugin_description, accumulate: false)
+        Module.register_attribute(__MODULE__, :plugin_permissions, accumulate: true)
+        Module.register_attribute(__MODULE__, :plugin_dependencies, accumulate: true)
+        Module.register_attribute(__MODULE__, :plugin_platforms, accumulate: true)
+        Module.register_attribute(__MODULE__, :plugin_native_module_decls, accumulate: true)
+        Module.register_attribute(__MODULE__, :plugin_block_used, accumulate: false)
+        Module.register_attribute(__MODULE__, :plugin_events, accumulate: true)
 
-      # Plugin block declarations (from `plugin do ... end`)
-      Module.register_attribute(__MODULE__, :plugin_block_components, accumulate: true)
-      Module.register_attribute(__MODULE__, :plugin_block_events, accumulate: true)
-      Module.register_attribute(__MODULE__, :plugin_block_natives, accumulate: true)
-      Module.register_attribute(__MODULE__, :plugin_block_permissions, accumulate: true)
-      Module.register_attribute(__MODULE__, :plugin_block_dependencies, accumulate: true)
-      Module.register_attribute(__MODULE__, :plugin_block_platforms, accumulate: true)
-      Module.register_attribute(__MODULE__, :plugin_block_description, accumulate: false)
-      Module.register_attribute(__MODULE__, :plugin_inline_events, accumulate: true)
+        # Plugin block declarations (from `plugin do ... end`)
+        Module.register_attribute(__MODULE__, :plugin_block_components, accumulate: true)
+        Module.register_attribute(__MODULE__, :plugin_block_events, accumulate: true)
+        Module.register_attribute(__MODULE__, :plugin_block_natives, accumulate: true)
+        Module.register_attribute(__MODULE__, :plugin_block_permissions, accumulate: true)
+        Module.register_attribute(__MODULE__, :plugin_block_dependencies, accumulate: true)
+        Module.register_attribute(__MODULE__, :plugin_block_platforms, accumulate: true)
+        Module.register_attribute(__MODULE__, :plugin_block_description, accumulate: false)
+        Module.register_attribute(__MODULE__, :plugin_inline_events, accumulate: true)
 
-      # Metadata from use options (always set with defaults)
-      @plugin_name plugin_name
-      @plugin_version plugin_version
-      @plugin_platforms_from_opts plugin_platforms
-      @plugin_dala_requires plugin_dala_requires
-      @plugin_capabilities_from_opts plugin_capabilities
-      @plugin_metadata plugin_metadata
+        # Metadata from use options (always set with defaults)
+        @plugin_name plugin_name
+        @plugin_version plugin_version
+        @plugin_platforms_from_opts plugin_platforms
+        @plugin_dala_requires plugin_dala_requires
+        @plugin_capabilities_from_opts plugin_capabilities
 
-      schema_version("1.0.0")
-      protocol_version(3)
-      native_api_version("2.0.0")
-    end
+        schema_version("1.0.0")
+        protocol_version(3)
+        native_api_version("2.0.0")
+      end
+
+    metadata_quote =
+      if plugin_metadata do
+        quote bind_quoted: [plugin_metadata: plugin_metadata] do
+          @plugin_metadata plugin_metadata
+        end
+      else
+        quote do
+          @plugin_metadata %{}
+        end
+      end
+
+    {:__block__, [], [base_quote, metadata_quote]}
   end
 
   # ── Top-level DSL macros ───────────────────────────────────────────────────
@@ -492,14 +504,13 @@ defmodule Dala.Plugin do
   end
 
   @doc false
-  defmacro plugin_event(name, module) when is_atom(name) and is_atom(module) do
+  defmacro plugin_event(name, {:__aliases__, _, _} = module) when is_atom(name) do
     quote do
       @plugin_block_events {unquote(name), unquote(module)}
     end
   end
 
-  @doc false
-  defmacro plugin_event(name, payload) when is_atom(name) and is_map(payload) do
+  defmacro plugin_event(name, payload) when is_atom(name) do
     event_mod = Dala.Plugin.Event.event_module_name(name, __MODULE__)
 
     quote do

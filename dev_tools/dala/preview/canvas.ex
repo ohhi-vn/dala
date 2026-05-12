@@ -16,40 +16,18 @@ defmodule Dala.Preview.Canvas do
   import Phoenix.HTML
   alias Dala.Preview.Codegen
 
-  @container_types [:column, :row, :box, :scroll, :modal, :pressable, :safe_area]
+  alias Dala.Ui.Component
 
-  @layout_palette [
-    {:column, "Column", "Vertical layout container"},
-    {:row, "Row", "Horizontal layout container"},
-    {:box, "Box", "Generic container"},
-    {:scroll, "Scroll", "Scrollable container"},
-    {:modal, "Modal", "Modal overlay"},
-    {:pressable, "Pressable", "Tappable container"},
-    {:safe_area, "SafeArea", "Safe area inset container"}
-  ]
+  @components Component.all() |> Enum.map(fn {_name, comp} -> comp end)
+  @container_types @components |> Enum.filter(&(&1.category == :container)) |> Enum.map(& &1.name)
 
-  @leaf_palette [
-    {:text, "Text", "Text label"},
-    {:button, "Button", "Tappable button"},
-    {:icon, "Icon", "Icon element"},
-    {:divider, "Divider", "Horizontal divider line"},
-    {:spacer, "Spacer", "Flexible spacer"},
-    {:text_field, "TextField", "Text input field"},
-    {:toggle, "Toggle", "Toggle switch"},
-    {:slider, "Slider", "Range slider"},
-    {:switch, "Switch", "On/off switch"},
-    {:image, "Image", "Image view"},
-    {:video, "Video", "Video player"},
-    {:activity_indicator, "ActivityIndicator", "Loading spinner"},
-    {:progress_bar, "ProgressBar", "Progress indicator"},
-    {:status_bar, "StatusBar", "Status bar"},
-    {:refresh_control, "RefreshControl", "Pull-to-refresh"},
-    {:webview, "WebView", "Embedded web view"},
-    {:camera_preview, "CameraPreview", "Camera preview"},
-    {:native_view, "NativeView", "Custom native view"},
-    {:tab_bar, "TabBar", "Tab navigation bar"},
-    {:list, "List", "List container"}
-  ]
+  @layout_palette @components
+                |> Enum.filter(&(&1.category == :container))
+                |> Enum.map(fn comp -> {comp.name, Atom.to_string(comp.name), comp.doc || ""} end)
+
+  @leaf_palette @components
+              |> Enum.filter(&(&1.category == :leaf))
+              |> Enum.map(fn comp -> {comp.name, Atom.to_string(comp.name), comp.doc || ""} end)
 
   @component_specs %{
     column: [

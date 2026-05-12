@@ -19,7 +19,7 @@ All examples are **zero-config** - just run them!
 Basic Dala app with navigation and state management.
 
 ### Features:
-- Counter with increment button
+- Counter with increment/decrement buttons
 - Navigation between screens
 - Back button functionality
 - No configuration needed!
@@ -41,7 +41,7 @@ mix dala.deploy --native --android-emu  # Android Emulator
 On-device machine learning with YOLO object detection.
 
 ### Features:
-- **Zero configuration** - EMLX auto-setups for iOS/Android
+- **Zero configuration** - Dala.ML.setup() auto-configures for iOS/Android
 - YOLO object detection (simulated)
 - Camera integration ready
 - Metal GPU acceleration on Apple Silicon
@@ -81,6 +81,69 @@ These are automatically added in `mix.exs` - no work for you!
 
 ---
 
+## 3. Demo App (`demo_app/`) - **NEW**
+
+Comprehensive demo showcasing multiple screens with complex layouts.
+
+### Features:
+- **Multi-screen navigation** with tab bar
+- **Complex layouts**: columns, rows, boxes, scroll views
+- **Interactive components**: buttons, toggles, switches, sliders, text fields
+- **Form validation** with error handling
+- **Modal presentations**
+- **State management** across screens
+
+### Screens:
+1. **Home Screen** - Counter, navigation buttons, modal trigger
+2. **Profile Screen** - Form inputs, avatar, toggles, sliders
+3. **Settings Screen** - Switches, sections, storage management
+4. **Forms Screen** - Registration form with validation
+5. **Modal Screen** - Demonstrates modal presentation
+
+### Run it:
+
+```bash
+cd examples/demo_app
+mix deps.get
+mix dala.deploy --native --ios-sim    # iOS Simulator
+# or
+mix dala.deploy --native --android-emu  # Android Emulator
+```
+
+### Key Demonstrations:
+
+**Tab Bar Navigation:**
+```elixir
+tab_bar do
+  tab(:home, icon: "house", title: "Home")
+  tab(:profile, icon: "person", title: "Profile")
+  tab(:settings, icon: "gear", title: "Settings")
+end
+```
+
+**Complex Layout (Row with aligned items):**
+```elixir
+%{
+  type: :row,
+  props: %{spacing: 12, align: :center},
+  children: [
+    %{type: :text, props: %{text: "Count: #{assigns.count}"}},
+    %{type: :button, props: %{text: "-", on_tap: :decrement}},
+    %{type: :button, props: %{text: "+", on_tap: :increment}}
+  ]
+}
+```
+
+**Form Validation:**
+```elixir
+def handle_event(:submit, _params, socket) do
+  errors = validate_form(socket.assigns)
+  {:noreply, Dala.Socket.assign(socket, :errors, errors)}
+end
+```
+
+---
+
 ## How It Works (Zero Config Magic)
 
 ### Simple App:
@@ -89,7 +152,7 @@ These are automatically added in `mix.exs` - no work for you!
 # examples/simple_app/lib/simple_app.ex
 def on_start do
   # Pattern-match ensures failures crash loudly (AGENTS.md Rule #2)
-  {:ok, _pid} = Dala.Screen.Screen.start_root(SimpleApp.HomeScreen)
+  {:ok, _pid} = Dala.Screen.start_root(SimpleApp.HomeScreen)
   :ok
 end
 ```
@@ -100,24 +163,38 @@ end
 # examples/ml_app/lib/ml_app.ex
 def on_start do
   # Auto-configure ML backend - that's it!
-  case Dala.ML.EMLX.setup() do
-    {:ok, config} ->
-      Dala.Native.log("MLApp: EMLX configured - device: #{config.device}")
-    :ok ->
-      Dala.Native.log("MLApp: Using default Nx backend (non-iOS)")
-  end
+  Dala.ML.setup()
 
-  {:ok, _pid} = Dala.Screen.Screen.start_root(MLApp.HomeScreen)
+  {:ok, _pid} = Dala.Screen.start_root(MLApp.HomeScreen)
   :ok
 end
 ```
 
-The `Dala.ML.EMLX.setup/0` function:
+The `Dala.ML.setup/0` function:
 - Detects iOS device vs simulator
 - Disables JIT on real devices (required by W^X policy)
 - Enables Metal GPU on Apple Silicon
 - Sets EMLX as default Nx backend
 - Safe to call on non-iOS platforms (becomes no-op)
+
+### Demo App:
+
+```elixir
+# examples/demo_app/lib/demo_app.ex
+def navigation(_platform) do
+  screens([DemoApp.HomeScreen, DemoApp.ProfileScreen, ...])
+
+  tab_bar do
+    tab(:home, icon: "house", title: "Home")
+    tab(:profile, icon: "person", title: "Profile")
+    tab(:settings, icon: "gear", title: "Settings")
+  end
+
+  stack(:home, root: DemoApp.HomeScreen)
+  stack(:profile, root: DemoApp.ProfileScreen)
+  stack(:settings, root: DemoApp.SettingsScreen)
+end
+```
 
 ---
 

@@ -314,16 +314,18 @@ defmodule Dala.Plugin.Protocol do
         [<<byte_size(key_str)::16, key_str::binary, type_tag>>, value_data]
       end)
 
-    <<@event_opcode, byte_size(event_name)::16, event_name::binary,
-      length(payload)::16, fields::binary>>
+    <<@event_opcode, byte_size(event_name)::16, event_name::binary, length(payload)::16,
+      fields::binary>>
   end
 
   @doc """
   Decodes a binary event message back to a map.
   """
   @spec decode_event(binary()) :: {atom(), map()}
-  def decode_event(<<@event_opcode, name_len::16, name::binary-size(name_len),
-                     field_count::16, rest::binary>>) do
+  def decode_event(
+        <<@event_opcode, name_len::16, name::binary-size(name_len), field_count::16,
+          rest::binary>>
+      ) do
     {fields, _} =
       Enum.reduce(1..field_count, {%{}, rest}, fn _, {acc, data} ->
         <<key_len::16, key::binary-size(key_len), type_tag, value_data::binary>> = data
@@ -368,22 +370,29 @@ defmodule Dala.Plugin.Protocol do
   def decode_value(0x08, <<len::32, value::binary-size(len), rest::binary>>),
     do: {value, rest}
 
-  def decode_value(0x09, <<len::32, _rest::binary>> = data) do
+  def decode_value(0x09, <<_len::32, _rest::binary>> = data) do
     <<0x09, len::32, items::binary-size(len), rest::binary>> = data
-    values = for <<_s::16, item::binary>> <- items, do: item
+    values = decode_list_items(items)
     {values, rest}
   end
 
-  def decode_value(0x0A, <<len::32, _rest::binary>> = data) do
+  def decode_value(0x0A, <<_len::32, _rest::binary>> = data) do
     <<0x0A, len::32, items::binary-size(len), rest::binary>> = data
+
     map =
       Enum.reduce(1..div(len, 2), %{}, fn _, acc ->
-        <<klen::16, key::binary-size(klen), vlen::16, val::binary-size(vlen), remaining::binary>> =
+        <<klen::16, key::binary-size(klen), vlen::16, val::binary-size(vlen), _remaining::binary>> =
           items
+
         Map.put(acc, key, val)
       end)
 
     {map, rest}
+  end
+
+  defp decode_list_items(<<>>), do: []
+  defp decode_list_items(<<slen::16, item::binary-size(slen), rest::binary>>) do
+    [item | decode_list_items(rest)]
   end
 
   @doc """

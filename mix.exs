@@ -4,14 +4,14 @@ defmodule Dala.MixProject do
   def project do
     [
       app: :dala,
-      version: "0.0.13",
+      version: "0.0.14",
       elixir: "~> 1.18",
       erlang: ">= 27.0",
       start_permanent: Mix.env() == :prod,
       elixirc_paths: elixirc_paths(Mix.env()),
       deps: deps(),
       description:
-        "Dala is a native mobile framework for Elixir powered by the BEAM VM. Build iOS and Android apps with OTP, lightweight processes, fault tolerance, and native performance through a Rust-powered runtime.",
+        "Dala is a native mobile framework for Elixir powered by the BEAM VM. Build iOS and Android apps with OTP, lightweight processes, fault tolerance, AI/ML.",
       source_url: "https://github.com/manhvu/dala",
       homepage_url: "https://hexdocs.pm/dala",
       package: package(),

@@ -774,16 +774,18 @@ defmodule Dala.Ui.Renderer do
     [<<count::little-32>>, ids]
   end
 
-  # ── Enum byte helpers ──────────────────────────────────────────────
+  # ── Component registry ────────────────────────────────────────────
 
-  defp kind_to_byte(:column), do: 0
-  defp kind_to_byte(:row), do: 1
-  defp kind_to_byte(:text), do: 2
-  defp kind_to_byte(:button), do: 3
-  defp kind_to_byte(:image), do: 4
-  defp kind_to_byte(:scroll), do: 5
-  defp kind_to_byte(:webview), do: 6
-  defp kind_to_byte(_), do: 0
+  alias Dala.Ui.Component
+
+  @component_kinds Component.all()
+                   |> Enum.map(fn {_name, comp} -> comp end)
+                   |> Enum.with_index()
+                   |> Enum.map(fn {comp, idx} -> {comp.name, idx} end)
+                   |> Map.new()
+
+  defp kind_to_byte(kind),
+    do: Map.get(@component_kinds, kind) || raise("Unknown component: #{inspect(kind)}")
 
   defp flex_dir_byte(:row), do: 1
   defp flex_dir_byte(_), do: 0
