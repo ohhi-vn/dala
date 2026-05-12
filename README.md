@@ -85,11 +85,33 @@ The `dala_new` package (separate) provides project generation, deployment toolin
 mix archive.install hex dala_new
 ```
 
-## A screen
+## A screen (Spark DSL - Recommended)
 
 ```elixir
 defmodule MyApp.CounterScreen do
-  use Dala.Screen.Screen
+  use Dala.Spark.Dsl
+
+  attribute :count, :integer, default: 0
+
+  screen name: :counter do
+    column do
+      gap(:space_sm)
+      text "Count: @count", text_size: :xl
+      button "Increment", on_tap: :increment
+    end
+  end
+
+  def handle_event(:increment, _params, socket) do
+    {:noreply, Dala.Socket.assign(socket, :count, socket.assigns.count + 1)}
+  end
+end
+```
+
+## A screen (Traditional - Alternative)
+
+```elixir
+defmodule MyApp.CounterScreen do
+  use Dala.Screen
 
   def mount(_params, _session, socket) do
     {:ok, Dala.Socket.assign(socket, :count, 0)}
@@ -213,7 +235,10 @@ end
 | Package | Purpose |
 |---------|---------|
 | [`dala_dev`](https://hex.pm/packages/dala_dev) | Dev tooling: `mix dala.new`, `mix dala.deploy`, `mix dala.connect`, live dashboard |
-| [`dala_push`](https://hex.pm/packages/dala_push) | Server-side push notifications (APNs + FCM) |
+| [`dala_new`](https://hex.pm/packages/dala_new) | Generator poject tool |
+| [`dala_runtime`](working, https://github.com/manhvu/dala_runtime) | AOT compiler & runtime for BEAM, fix limitations of JIT  |
+
+
 
 ## Documentation
 

@@ -942,12 +942,12 @@ defmodule Dala.PluginTest do
 
     test "metadata from use opts is passed through" do
       info = CapabilitiesFromOptsPlugin.__plugin_info__()
-      assert info.metadata["author"] == "test"
-      assert info.metadata["license"] == "MIT"
+      assert info.metadata[:author] == "test"
+      assert info.metadata[:license] == "MIT"
     end
 
     test "metadata defaults to empty map when not provided" do
-      info = LifecyclePlugin.__plugin_info__()
+      info = Dala.PluginTest.LifecyclePlugin.__plugin_info__()
       assert info.metadata == %{}
     end
   end
@@ -1067,12 +1067,17 @@ defmodule Dala.PluginTest do
     end
 
     test "shows usage when no name provided" do
-      output =
-        ExUnit.CaptureIO.capture_io(:stderr, fn ->
-          Mix.Tasks.Dala.Plugin.New.run([])
-        end)
+      Mix.shell(Mix.Shell.Process)
 
-      assert output =~ "Usage:"
+      Mix.Tasks.Dala.Plugin.New.run([])
+
+      receive do
+        {:mix_shell, :error, [message]} ->
+          assert message =~ "Usage:"
+      after
+        100 ->
+          flunk("Expected error message not received")
+      end
     end
   end
 end

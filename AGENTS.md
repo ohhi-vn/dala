@@ -245,8 +245,7 @@ These are the things we've burned ourselves on. Following them isn't optional.
         attribute :count, :integer, default: 0
       end
 
-      screen do
-        name :counter
+      screen name: :counter do
         column do
           gap :space_sm
           text "Count: @count"
@@ -260,15 +259,21 @@ These are the things we've burned ourselves on. Following them isn't optional.
     end
     ```
 
+    **New in v0.4:**
+    - **Improved error messages**: Verifier now provides clearer error messages
+      for invalid types and missing handlers.
+    - **Fixed PubSub transformer**: Corrected Spark DSL API usage.
+    - **Restored original DSL syntax**: `screen name: :atom do` (keyword arg).
+
     Features:
     - **@ref syntax**: Use `@count` in strings to reference assigns (processed at compile time)
     - **Auto-generated mount/3**: Initializes attributes with defaults; always generated
-    - **Compile-time verifiers**: Validates prop types and handler references
+    - **Compile-time verifiers**: Validates prop types and handler references (improved error messages)
     - **Layout containers**: column, row, box, scroll, modal, pressable, safe_area (with nested children)
     - **Leaf components**: text, button, icon, divider, spacer, text_field, toggle, slider,
       switch, image, video, activity_indicator, progress_bar, status_bar, refresh_control,
       webview, camera_preview, native_view, tab_bar, list
-    - **Container props go inside do blocks**: `column do padding :space_md; gap :space_sm; ... end`
+    - **Container props as function calls**: `column do padding(:space_md); gap(:space_sm); ... end`
     - **Leaf props as keyword args**: `text "Hello", text_size: :xl`
 
     The extension module (`Dala.Spark.Dsl`) is both a Spark extension and a DSL

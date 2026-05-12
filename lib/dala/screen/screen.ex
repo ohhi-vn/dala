@@ -8,21 +8,17 @@ defmodule Dala.Screen.Screen do
       defmodule MyApp.CounterScreen do
         use Dala.Screen
 
-        attributes do
-          attribute :count, :integer, default: 0
-        end
+        attribute :count, :integer, default: 0
 
-        screen do
-          name :counter
-          column do
-            gap :space_sm
+        screen name: :counter do
+          column gap: :space_sm do
             text "Count: @count"
             button "Increment", on_tap: :increment
           end
         end
 
         def handle_event(:increment, _params, socket) do
-          {:noreply, Dala.Ui.Socket.assign(socket, :count, socket.assigns.count + 1)}
+          {:noreply, Dala.Socket.assign(socket, :count, socket.assigns.count + 1)}
         end
       end
 
@@ -85,7 +81,7 @@ defmodule Dala.Screen.Screen do
   Return the navigation history (list of `{module, socket}` pairs, head = most recent).
   Intended for testing and debugging.
   """
-  @spec get_nav_history(pid()) :: [{module(), Dala.Ui.Socket.t()}]
+  @spec get_nav_history(pid()) :: [{module(), Dala.Socket.t()}]
   def get_nav_history(pid) do
     GenServer.call(pid, :get_nav_history)
   end
@@ -153,7 +149,7 @@ defmodule Dala.Screen.Screen do
 
   @impl GenServer
   def init({screen_module, params, render_mode, platform}) do
-    socket = Dala.Ui.Socket.new(screen_module, platform: platform)
+    socket = Dala.Socket.new(screen_module, platform: platform)
 
     # Register under :dala_screen so C-layer dala_handle_back() can find us.
     # Only in :render mode (production); tests use :no_render and run without a NIF.
@@ -162,9 +158,9 @@ defmodule Dala.Screen.Screen do
     socket =
       if render_mode == :render do
         {t, r, b, l} = Dala.Platform.Native.safe_area()
-        Dala.Ui.Socket.assign(socket, :safe_area, %{top: t, right: r, bottom: b, left: l})
+        Dala.Socket.assign(socket, :safe_area, %{top: t, right: r, bottom: b, left: l})
       else
-        Dala.Ui.Socket.assign(socket, :safe_area, %{top: 0.0, right: 0.0, bottom: 0.0, left: 0.0})
+        Dala.Socket.assign(socket, :safe_area, %{top: 0.0, right: 0.0, bottom: 0.0, left: 0.0})
       end
 
     case screen_module.mount(params, %{}, socket) do
@@ -282,7 +278,7 @@ defmodule Dala.Screen.Screen do
   programmatically without needing a UI event. Synchronous — the caller blocks
   until the navigation (and re-render, in production mode) completes.
 
-  Valid actions mirror the `Dala.Ui.Socket` navigation functions:
+  Valid actions mirror the `Dala.Socket` navigation functions:
   - `{:push, dest, params}` — push a new screen
   - `{:pop}` — pop to the previous screen
   - `{:pop_to, dest}` — pop to a specific screen in history
@@ -294,7 +290,7 @@ defmodule Dala.Screen.Screen do
         _from,
         {module, socket, nav_history, render_mode, screen_id}
       ) do
-    socket = Dala.Ui.Socket.put_dala(socket, :nav_action, nav_action)
+    socket = Dala.Socket.put_dala(socket, :nav_action, nav_action)
 
     {new_module, new_socket, new_history, transition} =
       apply_nav_action(module, socket, nav_history)
@@ -310,7 +306,7 @@ defmodule Dala.Screen.Screen do
   end
 
   def handle_call({:navigate, nav_action}, _from, {module, socket, nav_history, render_mode}) do
-    socket = Dala.Ui.Socket.put_dala(socket, :nav_action, nav_action)
+    socket = Dala.Socket.put_dala(socket, :nav_action, nav_action)
 
     {new_module, new_socket, new_history, transition} =
       apply_nav_action(module, socket, nav_history)
@@ -534,7 +530,7 @@ defmodule Dala.Screen.Screen do
         else
           apply_nav_action(
             module,
-            Dala.Ui.Socket.put_dala(socket, :nav_action, {:pop}),
+            Dala.Socket.put_dala(socket, :nav_action, {:pop}),
             nav_history
           )
         end
@@ -562,7 +558,7 @@ defmodule Dala.Screen.Screen do
         else
           apply_nav_action(
             module,
-            Dala.Ui.Socket.put_dala(socket, :nav_action, {:pop}),
+            Dala.Socket.put_dala(socket, :nav_action, {:pop}),
             nav_history
           )
         end
@@ -698,8 +694,8 @@ defmodule Dala.Screen.Screen do
         platform = socket.__dala__.platform
 
         new_base =
-          Dala.Ui.Socket.new(new_module, platform: platform)
-          |> Dala.Ui.Socket.assign(:safe_area, socket.assigns.safe_area)
+          Dala.Socket.new(new_module, platform: platform)
+          |> Dala.Socket.assign(:safe_area, socket.assigns.safe_area)
 
         {:ok, mounted} = new_module.mount(params, %{}, new_base)
         saved = {module, clear_nav_action(socket)}
@@ -739,8 +735,8 @@ defmodule Dala.Screen.Screen do
         platform = socket.__dala__.platform
 
         new_base =
-          Dala.Ui.Socket.new(new_module, platform: platform)
-          |> Dala.Ui.Socket.assign(:safe_area, socket.assigns.safe_area)
+          Dala.Socket.new(new_module, platform: platform)
+          |> Dala.Socket.assign(:safe_area, socket.assigns.safe_area)
 
         {:ok, mounted} = new_module.mount(params, %{}, new_base)
         {new_module, mounted, [], :reset}
@@ -783,7 +779,7 @@ defmodule Dala.Screen.Screen do
   end
 
   defp clear_nav_action(socket) do
-    Dala.Ui.Socket.put_dala(socket, :nav_action, nil)
+    Dala.Socket.put_dala(socket, :nav_action, nil)
   end
 
   # ── Helpers ───────────────────────────────────────────────────────────────
@@ -843,7 +839,7 @@ defmodule Dala.Screen.Screen do
       Dala.Ui.NativeView.Registry.reconcile(self(), active_component_keys)
 
       # Get previous tree from socket metadata
-      old_tree = Dala.Ui.Socket.get_dala(socket, :last_tree)
+      old_tree = Dala.Socket.get_dala(socket, :last_tree)
 
       # Use patch-based rendering
       {:ok, _patches} =
@@ -856,13 +852,13 @@ defmodule Dala.Screen.Screen do
         )
 
       # Store the new tree for next diff
-      socket = Dala.Ui.Socket.put_dala(socket, :last_tree, new_node)
-      socket = Dala.Ui.Socket.clear_changed(socket)
-      Dala.Ui.Socket.put_root_view(socket, :rendered)
+      socket = Dala.Socket.put_dala(socket, :last_tree, new_node)
+      socket = Dala.Socket.clear_changed(socket)
+      Dala.Socket.put_root_view(socket, :rendered)
     else
       # Nothing changed, keep existing UI but still clear the changed set
       # so the next render doesn't incorrectly think something changed
-      socket = Dala.Ui.Socket.clear_changed(socket)
+      socket = Dala.Socket.clear_changed(socket)
       socket
     end
   end
@@ -879,7 +875,7 @@ defmodule Dala.Screen.Screen do
           %{top: 0.0, right: 0.0, bottom: 0.0, left: 0.0}
         end
 
-      Dala.Ui.Socket.assign(socket, :safe_area, safe_area)
+      Dala.Socket.assign(socket, :safe_area, safe_area)
     end
   end
 end

@@ -16,7 +16,7 @@ defmodule SimpleApp do
 
   def on_start do
     # Pattern-match start_root so failures crash loudly (AGENTS.md Rule #2)
-    {:ok, _pid} = Dala.Screen.Screen.start_root(SimpleApp.HomeScreen)
+    {:ok, _pid} = Dala.Screen.start_root(SimpleApp.HomeScreen)
     :ok
   end
 end

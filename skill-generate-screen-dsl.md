@@ -17,12 +17,9 @@ defmodule MyApp.SomeScreen do
   use Dala.Spark.Dsl
 
   dala do
-    attributes do
-      attribute :key, :type, default: value
-    end
+    attribute :key, :type, default: value
 
-    screen do
-      name :screen_atom
+    screen name: :screen_atom do
       # UI components here
     end
   end
@@ -41,8 +38,24 @@ end
 | `use Dala.Spark.Dsl` | Always. Never `use Dala.Screen` for DSL screens. |
 | `dala do ... end` | Wraps both `attributes` and `screen` sections. |
 | `attributes do ... end` | Optional. Omit if the screen has no state. |
-| `screen do ... end` | Required. Must contain `name :atom` as its first line. |
+| `screen name: :atom do` | Required. `name:` is a keyword arg. |
 | `handle_event/3` | One clause per event atom referenced in `on_tap` / `on_change` / etc. |
+
+### Screen name inference
+
+If you omit `name`, it's automatically inferred from the module name:
+
+```elixir
+defmodule MyApp.CounterScreen do
+  use Dala.Spark.Dsl
+  # Inferred name: :counter (removes "Screen" suffix, converts to snake_case)
+  screen do
+    text "Hello"
+  end
+end
+```
+
+Common suffixes removed: `Screen`, `View`, `Page`.
 
 ---
 
@@ -81,17 +94,16 @@ end
 
 ## 3. Screen Section
 
-### Required: `name`
+### Required: `name` (keyword arg)
 
 ```elixir
-screen do
-  name :my_screen
+screen name: :my_screen do
   # ...
 end
 ```
 
-The `:name` atom identifies the screen in navigation and debugging. It must be
-the first entity inside `screen do`.
+The `:name` atom identifies the screen in navigation and debugging.
+It's passed as a keyword argument to `screen`.
 
 ### @ref syntax
 
@@ -105,6 +117,13 @@ button "Save @item_name"       # → "Save " <> to_string(assigns[:item_name])
 
 - `@safe_area` is always available (populated by the framework).
 - Use `@safe_area.top`, `@safe_area.bottom` etc. for safe-area insets.
+
+## 3.5 Control Flow (Coming Soon)
+
+Control flow (`if`/`for`) is NOT currently supported in the DSL.
+Spark DSL entities are structs, not arbitrary Elixir AST.
+
+For dynamic rendering, use traditional `Dala.Screen` with `render/1` function.
 
 ---
 

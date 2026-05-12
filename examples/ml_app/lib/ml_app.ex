@@ -34,7 +34,7 @@ defmodule MLApp do
 
   def on_start do
     # Auto-configure ML backend (zero config!)
-    case Dala.ML.EMLX.setup() do
+    case Dala.ML.setup() do
       {:ok, config} ->
         Dala.Native.log("MLApp: EMLX configured - device: #{config.device}")
 
@@ -42,7 +42,7 @@ defmodule MLApp do
         Dala.Native.log("MLApp: Using default Nx backend (non-iOS)")
     end
 
-    {:ok, _pid} = Dala.Screen.Screen.start_root(MLApp.HomeScreen)
+    {:ok, _pid} = Dala.Screen.start_root(MLApp.HomeScreen)
     :ok
   end
 end

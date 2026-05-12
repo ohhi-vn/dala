@@ -2,7 +2,7 @@ defmodule Dala.Spark.Transformers.GenerateMount do
   @moduledoc """
   Spark transformer that generates the `mount/3` function from DSL attributes.
 
-  Each `attribute` declaration becomes a `Dala.Ui.Socket.assign/3` call
+  Each `attribute` declaration becomes a `Dala.Socket.assign/3` call
   initialized with its default value. If no attributes are declared, a
   default mount that returns `{:ok, socket}` is generated.
   """
@@ -20,7 +20,7 @@ defmodule Dala.Spark.Transformers.GenerateMount do
           default = Map.get(attr, :default)
 
           quote do
-            socket = Dala.Ui.Socket.assign(socket, unquote(name), unquote(Macro.escape(default)))
+            socket = Dala.Socket.assign(socket, unquote(name), unquote(Macro.escape(default)))
           end
         end)
 

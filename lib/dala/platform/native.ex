@@ -78,6 +78,7 @@ defmodule Dala.Platform.Native do
   def share_text(_text), do: :erlang.nif_error(:nif_not_loaded)
 
   # Permissions
+  def check_permission(_cap), do: :erlang.nif_error(:nif_not_loaded)
   def request_permission(_cap), do: :erlang.nif_error(:nif_not_loaded)
 
   # Biometric

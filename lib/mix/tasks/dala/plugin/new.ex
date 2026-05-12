@@ -173,7 +173,7 @@ defmodule Mix.Tasks.Dala.Plugin.New do
     """
   end
 
-  defp ios_header(mod_prefix, mod_name) do
+  defp ios_header(mod_prefix, _mod_name) do
     """
     #import <Foundation/Foundation.h>
 

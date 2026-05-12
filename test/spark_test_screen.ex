@@ -5,14 +5,10 @@ defmodule Dala.SparkTestScreen do
 
   use Dala.Spark.Dsl
 
-  attributes do
-    attribute(:count, :integer, default: 0)
-    attribute(:message, :string, default: "Hello")
-  end
+  attribute(:count, :integer, default: 0)
+  attribute(:message, :string, default: "Hello")
 
-  screen do
-    name(:spark_test)
-
+  screen name: :spark_test do
     column do
       gap(:space_sm)
       text("Count: @count")
@@ -22,7 +18,7 @@ defmodule Dala.SparkTestScreen do
   end
 
   def handle_event(:increment, _params, socket) do
-    new_count = Dala.Socket.get_assign(socket, :count) + 1
+    new_count = Dala.Socket.get(socket, :count) + 1
     socket = Dala.Socket.assign(socket, :count, new_count)
     {:noreply, socket}
   end

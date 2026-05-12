@@ -24,8 +24,7 @@ defmodule MyApp.CounterScreen do
     attribute :count, :integer, default: 0
   end
 
-  screen do
-    name :counter
+  screen name: :counter do
     column do
       gap :space_sm
       text "Count: @count"
@@ -72,18 +71,17 @@ end
 
 ## Screen Section
 
-The `screen` section holds all UI components. It requires a `name` option:
+The `screen` section holds all UI components. It requires a `name:` keyword argument:
 
 ```elixir
-screen do
-  name :my_screen
+screen name: :my_screen do
   # components go here
 end
 ```
 
 ## Layout Containers
 
-Container components support nested children via `do...end` blocks. Props are set inside the block:
+Container components support nested children via `do...end` blocks. Props are set as function calls inside the block:
 
 ### Column (VStack)
 

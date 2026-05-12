@@ -11,7 +11,7 @@ defmodule Dala.Spark.Transformers.Pubsub do
 
   @impl true
   def transform(dsl_state) do
-    subscriptions = Dala.Spark.Pubsub.get_subscriptions(dsl_state)
+    subscriptions = Spark.Dsl.Transformer.get_entities(dsl_state, [:pubsub])
 
     if Enum.any?(subscriptions) do
       # Generate handle_info clauses for each subscription

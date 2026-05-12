@@ -36,24 +36,10 @@ defmodule Dala.Ui.Diff do
   changed, a full `{:update_props, ...}` is sent instead.
   """
 
-  # Mapping from prop keys to field mask bits
-  @field_mask_bits %{
-    text: 0x0001,
-    title: 0x0002,
-    color: 0x0004,
-    background: 0x0008,
-    on_tap: 0x0010,
-    width: 0x0020,
-    height: 0x0040,
-    padding: 0x0080,
-    flex_grow: 0x0100,
-    flex_direction: 0x0200,
-    justify_content: 0x0400,
-    align_items: 0x0800
-  }
+  # Auto-generated from Dala.Ui.Component registry
+  # Limited to original 12 props that participate in field masks
 
-  # Known prop keys that participate in field masks
-  @known_props [
+  @original_mask_props [
     :text,
     :title,
     :color,
@@ -67,6 +53,13 @@ defmodule Dala.Ui.Diff do
     :justify_content,
     :align_items
   ]
+
+  @field_mask_bits @original_mask_props
+                   |> Enum.with_index()
+                   |> Enum.map(fn {prop, idx} -> {prop, 1 <<< idx} end)
+                   |> Map.new()
+
+  @known_props @original_mask_props
 
   @type node_id :: String.t() | atom()
 
