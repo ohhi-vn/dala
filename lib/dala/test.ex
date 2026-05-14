@@ -930,7 +930,7 @@ defmodule Dala.Test do
   """
   @spec webview_eval(node(), String.t()) :: :ok
   def webview_eval(node, code) when is_binary(code) do
-    :rpc.call(node, Dala.WebView, :eval_js, [code])
+    :rpc.call(node, Dala.Ui.Embedded.Webview, :eval_js, [code])
     :ok
   end
 
@@ -941,7 +941,7 @@ defmodule Dala.Test do
   """
   @spec webview_post_message(node(), term()) :: :ok
   def webview_post_message(node, data) do
-    :rpc.call(node, Dala.WebView, :post_message, [data])
+    :rpc.call(node, Dala.Ui.Embedded.Webview, :post_message, [data])
     :ok
   end
 
@@ -950,7 +950,7 @@ defmodule Dala.Test do
   """
   @spec webview_navigate(node(), String.t()) :: :ok
   def webview_navigate(node, url) when is_binary(url) do
-    :rpc.call(node, Dala.WebView, :navigate, [url])
+    :rpc.call(node, Dala.Ui.Embedded.Webview, :navigate, [url])
     :ok
   end
 
@@ -959,7 +959,7 @@ defmodule Dala.Test do
   """
   @spec webview_reload(node()) :: :ok
   def webview_reload(node) do
-    :rpc.call(node, Dala.WebView, :reload, [])
+    :rpc.call(node, Dala.Ui.Embedded.Webview, :reload, [])
     :ok
   end
 
@@ -968,7 +968,7 @@ defmodule Dala.Test do
   """
   @spec webview_stop_loading(node()) :: :ok
   def webview_stop_loading(node) do
-    :rpc.call(node, Dala.WebView, :stop_loading, [])
+    :rpc.call(node, Dala.Ui.Embedded.Webview, :stop_loading, [])
     :ok
   end
 
@@ -977,7 +977,7 @@ defmodule Dala.Test do
   """
   @spec webview_go_forward(node()) :: :ok
   def webview_go_forward(node) do
-    :rpc.call(node, Dala.WebView, :go_forward, [])
+    :rpc.call(node, Dala.Ui.Embedded.Webview, :go_forward, [])
     :ok
   end
 
@@ -990,7 +990,7 @@ defmodule Dala.Test do
   """
   @spec webview_tap(node(), String.t()) :: :ok
   def webview_tap(node, selector) when is_binary(selector) do
-    :rpc.call(node, Dala.WebView, :interact, [{:tap, selector}])
+    :rpc.call(node, Dala.Ui.Embedded.Webview, :interact, [{:tap, selector}])
     :ok
   end
 
@@ -999,7 +999,7 @@ defmodule Dala.Test do
   """
   @spec webview_type(node(), String.t(), String.t()) :: :ok
   def webview_type(node, selector, text) when is_binary(selector) and is_binary(text) do
-    :rpc.call(node, Dala.WebView, :interact, [{:type, selector, text}])
+    :rpc.call(node, Dala.Ui.Embedded.Webview, :interact, [{:type, selector, text}])
     :ok
   end
 
@@ -1008,7 +1008,7 @@ defmodule Dala.Test do
   """
   @spec webview_clear(node(), String.t()) :: :ok
   def webview_clear(node, selector) when is_binary(selector) do
-    :rpc.call(node, Dala.WebView, :interact, [{:clear, selector}])
+    :rpc.call(node, Dala.Ui.Embedded.Webview, :interact, [{:clear, selector}])
     :ok
   end
 
@@ -1021,7 +1021,7 @@ defmodule Dala.Test do
   """
   @spec webview_screenshot(node()) :: :ok
   def webview_screenshot(node) do
-    :rpc.call(node, Dala.WebView, :screenshot, [])
+    :rpc.call(node, Dala.Ui.Embedded.Webview, :screenshot, [])
     :ok
   end
 

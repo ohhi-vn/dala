@@ -46,14 +46,17 @@ defmodule Dala.ML.Training do
     optimizer = Keyword.get(opts, :optimizer, Polaris.Optimizers.adam(learning_rate: lr))
 
     try do
-      model
-      |> Axon.Loop.trainer(loss_fn, optimizer)
-      |> Axon.Loop.run(
-        {data, labels},
-        params,
-        epochs: epochs,
-        progress_callback: progress_fn
-      )
+      result =
+        model
+        |> Axon.Loop.trainer(loss_fn, optimizer)
+        |> Axon.Loop.run(
+          {data, labels},
+          params,
+          epochs: epochs,
+          progress_callback: progress_fn
+        )
+
+      {:ok, result}
     rescue
       e -> {:error, Exception.message(e)}
     end
@@ -70,10 +73,13 @@ defmodule Dala.ML.Training do
     _metrics = Keyword.get(opts, [:metrics], [:accuracy])
 
     try do
-      model
-      |> Axon.Loop.evaluator()
-      |> Axon.Loop.metric(:accuracy)
-      |> Axon.Loop.run({data, labels}, params)
+      result =
+        model
+        |> Axon.Loop.evaluator()
+        |> Axon.Loop.metric(:accuracy)
+        |> Axon.Loop.run({data, labels}, params)
+
+      {:ok, result}
     rescue
       e -> {:error, Exception.message(e)}
     end
@@ -101,7 +107,10 @@ defmodule Dala.ML.Training do
         {:ok, params}
 
       {:error, reason} ->
-        {:error, Exception.message(reason)}
+        {:error, format_error(reason)}
     end
   end
+
+  defp format_error(reason) when is_atom(reason), do: Atom.to_string(reason)
+  defp format_error(reason), do: Exception.message(reason)
 end

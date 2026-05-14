@@ -244,12 +244,8 @@ defmodule Dala.Ui.Renderer do
           atom()
         ) :: {:ok, [Dala.Ui.Diff.patch()]}
   def render_patches(old_tree, new_tree, platform, nif \\ @default_nif, transition \\ :none) do
-    # Convert to Node structs if needed
-    old_node = to_node(old_tree, "root")
-    new_node = to_node(new_tree, "root")
-
-    # Compute diff
-    patches = Dala.Ui.Diff.diff(old_node, new_node)
+    # Compute diff — Dala.Ui.Diff.diff accepts both maps and Node structs
+    patches = Dala.Ui.Diff.diff(old_tree, new_tree)
 
     if patches == [] do
       # Nothing changed
@@ -259,11 +255,12 @@ defmodule Dala.Ui.Renderer do
       # encode_patch handles :replace (remove+create), :insert, :remove,
       # :update_props, and :patch_node.
       nif.set_transition(transition)
-      send_patches(patches, new_node, platform, nif)
+      send_patches(patches, new_tree, platform, nif)
       {:ok, patches}
     end
   end
 
+  # Convert a map tree or Node struct to a Node struct (no-op if already a Node)
   defp to_node(nil, _), do: nil
   defp to_node(%Dala.Node{} = node, _), do: node
   defp to_node(map, default_id), do: Dala.Node.from_map(map, default_id)
@@ -327,30 +324,39 @@ defmodule Dala.Ui.Renderer do
 
   defp encode_tree_node(%Dala.Node{id: id, type: type, props: props, children: children}) do
     node_id = hash_id(id)
+    child_count = length(children)
 
     {child_binaries, child_ids, total_count} =
-      Enum.reduce(children, {[], [], 0}, fn child, {bins, ids, count} ->
-        {bin, child_count} = encode_tree_node(child)
-        {[bin | bins], [<<hash_id(child.id)::little-64>> | ids], count + child_count}
-      end)
-
-    child_count = length(children)
+      encode_children_binary(children, child_count, {[], [], 0})
 
     node_binary = [
       <<node_id::little-64>>,
       <<kind_to_byte(type)::8>>,
       encode_props(props),
       <<child_count::little-32>>,
-      Enum.reverse(child_ids)
+      child_ids
     ]
 
-    {[node_binary | Enum.reverse(child_binaries)], total_count + 1}
+    {[node_binary | child_binaries], total_count + 1}
+  end
+
+  # Tail-recursive children encoding — accumulates in reverse order then
+  # reverses once at the end, avoiding the double-prepend + double-reverse
+  # pattern of the previous Enum.reduce implementation.
+  defp encode_children_binary([], 0, {bins, ids, count}), do: {bins, ids, count}
+  defp encode_children_binary(children, _count, acc) do
+    {bins, ids, count} =
+      Enum.reduce(children, acc, fn child, {bins, ids, cnt} ->
+        {bin, child_count} = encode_tree_node(child)
+        {[bin | bins], [<<hash_id(child.id)::little-64>> | ids], cnt + child_count}
+      end)
+
+    {Enum.reverse(bins), Enum.reverse(ids), count}
   end
 
   @doc "Encode tree with tap handles for render_fast"
   def encode_tree_with_taps(%Dala.Node{} = node, nif, platform, ctx) do
-    {binary, taps} = encode_tree_node_with_taps(node, nif, platform, ctx)
-    node_count = count_nodes(node)
+    {binary, taps, node_count} = encode_tree_node_with_taps(node, nif, platform, ctx, 0)
 
     {IO.iodata_to_binary([
        <<@magic_byte_0::8, @magic_byte_1::8, @protocol_version::little-16, 0::little-16,
@@ -363,17 +369,18 @@ defmodule Dala.Ui.Renderer do
          %Dala.Node{id: id, type: type, props: props, children: children},
          nif,
          platform,
-         ctx
+         ctx,
+         _tap_acc
        ) do
     node_id = hash_id(id)
 
     # Encode props with tap handling
     {encoded_props, tap_handles} = encode_props_with_taps(props, nif, platform, ctx)
 
-    {child_binaries, child_ids, all_taps} =
-      Enum.reduce(children, {[], [], tap_handles}, fn child, {bins, ids, taps} ->
-        {bin, child_taps} = encode_tree_node_with_taps(child, nif, platform, ctx)
-        {[bin | bins], [<<hash_id(child.id)::little-64>> | ids], taps ++ child_taps}
+    {child_binaries, child_ids, all_taps, _child_count} =
+      Enum.reduce(children, {[], [], tap_handles, 0}, fn child, {bins, ids, taps, cnt} ->
+        {bin, child_taps, sub_count} = encode_tree_node_with_taps(child, nif, platform, ctx, taps)
+        {[bin | bins], [<<hash_id(child.id)::little-64>> | ids], child_taps, cnt + sub_count}
       end)
 
     child_count = length(children)
@@ -386,11 +393,7 @@ defmodule Dala.Ui.Renderer do
       Enum.reverse(child_ids)
     ]
 
-    {[node_binary | Enum.reverse(child_binaries)], all_taps}
-  end
-
-  defp count_nodes(%Dala.Node{children: children}) do
-    1 + Enum.sum(Enum.map(children, &count_nodes/1))
+    {[node_binary | Enum.reverse(child_binaries)], all_taps, child_count + 1}
   end
 
   @doc "Encode patches to binary frame format for the native side (v3)"

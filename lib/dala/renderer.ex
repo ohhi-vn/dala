@@ -83,22 +83,8 @@ defmodule Dala.Renderer do
           {:ok, [Dala.Diff.patch()]} | {:error, term()}
   def render_patches(old_tree, new_tree, platform, nif \\ @default_nif, transition \\ :none)
 
-  def render_patches(old_tree, new_tree, platform, nif, transition)
-      when (is_map(old_tree) or is_nil(old_tree)) and is_map(new_tree) do
+  def render_patches(old_tree, new_tree, platform, nif, transition) do
     Renderer.render_patches(old_tree, new_tree, platform, nif, transition)
-  end
-
-  def render_patches(%Dala.Node{} = old_tree, %Dala.Node{} = new_tree, platform, nif, transition) do
-    Renderer.render_patches(old_tree, new_tree, platform, nif, transition)
-  end
-
-  def render_patches(nil, %Dala.Node{} = new_tree, platform, nif, transition) do
-    Renderer.render_patches(nil, new_tree, platform, nif, transition)
-  end
-
-  def render_patches(old_tree, nil, platform, nif, transition)
-      when is_map(old_tree) or is_nil(old_tree) do
-    Renderer.render_patches(old_tree, nil, platform, nif, transition)
   end
 
   @doc """

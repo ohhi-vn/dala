@@ -103,7 +103,8 @@ defmodule Dala.ML.CoreML do
   """
   @spec predict_with_loaded_model(String.t(), map()) ::
           {:ok, String.t()} | {:error, term()} | :not_supported
-  def predict_with_loaded_model(identifier, inputs) do
+  def predict_with_loaded_model(identifier, inputs)
+      when is_binary(identifier) and is_map(inputs) do
     if loaded?(identifier) do
       predict(identifier, inputs)
     else
