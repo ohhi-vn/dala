@@ -93,11 +93,12 @@ defmodule Dala.Node do
   Compute a stable numeric u64 ID by hashing the string/atom ID.
 
   Uses SHA-256 and takes the first 8 bytes as a big-endian unsigned 64-bit integer.
-  Delegates to `Dala.Ui.Renderer.hash_id/1`.
   """
   @spec stable_id(String.t() | atom()) :: non_neg_integer()
   def stable_id(id) do
-    Dala.Ui.Renderer.hash_id(id)
+    id_str = to_string(id)
+    <<hash::unsigned-64-big, _rest::binary>> = :crypto.hash(:sha256, id_str)
+    hash
   end
 
   @doc """
@@ -109,7 +110,28 @@ defmodule Dala.Node do
   a big-endian unsigned 64-bit integer.
   """
   @spec compute_layout_hash(t()) :: non_neg_integer()
-  def compute_layout_hash(%__MODULE__{} = node) do
-    Dala.Ui.Renderer.compute_layout_hash(node)
+  def compute_layout_hash(%__MODULE__{type: type, props: props, children: children}) do
+    layout_props = [
+      to_string(type),
+      format_layout_prop(:width, props),
+      format_layout_prop(:height, props),
+      format_layout_prop(:padding, props),
+      format_layout_prop(:flex_grow, props),
+      format_layout_prop(:flex_direction, props),
+      format_layout_prop(:justify_content, props),
+      format_layout_prop(:align_items, props),
+      to_string(length(children))
+    ]
+
+    data = Enum.join(layout_props, "|")
+    <<hash::unsigned-64-big, _rest::binary>> = :crypto.hash(:sha256, data)
+    hash
+  end
+
+  defp format_layout_prop(key, props) do
+    case Map.get(props, key) do
+      nil -> ""
+      val -> to_string(val)
+    end
   end
 end

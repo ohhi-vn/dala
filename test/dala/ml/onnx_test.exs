@@ -47,11 +47,11 @@ defmodule Dala.ML.ONNX.Test do
 
     test "validates argument type" do
       assert_raise FunctionClauseError, fn ->
-        Dala.ML.ONNX.create_session("not_binary")
+        Dala.ML.ONNX.create_session(123)
       end
 
       assert_raise FunctionClauseError, fn ->
-        Dala.ML.ONNX.create_session(123)
+        Dala.ML.ONNX.create_session(:atom)
       end
     end
   end
@@ -100,7 +100,7 @@ defmodule Dala.ML.ONNX.Test do
       end
 
       assert_raise FunctionClauseError, fn ->
-        Dala.ML.ONNX.run(1, "not_binary")
+        Dala.ML.ONNX.run(1, :not_binary)
       end
     end
   end

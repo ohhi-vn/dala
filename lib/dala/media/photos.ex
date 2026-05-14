@@ -19,7 +19,7 @@ defmodule Dala.Media.Photos do
   iOS: `PHPickerViewController`. Android: `PickMultipleVisualMedia`.
   """
 
-  @spec pick(Dala.Ui.Socket.t(), keyword()) :: Dala.Ui.Socket.t()
+  @spec pick(Dala.Socket.t(), keyword()) :: Dala.Socket.t()
   def pick(socket, opts \\ []) do
     max = Keyword.get(opts, :max, 1)
     types = Keyword.get(opts, :types, [:image]) |> Enum.map(&Atom.to_string/1)

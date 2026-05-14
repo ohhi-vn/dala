@@ -1,3 +1,18 @@
+defmodule Dala.Setup do
+  @moduledoc """
+  Convenience shorthand for `Dala.Setup.Setup`.
+
+  Provides runtime setup helpers for Bluetooth and WiFi functionality.
+  """
+
+  defdelegate check_bluetooth(), to: Dala.Setup.Setup
+  defdelegate check_wifi(), to: Dala.Setup.Setup
+  defdelegate ensure_bluetooth_permissions(socket), to: Dala.Setup.Setup
+  defdelegate ensure_wifi_permissions(socket), to: Dala.Setup.Setup
+  defdelegate diagnostic(), to: Dala.Setup.Setup
+  defdelegate print_diagnostic(), to: Dala.Setup.Setup
+end
+
 defmodule Dala.Setup.Setup do
   @moduledoc """
   Runtime setup helpers for Bluetooth and WiFi functionality.
@@ -67,7 +82,7 @@ defmodule Dala.Setup.Setup do
 
   Returns the updated socket.
   """
-  @spec ensure_bluetooth_permissions(Dala.Ui.Socket.t()) :: Dala.Ui.Socket.t()
+  @spec ensure_bluetooth_permissions(Dala.Socket.t()) :: Dala.Socket.t()
   def ensure_bluetooth_permissions(socket) do
     apply(Dala.Permissions, :request, [socket, :bluetooth])
   end
@@ -80,7 +95,7 @@ defmodule Dala.Setup.Setup do
 
   Returns the updated socket.
   """
-  @spec ensure_wifi_permissions(Dala.Ui.Socket.t()) :: Dala.Ui.Socket.t()
+  @spec ensure_wifi_permissions(Dala.Socket.t()) :: Dala.Socket.t()
   def ensure_wifi_permissions(socket) do
     apply(Dala.Permissions, :request, [socket, :wifi])
   end

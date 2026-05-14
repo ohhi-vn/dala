@@ -1,4 +1,6 @@
 // Binary protocol v3 for Dala patch transmission
+
+#![allow(dead_code)]
 //
 // ── Version 3 (current) ──────────────────────────────────────────────
 // Header: [0xDA][0xA1][u16 version=3][u16 patch_count]
@@ -70,14 +72,56 @@ pub const OP_SET_STYLE: u8 = 0x07;
 pub const OP_EVENT: u8 = 0x08;
 pub const OP_FRAME_END: u8 = 0xFF;
 
-// Node type tags (u8)
-pub const NODE_COLUMN: u8 = 0;
-pub const NODE_ROW: u8 = 1;
-pub const NODE_TEXT: u8 = 2;
-pub const NODE_BUTTON: u8 = 3;
-pub const NODE_IMAGE: u8 = 4;
-pub const NODE_SCROLL: u8 = 5;
-pub const NODE_WEBVIEW: u8 = 6;
+// Node type tags (u8) — must match Elixir Dala.Ui.Component.all() |> Enum.with_index order
+// Leaf components (0-35)
+pub const NODE_TEXT: u8 = 0;
+pub const NODE_BUTTON: u8 = 1;
+pub const NODE_ICON: u8 = 2;
+pub const NODE_DIVIDER: u8 = 3;
+pub const NODE_SPACER: u8 = 4;
+pub const NODE_TEXT_FIELD: u8 = 5;
+pub const NODE_TOGGLE: u8 = 6;
+pub const NODE_SLIDER: u8 = 7;
+pub const NODE_SWITCH: u8 = 8;
+pub const NODE_IMAGE: u8 = 9;
+pub const NODE_VIDEO: u8 = 10;
+pub const NODE_ACTIVITY_INDICATOR: u8 = 11;
+pub const NODE_PROGRESS_BAR: u8 = 12;
+pub const NODE_STATUS_BAR: u8 = 13;
+pub const NODE_REFRESH_CONTROL: u8 = 14;
+pub const NODE_WEBVIEW: u8 = 15;
+pub const NODE_CAMERA_PREVIEW: u8 = 16;
+pub const NODE_NATIVE_VIEW: u8 = 17;
+pub const NODE_TAB_BAR: u8 = 18;
+pub const NODE_LIST: u8 = 19;
+pub const NODE_CHECKBOX: u8 = 20;
+pub const NODE_RADIO: u8 = 21;
+pub const NODE_CHIP: u8 = 22;
+pub const NODE_SNACKBAR: u8 = 23;
+pub const NODE_FAB: u8 = 24;
+pub const NODE_ICON_BUTTON: u8 = 25;
+pub const NODE_SEGMENTED_BUTTON: u8 = 26;
+pub const NODE_APP_BAR: u8 = 27;
+pub const NODE_NAV_BAR: u8 = 28;
+pub const NODE_NAV_DRAWER: u8 = 29;
+pub const NODE_NAV_RAIL: u8 = 30;
+pub const NODE_MENU: u8 = 31;
+pub const NODE_DATE_PICKER: u8 = 32;
+pub const NODE_TIME_PICKER: u8 = 33;
+pub const NODE_SEARCH_BAR: u8 = 34;
+pub const NODE_CAROUSEL: u8 = 35;
+// Container components (36-46)
+pub const NODE_COLUMN: u8 = 36;
+pub const NODE_ROW: u8 = 37;
+pub const NODE_BOX: u8 = 38;
+pub const NODE_SCROLL: u8 = 39;
+pub const NODE_MODAL: u8 = 40;
+pub const NODE_PRESSABLE: u8 = 41;
+pub const NODE_SAFE_AREA: u8 = 42;
+pub const NODE_CARD: u8 = 43;
+pub const NODE_BADGE: u8 = 44;
+pub const NODE_BOTTOM_SHEET: u8 = 45;
+pub const NODE_TOOLTIP: u8 = 46;
 
 // Prop field tags (u8)
 pub const FIELD_TEXT: u8 = 1;
@@ -672,13 +716,53 @@ fn decode_node_from_insert_v3(
     string_table: &StringTable,
 ) -> super::tree::Node {
     let kind = match bytes[*i] {
-        NODE_COLUMN => super::tree::NodeKind::Column,
-        NODE_ROW => super::tree::NodeKind::Row,
-        NODE_TEXT => super::tree::NodeKind::Text,
-        NODE_BUTTON => super::tree::NodeKind::Button,
-        NODE_IMAGE => super::tree::NodeKind::Image,
-        NODE_SCROLL => super::tree::NodeKind::Scroll,
-        NODE_WEBVIEW => super::tree::NodeKind::WebView,
+        0 => super::tree::NodeKind::Text,
+        1 => super::tree::NodeKind::Button,
+        2 => super::tree::NodeKind::Icon,
+        3 => super::tree::NodeKind::Divider,
+        4 => super::tree::NodeKind::Spacer,
+        5 => super::tree::NodeKind::TextField,
+        6 => super::tree::NodeKind::Toggle,
+        7 => super::tree::NodeKind::Slider,
+        8 => super::tree::NodeKind::Switch,
+        9 => super::tree::NodeKind::Image,
+        10 => super::tree::NodeKind::Video,
+        11 => super::tree::NodeKind::ActivityIndicator,
+        12 => super::tree::NodeKind::ProgressBar,
+        13 => super::tree::NodeKind::StatusBar,
+        14 => super::tree::NodeKind::RefreshControl,
+        15 => super::tree::NodeKind::WebView,
+        16 => super::tree::NodeKind::CameraPreview,
+        17 => super::tree::NodeKind::NativeView,
+        18 => super::tree::NodeKind::TabBar,
+        19 => super::tree::NodeKind::List,
+        20 => super::tree::NodeKind::Checkbox,
+        21 => super::tree::NodeKind::Radio,
+        22 => super::tree::NodeKind::Chip,
+        23 => super::tree::NodeKind::Snackbar,
+        24 => super::tree::NodeKind::Fab,
+        25 => super::tree::NodeKind::IconButton,
+        26 => super::tree::NodeKind::SegmentedButton,
+        27 => super::tree::NodeKind::AppBar,
+        28 => super::tree::NodeKind::NavBar,
+        29 => super::tree::NodeKind::NavDrawer,
+        30 => super::tree::NodeKind::NavRail,
+        31 => super::tree::NodeKind::Menu,
+        32 => super::tree::NodeKind::DatePicker,
+        33 => super::tree::NodeKind::TimePicker,
+        34 => super::tree::NodeKind::SearchBar,
+        35 => super::tree::NodeKind::Carousel,
+        36 => super::tree::NodeKind::Column,
+        37 => super::tree::NodeKind::Row,
+        38 => super::tree::NodeKind::Box,
+        39 => super::tree::NodeKind::Scroll,
+        40 => super::tree::NodeKind::Modal,
+        41 => super::tree::NodeKind::Pressable,
+        42 => super::tree::NodeKind::SafeArea,
+        43 => super::tree::NodeKind::Card,
+        44 => super::tree::NodeKind::Badge,
+        45 => super::tree::NodeKind::BottomSheet,
+        46 => super::tree::NodeKind::Tooltip,
         _ => {
             eprintln!("[Dala] Unknown node type: {}", bytes[*i]);
             super::tree::NodeKind::Column
@@ -773,13 +857,53 @@ fn decode_tree_node_v3(
     *i += 1;
 
     let kind = match kind_byte {
-        NODE_COLUMN => super::tree::NodeKind::Column,
-        NODE_ROW => super::tree::NodeKind::Row,
-        NODE_TEXT => super::tree::NodeKind::Text,
-        NODE_BUTTON => super::tree::NodeKind::Button,
-        NODE_IMAGE => super::tree::NodeKind::Image,
-        NODE_SCROLL => super::tree::NodeKind::Scroll,
-        NODE_WEBVIEW => super::tree::NodeKind::WebView,
+        0 => super::tree::NodeKind::Text,
+        1 => super::tree::NodeKind::Button,
+        2 => super::tree::NodeKind::Icon,
+        3 => super::tree::NodeKind::Divider,
+        4 => super::tree::NodeKind::Spacer,
+        5 => super::tree::NodeKind::TextField,
+        6 => super::tree::NodeKind::Toggle,
+        7 => super::tree::NodeKind::Slider,
+        8 => super::tree::NodeKind::Switch,
+        9 => super::tree::NodeKind::Image,
+        10 => super::tree::NodeKind::Video,
+        11 => super::tree::NodeKind::ActivityIndicator,
+        12 => super::tree::NodeKind::ProgressBar,
+        13 => super::tree::NodeKind::StatusBar,
+        14 => super::tree::NodeKind::RefreshControl,
+        15 => super::tree::NodeKind::WebView,
+        16 => super::tree::NodeKind::CameraPreview,
+        17 => super::tree::NodeKind::NativeView,
+        18 => super::tree::NodeKind::TabBar,
+        19 => super::tree::NodeKind::List,
+        20 => super::tree::NodeKind::Checkbox,
+        21 => super::tree::NodeKind::Radio,
+        22 => super::tree::NodeKind::Chip,
+        23 => super::tree::NodeKind::Snackbar,
+        24 => super::tree::NodeKind::Fab,
+        25 => super::tree::NodeKind::IconButton,
+        26 => super::tree::NodeKind::SegmentedButton,
+        27 => super::tree::NodeKind::AppBar,
+        28 => super::tree::NodeKind::NavBar,
+        29 => super::tree::NodeKind::NavDrawer,
+        30 => super::tree::NodeKind::NavRail,
+        31 => super::tree::NodeKind::Menu,
+        32 => super::tree::NodeKind::DatePicker,
+        33 => super::tree::NodeKind::TimePicker,
+        34 => super::tree::NodeKind::SearchBar,
+        35 => super::tree::NodeKind::Carousel,
+        36 => super::tree::NodeKind::Column,
+        37 => super::tree::NodeKind::Row,
+        38 => super::tree::NodeKind::Box,
+        39 => super::tree::NodeKind::Scroll,
+        40 => super::tree::NodeKind::Modal,
+        41 => super::tree::NodeKind::Pressable,
+        42 => super::tree::NodeKind::SafeArea,
+        43 => super::tree::NodeKind::Card,
+        44 => super::tree::NodeKind::Badge,
+        45 => super::tree::NodeKind::BottomSheet,
+        46 => super::tree::NodeKind::Tooltip,
         _ => {
             eprintln!("[Dala] Unknown node kind: 0x{:02x}", kind_byte);
             return None;

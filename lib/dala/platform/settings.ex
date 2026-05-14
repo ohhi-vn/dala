@@ -26,13 +26,13 @@ defmodule Dala.Platform.Settings do
     Dala.Platform.Native.settings_get(key)
   end
 
-  @spec set(Dala.Ui.Socket.t(), String.t(), any()) :: Dala.Ui.Socket.t()
+  @spec set(Dala.Socket.t(), String.t(), any()) :: Dala.Socket.t()
   def set(socket, key, value) when is_binary(key) do
     Dala.Platform.Native.settings_set(key, value)
     socket
   end
 
-  @spec watch(Dala.Ui.Socket.t(), String.t()) :: Dala.Ui.Socket.t()
+  @spec watch(Dala.Socket.t(), String.t()) :: Dala.Socket.t()
   def watch(socket, key) when is_binary(key) do
     Dala.Platform.Native.settings_watch(key)
     socket

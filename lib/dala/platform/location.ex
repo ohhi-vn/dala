@@ -18,7 +18,7 @@ defmodule Dala.Platform.Location do
   @doc """
   Request a single location fix, then stop.
   """
-  @spec get_once(Dala.Ui.Socket.t()) :: Dala.Ui.Socket.t()
+  @spec get_once(Dala.Socket.t()) :: Dala.Socket.t()
   def get_once(socket) do
     Dala.Platform.Native.location_get_once()
     socket
@@ -32,7 +32,7 @@ defmodule Dala.Platform.Location do
 
   Call `stop/1` when done to save battery.
   """
-  @spec start(Dala.Ui.Socket.t(), keyword()) :: Dala.Ui.Socket.t()
+  @spec start(Dala.Socket.t(), keyword()) :: Dala.Socket.t()
   def start(socket, opts \\ []) do
     accuracy = Keyword.get(opts, :accuracy, :balanced)
     Dala.Platform.Native.location_start(accuracy)
@@ -42,7 +42,7 @@ defmodule Dala.Platform.Location do
   @doc """
   Stop continuous location updates.
   """
-  @spec stop(Dala.Ui.Socket.t()) :: Dala.Ui.Socket.t()
+  @spec stop(Dala.Socket.t()) :: Dala.Socket.t()
   def stop(socket) do
     Dala.Platform.Native.location_stop()
     socket

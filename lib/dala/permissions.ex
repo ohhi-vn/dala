@@ -19,8 +19,9 @@ defmodule Dala.Permissions do
 
   ## Usage
 
-      # Request a permission at runtime
-      Dala.Permissions.request(socket, :camera)
+      # Request a permission at runtime — pass the screen pid
+      # The result arrives as {:permission_result, permission, result} via handle_info/2
+      Dala.Permissions.request(self(), :camera)
 
       # Check if a permission is granted
       Dala.Permissions.check(:camera)
@@ -70,7 +71,15 @@ defmodule Dala.Permissions do
     end
   end
 
-  @doc "Requests a permission. Sends `{:permission_result, permission, result}` to `pid`."
+  @doc """
+  Requests a permission from the OS.
+
+  `pid` is the process that will receive the result message
+  `{:permission_result, permission, result}` — typically the screen process (`self()`).
+
+  Returns `:ok` immediately; the actual permission result arrives asynchronously
+  via the pid's mailbox.
+  """
   @spec request(pid(), permission()) :: :ok | {:error, term()}
   def request(pid, permission) when is_atom(permission) do
     if supported?(permission) do

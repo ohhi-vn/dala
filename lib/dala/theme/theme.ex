@@ -1,3 +1,20 @@
+defmodule Dala.Theme do
+  @moduledoc """
+  Convenience shorthand for `Dala.Theme.Theme`.
+
+  Provides the design token system for Dala apps.
+  """
+
+  defdelegate set(theme), to: Dala.Theme.Theme
+  defdelegate current(), to: Dala.Theme.Theme
+  defdelegate default(), to: Dala.Theme.Theme
+  defdelegate build(overrides), to: Dala.Theme.Theme
+  defdelegate color_scheme(), to: Dala.Theme.Theme
+  defdelegate color_map(theme), to: Dala.Theme.Theme
+  defdelegate spacing_map(theme), to: Dala.Theme.Theme
+  defdelegate radius_map(theme), to: Dala.Theme.Theme
+end
+
 defmodule Dala.Theme.Theme do
   @compile {:nowarn_undefined, [:Nx]}
   @moduledoc """

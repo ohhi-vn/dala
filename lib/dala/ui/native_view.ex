@@ -75,21 +75,21 @@ defmodule Dala.Ui.NativeView do
       %{type: "video", props: %{source: "...", autoplay: true}, children: []}
   """
 
-  @callback mount(props :: map(), socket :: Dala.Ui.Socket.t()) ::
-              {:ok, Dala.Ui.Socket.t()} | {:error, term()}
+  @callback mount(props :: map(), socket :: Dala.Socket.t()) ::
+              {:ok, Dala.Socket.t()} | {:error, term()}
 
-  @callback update(props :: map(), socket :: Dala.Ui.Socket.t()) ::
-              {:ok, Dala.Ui.Socket.t()}
+  @callback update(props :: map(), socket :: Dala.Socket.t()) ::
+              {:ok, Dala.Socket.t()}
 
   @callback render(assigns :: map()) :: map()
 
-  @callback handle_event(event :: String.t(), payload :: map(), socket :: Dala.Ui.Socket.t()) ::
-              {:noreply, Dala.Ui.Socket.t()}
+  @callback handle_event(event :: String.t(), payload :: map(), socket :: Dala.Socket.t()) ::
+              {:noreply, Dala.Socket.t()}
 
-  @callback handle_info(message :: term(), socket :: Dala.Ui.Socket.t()) ::
-              {:noreply, Dala.Ui.Socket.t()}
+  @callback handle_info(message :: term(), socket :: Dala.Socket.t()) ::
+              {:noreply, Dala.Socket.t()}
 
-  @callback terminate(reason :: term(), socket :: Dala.Ui.Socket.t()) :: term()
+  @callback terminate(reason :: term(), socket :: Dala.Socket.t()) :: term()
 
   @optional_callbacks [update: 2, handle_event: 3, handle_info: 2, terminate: 2]
 
@@ -167,8 +167,8 @@ defmodule Dala.Ui.NativeView do
             raise ArgumentError,
                   "Plugin component #{type} requires :id prop"
 
-        # Use a synthetic module name for the component
-        module = :"Elixir.Dala.PluginComponent.#{type}"
+        # Use a tuple key instead of dynamic atom to avoid atom table pollution
+        module = {:plugin_component, type}
 
         component_pid = ensure_started(screen_pid, id, module, props, platform)
         rendered_props = Dala.Ui.NativeView.Server.render_props(component_pid)

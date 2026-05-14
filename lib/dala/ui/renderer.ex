@@ -195,17 +195,9 @@ defmodule Dala.Ui.Renderer do
   """
   @spec render(map(), atom(), module() | atom(), atom()) ::
           {:ok, :binary_tree} | {:error, term()}
-  def render(tree, _platform, nif \\ @default_nif, _transition \\ :none) do
-    theme = Dala.Theme.Theme.current()
-
-    _ctx = %{
-      colors: Dala.Theme.Theme.color_map(theme),
-      spacing: Dala.Theme.Theme.spacing_map(theme),
-      radii: Dala.Theme.Theme.radius_map(theme),
-      type_scale: theme.type_scale
-    }
-
+  def render(tree, _platform, nif \\ @default_nif, transition \\ :none) do
     nif.clear_taps()
+    nif.set_transition(transition)
 
     # Use binary protocol for full tree rendering
     node = to_node(tree, "root")
@@ -218,25 +210,15 @@ defmodule Dala.Ui.Renderer do
   # Optimized version that batches tap registrations
   @spec render_fast(Dala.Node.t() | map(), atom(), module(), atom()) :: {:ok, :binary_tree}
   def render_fast(tree, platform, nif \\ @default_nif, transition \\ :none) do
-    theme = Dala.Theme.Theme.current()
-
-    ctx = %{
-      colors: Dala.Theme.Theme.color_map(theme),
-      spacing: Dala.Theme.Theme.spacing_map(theme),
-      radii: Dala.Theme.Theme.radius_map(theme),
-      type_scale: theme.type_scale
-    }
-
     nif.clear_taps()
     nif.set_transition(transition)
 
-    # For render_fast, we still need tap registration
     # Convert to Node struct and encode with tap handles
     node = to_node(tree, "root")
-    {binary, _taps} = encode_tree_with_taps(node, nif, platform, ctx)
+    {binary, _taps} = encode_tree_with_taps(node, nif, platform, %{})
 
-    # Batch register taps
-    # nif.set_taps(taps)  # TODO: integrate tap batching with binary protocol
+    # TODO: integrate tap batching with binary protocol
+    # nif.set_taps(taps)
 
     nif.set_root_binary(binary)
     {:ok, :binary_tree}
@@ -262,15 +244,6 @@ defmodule Dala.Ui.Renderer do
           atom()
         ) :: {:ok, [Dala.Ui.Diff.patch()]}
   def render_patches(old_tree, new_tree, platform, nif \\ @default_nif, transition \\ :none) do
-    theme = Dala.Theme.Theme.current()
-
-    ctx = %{
-      colors: Dala.Theme.Theme.color_map(theme),
-      spacing: Dala.Theme.Theme.spacing_map(theme),
-      radii: Dala.Theme.Theme.radius_map(theme),
-      type_scale: theme.type_scale
-    }
-
     # Convert to Node structs if needed
     old_node = to_node(old_tree, "root")
     new_node = to_node(new_tree, "root")
@@ -286,7 +259,7 @@ defmodule Dala.Ui.Renderer do
       # encode_patch handles :replace (remove+create), :insert, :remove,
       # :update_props, and :patch_node.
       nif.set_transition(transition)
-      send_patches(patches, new_node, platform, nif, ctx)
+      send_patches(patches, new_node, platform, nif)
       {:ok, patches}
     end
   end
@@ -296,7 +269,7 @@ defmodule Dala.Ui.Renderer do
   defp to_node(map, default_id), do: Dala.Node.from_map(map, default_id)
 
   # Send patches to native
-  defp send_patches(patches, _tree, _platform, nif, _ctx) do
+  defp send_patches(patches, _tree, _platform, nif) do
     binary = encode_frame(patches)
 
     if function_exported?(nif, :apply_patches, 1) do
@@ -523,42 +496,18 @@ defmodule Dala.Ui.Renderer do
     ])
   end
 
-  @doc "Compute the layout hash for a node"
+  @doc "Compute the layout hash for a node. Delegates to `Dala.Node.compute_layout_hash/1`."
   @spec compute_layout_hash(Dala.Node.t()) :: non_neg_integer()
-  def compute_layout_hash(%Dala.Node{type: type, props: props, children: children}) do
-    # Gather layout-relevant props in a deterministic order
-    layout_props = [
-      to_string(type),
-      format_layout_prop(:width, props),
-      format_layout_prop(:height, props),
-      format_layout_prop(:padding, props),
-      format_layout_prop(:flex_grow, props),
-      format_layout_prop(:flex_direction, props),
-      format_layout_prop(:justify_content, props),
-      format_layout_prop(:align_items, props),
-      to_string(length(children))
-    ]
-
-    data = Enum.join(layout_props, "|")
-    <<hash::unsigned-64-big, _rest::binary>> = :crypto.hash(:sha256, data)
-    hash
-  end
-
-  defp format_layout_prop(key, props) do
-    case Map.get(props, key) do
-      nil -> ""
-      val -> to_string(val)
-    end
+  def compute_layout_hash(%Dala.Node{} = node) do
+    Dala.Node.compute_layout_hash(node)
   end
 
   # ── ID hashing ─────────────────────────────────────────────────────
 
-  @doc "Hash a node ID to a stable u64"
+  @doc "Hash a node ID to a stable u64. Delegates to `Dala.Node.stable_id/1`."
   @spec hash_id(String.t() | atom()) :: non_neg_integer()
   def hash_id(id) do
-    id_str = to_string(id)
-    <<hash::unsigned-64-big, _rest::binary>> = :crypto.hash(:sha256, id_str)
-    hash
+    Dala.Node.stable_id(id)
   end
 
   # ── Props encoder ──────────────────────────────────────────────────
@@ -627,6 +576,12 @@ defmodule Dala.Ui.Renderer do
       :align_items when is_atom(value) ->
         {<<12::8, align_byte(value)::8>>, 1}
 
+      :thickness when is_number(value) ->
+        {<<13::8, value::float-little-32>>, 1}
+
+      :fixed_size when is_number(value) ->
+        {<<14::8, value::float-little-32>>, 1}
+
       _ ->
         {nil, 0}
     end
@@ -682,6 +637,14 @@ defmodule Dala.Ui.Renderer do
     collect_prop_fields(rest, [acc, <<12::8, align_byte(v)::8>>], count + 1)
   end
 
+  defp collect_prop_fields([{:thickness, v} | rest], acc, count) when is_number(v) do
+    collect_prop_fields(rest, [acc, <<13::8, v::float-little-32>>], count + 1)
+  end
+
+  defp collect_prop_fields([{:fixed_size, v} | rest], acc, count) when is_number(v) do
+    collect_prop_fields(rest, [acc, <<14::8, v::float-little-32>>], count + 1)
+  end
+
   # Skip keys that aren't in the protocol
   defp collect_prop_fields([_ | rest], acc, count) do
     collect_prop_fields(rest, acc, count)
@@ -708,6 +671,8 @@ defmodule Dala.Ui.Renderer do
       |> maybe_encode_field(:flex_direction, changed_props)
       |> maybe_encode_field(:justify_content, changed_props)
       |> maybe_encode_field(:align_items, changed_props)
+      |> maybe_encode_field(:thickness, changed_props)
+      |> maybe_encode_field(:fixed_size, changed_props)
 
     IO.iodata_to_binary(fields)
   end

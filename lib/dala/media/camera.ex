@@ -22,7 +22,7 @@ defmodule Dala.Media.Camera do
   Options:
     - `quality: :high | :medium | :low` (default `:high`) — JPEG compression level
   """
-  @spec capture_photo(Dala.Ui.Socket.t(), keyword()) :: Dala.Ui.Socket.t()
+  @spec capture_photo(Dala.Socket.t(), keyword()) :: Dala.Socket.t()
   def capture_photo(socket, opts \\ []) do
     quality = Keyword.get(opts, :quality, :high)
     Dala.Platform.Native.camera_capture_photo(quality)
@@ -35,7 +35,7 @@ defmodule Dala.Media.Camera do
   Options:
     - `max_duration: integer` — maximum clip length in seconds (default `60`)
   """
-  @spec capture_video(Dala.Ui.Socket.t(), keyword()) :: Dala.Ui.Socket.t()
+  @spec capture_video(Dala.Socket.t(), keyword()) :: Dala.Socket.t()
   def capture_video(socket, opts \\ []) do
     max_duration = Keyword.get(opts, :max_duration, 60)
     Dala.Platform.Native.camera_capture_video(max_duration)
@@ -49,7 +49,7 @@ defmodule Dala.Media.Camera do
   Options:
     - `facing: :back | :front` (default `:back`)
   """
-  @spec start_preview(Dala.Ui.Socket.t(), keyword()) :: Dala.Ui.Socket.t()
+  @spec start_preview(Dala.Socket.t(), keyword()) :: Dala.Socket.t()
   def start_preview(socket, opts \\ []) do
     facing = Keyword.get(opts, :facing, :back) |> Atom.to_string()
     Dala.Platform.Native.camera_start_preview(:json.encode(%{"facing" => facing}))
@@ -57,7 +57,7 @@ defmodule Dala.Media.Camera do
   end
 
   @doc "Stop the active camera preview session."
-  @spec stop_preview(Dala.Ui.Socket.t()) :: Dala.Ui.Socket.t()
+  @spec stop_preview(Dala.Socket.t()) :: Dala.Socket.t()
   def stop_preview(socket) do
     Dala.Platform.Native.camera_stop_preview()
     socket

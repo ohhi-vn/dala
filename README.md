@@ -195,22 +195,24 @@ All async — call the function, handle the result in `handle_info/2`:
 
 ```elixir
 # Haptic feedback (synchronous — no handle_info needed)
-Dala.Haptic.trigger(socket, :success)
+Dala.Hardware.Haptic.trigger(socket, :success)
 
 # Camera
-Dala.Camera.capture_photo(socket)
+Dala.Media.Camera.capture_photo(socket)
 def handle_info({:camera, :photo, %{path: path}}, socket), do: ...
 
 # Location
-Dala.Location.start(socket, accuracy: :high)
+Dala.Platform.Location.start(socket, accuracy: :high)
 def handle_info({:location, %{lat: lat, lon: lon}}, socket), do: ...
 
 # Push notifications
-Dala.Notify.register_push(socket)
+Dala.Platform.Notify.register_push(socket)
 def handle_info({:push_token, :ios, token}, socket), do: ...
 ```
 
-Also: `Dala.Clipboard`, `Dala.Share`, `Dala.Photos`, `Dala.Files`, `Dala.Audio`, `Dala.Motion`, `Dala.Biometric`, `Dala.Scanner`, `Dala.Permissions`.
+Also: `Dala.Platform.Clipboard`, `Dala.Platform.Share`, `Dala.Media.Photos`,
+`Dala.Storage.Files`, `Dala.Media.Audio`, `Dala.Ui.Sensor.Motion`,
+`Dala.Hardware.Biometric`, `Dala.Hardware.Scanner`, `Dala.Permissions`.
 
 Additional APIs: `Dala.Hardware.Bluetooth` (BLE), `Dala.Connectivity.Wifi`, `Dala.Wakelock`,
 `Dala.Storage.Storage`, `Dala.Storage.Blob`, `Dala.Platform.Settings`, `Dala.Platform.State`,
@@ -244,7 +246,7 @@ end
 |---------|---------|
 | [`dala_dev`](https://hex.pm/packages/dala_dev) | Dev tooling: `mix dala.new`, `mix dala.deploy`, `mix dala.connect`, live dashboard |
 | [`dala_new`](https://hex.pm/packages/dala_new) | Generator project tool |
-| [`dala_runtime`](working, https://github.com/manhvu/dala_runtime) | AOT compiler & runtime for BEAM, fix limitations of JIT  |
+| [`dala_runtime`](https://github.com/manhvu/dala_runtime) | AOT compiler & runtime for BEAM, fix limitations of JIT  |
 
 
 

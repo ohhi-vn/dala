@@ -34,7 +34,7 @@ defmodule Dala.Hardware.Haptic do
 
       Dala.Haptic.trigger(socket, :light)
   """
-  @spec trigger(Dala.Ui.Socket.t(), atom()) :: Dala.Ui.Socket.t()
+  @spec trigger(Dala.Socket.t(), atom()) :: Dala.Socket.t()
   def trigger(socket, type) when type in @types do
     Dala.Platform.Native.haptic(type)
     socket

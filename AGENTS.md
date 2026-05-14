@@ -213,7 +213,7 @@ These are the things we've burned ourselves on. Following them isn't optional.
     See `examples/ml_app/` for a ready-to-run YOLO detection app.
 
 ## 15. **WebView interact API for programmatic control.**
-    `Dala.WebView.interact/2` provides a high-level API for driving WebView
+    `Dala.Ui.Embedded.Webview.interact/2` provides a high-level API for driving WebView
     content from Elixir, similar to `Dala.Test` but for production use.
     
     Available actions:
@@ -259,7 +259,7 @@ These are the things we've burned ourselves on. Following them isn't optional.
     end
     ```
 
-    **New in v0.4:**
+    **New in v0.1:**
     - **Improved error messages**: Verifier now provides clearer error messages
       for invalid types and missing handlers.
     - **Fixed PubSub transformer**: Corrected Spark DSL API usage.
@@ -425,7 +425,7 @@ These are the things we've burned ourselves on. Following them isn't optional.
     - `find_by_capability/1`, `find_by_platform/1` — discovery queries
 
     **Key files:** `lib/dala/plugin.ex`, `lib/dala/plugin/lifecycle.ex`, `lib/dala/plugin/registry.ex`,
-    `lib/dala/plugin/component.ex`, `lib/dala/plugin/manifest.ex`, `lib/dala/plugin/protocol.ex`
+        `lib/dala/plugin/component.ex`, `lib/dala/plugin/component_dsl.ex`, `lib/dala/plugin/manifest.ex`, `lib/dala/plugin/protocol.ex`
 
 ## Where to look
 
@@ -444,7 +444,7 @@ These are the things we've burned ourselves on. Following them isn't optional.
 | Architecture decisions (one ADR per cross-cutting decision) | `docs/decisions/` |
 | iOS device deployment (provisioning, build chain, gotchas) | `guides/ios_physical_device.md` |
 | iOS ML support (Nx, Axon, EMLX, CoreML, ONNX) | `guides/ios_ml_support.md`, `lib/dala/ml/`, `dala/ML_INTEGRATION_SUMMARY.md` |
-| Bluetooth/WiFi setup and API | `docs/bluetooth_wifi_implementation.md`, `lib/dala/bluetooth.ex`, `lib/dala/wifi.ex` |
+| Bluetooth/WiFi setup and API | `docs/bluetooth_wifi_implementation.md`, `lib/dala/hardware/bluetooth.ex`, `lib/dala/connectivity/wifi.ex` |
 | Bluetooth/WiFi setup scripts | `scripts/ios_setup.sh`, `scripts/android_setup.sh` |
 | iOS Bluetooth native code | `ios/DalaBluetoothManager.{h,m}`, `ios/DalaBluetoothCInterface.m` |
 | Android Bluetooth/WiFi bridge | `android/src/main/java/com/example/dala/DalaBridge.java` |
@@ -510,7 +510,7 @@ Key constraints:
 5. **ONNX NIFs are dirty CPU scheduled** — won't block BEAM schedulers.
 6. **ONNX available on iOS + Android** — NIFs gated with `#[cfg(any(target_os = "ios", target_os = "android"))]`.
 
-Helper modules: `Dala.ML`, `Dala.ML.EMLX`, `Dala.ML.Nx`, `Dala.ML.CoreML`, `Dala.ML.ONNX` in `lib/dala/ml/`.
+Helper modules: `Dala.ML`, `Dala.ML.EMLX`, `Dala.Ml.Nx`, `Dala.ML.CoreML`, `Dala.ML.ONNX` in `lib/dala/ml/`.
 Full guide: `guides/ios_ml_support.md`
 Summary: `dala/ML_INTEGRATION_SUMMARY.md`
 
@@ -538,7 +538,7 @@ Summary: `dala/ML_INTEGRATION_SUMMARY.md`
     **Live designer:**
     ```elixir
     Dala.Preview.start_designer(port: 4200)
-    Dala.Preview.generate_code(tree, :dsl, "MyApp.HomeScreen")
+    Dala.Preview.generate_code(tree, "MyApp.HomeScreen")
     ```
 
     ```bash
@@ -581,7 +581,7 @@ Summary: `dala/ML_INTEGRATION_SUMMARY.md`
     - `Dala.Storage.Storage` — App-local file storage with named locations
     - `Dala.Wakelock` — Screen wakelock
     - `Dala.Ui.Feedback.Alert` — Native alerts, action sheets, toasts
-    - `Dala.Ui.Embedded.Webview` — Bidirectional JS bridge for WebView
+    - `Dala.Ui.Embedded.Webview` — Bidirectional JS bridge for WebView (includes `interact/2`)
     - `Dala.Ui.Sensor.Motion` — Accelerometer and gyroscope
     - `Dala.List` — List rendering with custom item renderers
     - `Dala.PubSub` — Local PubSub via Elixir Registry

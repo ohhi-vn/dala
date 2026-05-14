@@ -67,7 +67,7 @@ defmodule Dala.Ui.Feedback.Alert do
   Dismissing the dialog without tapping a button (e.g. Android back gesture)
   sends `{:alert, :dismiss}`.
   """
-  @spec alert(Dala.Ui.Socket.t(), keyword()) :: Dala.Ui.Socket.t()
+  @spec alert(Dala.Socket.t(), keyword()) :: Dala.Socket.t()
   def alert(socket, opts) do
     title = to_string(opts[:title] || "")
     message = to_string(opts[:message] || "")
@@ -81,7 +81,7 @@ defmodule Dala.Ui.Feedback.Alert do
 
   Result arrives as `{:alert, action_atom}` in `handle_info/2`.
   """
-  @spec action_sheet(Dala.Ui.Socket.t(), keyword()) :: Dala.Ui.Socket.t()
+  @spec action_sheet(Dala.Socket.t(), keyword()) :: Dala.Socket.t()
   def action_sheet(socket, opts) do
     title = to_string(opts[:title] || "")
     buttons = opts[:buttons] || []
@@ -95,7 +95,7 @@ defmodule Dala.Ui.Feedback.Alert do
   Options:
     - `:duration` — `:short` (default, ~2 s) or `:long` (~4 s)
   """
-  @spec toast(Dala.Ui.Socket.t(), String.t(), keyword()) :: Dala.Ui.Socket.t()
+  @spec toast(Dala.Socket.t(), String.t(), keyword()) :: Dala.Socket.t()
   def toast(socket, message, opts \\ []) do
     duration = if opts[:duration] == :long, do: "long", else: "short"
     Dala.Platform.Native.toast_show(to_string(message), duration)

@@ -38,7 +38,7 @@ defmodule Dala.Hardware.Scanner do
   Options:
     - `formats: [format]` — list of barcode formats to detect (default `[:qr]`)
   """
-  @spec scan(Dala.Ui.Socket.t(), keyword()) :: Dala.Ui.Socket.t()
+  @spec scan(Dala.Socket.t(), keyword()) :: Dala.Socket.t()
   def scan(socket, opts \\ []) do
     formats = Keyword.get(opts, :formats, [:qr]) |> Enum.map(&Atom.to_string/1)
     formats_json = :json.encode(formats)

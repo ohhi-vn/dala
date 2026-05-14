@@ -87,7 +87,13 @@ defmodule Dala.Ui.Widgets do
   def column(props, children) when is_list(props), do: column(Map.new(props), children)
 
   def column(%{} = props, children) when is_list(children) do
-    allowed = @layout_props ++ @gesture_props ++ @accessibility_props ++ [:alignment, :justify]
+    # Map friendly names to binary-protocol names
+    props =
+      props
+      |> Map.put_new(:align_items, props[:alignment])
+      |> Map.put_new(:justify_content, props[:justify])
+
+    allowed = @layout_props ++ @gesture_props ++ @accessibility_props ++ [:align_items, :justify_content]
 
     %{
       type: :column,
@@ -106,7 +112,13 @@ defmodule Dala.Ui.Widgets do
   def row(props, children) when is_list(props), do: row(Map.new(props), children)
 
   def row(%{} = props, children) when is_list(children) do
-    allowed = @layout_props ++ @gesture_props ++ @accessibility_props ++ [:alignment, :justify]
+    # Map friendly names to binary-protocol names
+    props =
+      props
+      |> Map.put_new(:align_items, props[:alignment])
+      |> Map.put_new(:justify_content, props[:justify])
+
+    allowed = @layout_props ++ @gesture_props ++ @accessibility_props ++ [:align_items, :justify_content]
 
     %{
       type: :row,
@@ -284,6 +296,12 @@ defmodule Dala.Ui.Widgets do
   def divider(props) when is_list(props), do: divider(Map.new(props))
 
   def divider(%{} = props) do
+    props =
+      case props do
+        %{thickness: t} when is_number(t) -> %{props | thickness: t / 1}
+        _ -> props
+      end
+
     %{
       type: :divider,
       props: Map.take(props, [:thickness, :color, :padding]),
@@ -308,9 +326,12 @@ defmodule Dala.Ui.Widgets do
   def spacer(props) when is_list(props), do: spacer(Map.new(props))
 
   def spacer(%{} = props) do
+    # Native side reads "fixed_size" from props
+    props = Map.put(props, :fixed_size, Map.get(props, :size))
+
     %{
       type: :spacer,
-      props: Map.take(props, [:size]),
+      props: Map.take(props, [:fixed_size]),
       children: []
     }
   end
@@ -382,7 +403,17 @@ defmodule Dala.Ui.Widgets do
     %{
       type: :toggle,
       props:
-        Map.take(props, [:value, :on_change, :text, :track_color, :thumb_color, :accessibility_id]),
+        Map.take(props, [
+          :value,
+          :on_change,
+          :text,
+          :disabled,
+          :text_color,
+          :text_size,
+          :track_color,
+          :thumb_color,
+          :accessibility_id
+        ]),
       children: []
     }
   end
@@ -469,9 +500,12 @@ defmodule Dala.Ui.Widgets do
   def video(props) when is_list(props), do: video(Map.new(props))
 
   def video(%{} = props) do
+    src = props[:src] || props[:source] || ""
+    props = Map.put(props, :src, src)
+
     %{
       type: :video,
-      props: Map.take(props, [:src, :autoplay, :loop, :controls, :width, :height]),
+      props: Map.take(props, [:src, :source, :autoplay, :loop, :muted, :controls, :width, :height, :accessibility_id]),
       children: []
     }
   end
@@ -499,15 +533,20 @@ defmodule Dala.Ui.Widgets do
   def image(props) when is_list(props), do: image(Map.new(props))
 
   def image(%{} = props) do
+    src = props[:src] || props[:source] || ""
+    props = Map.put(props, :src, src)
+
     %{
       type: :image,
       props:
         Map.take(props, [
           :src,
+          :source,
           :resize_mode,
           :width,
           :height,
           :corner_radius,
+          :background,
           :placeholder_color,
           :accessibility_id,
           :on_error,
@@ -537,7 +576,17 @@ defmodule Dala.Ui.Widgets do
   def switch(%{} = props) do
     %{
       type: :switch,
-      props: Map.take(props, [:value, :on_toggle, :track_color, :thumb_color]),
+      props:
+        Map.take(props, [
+          :value,
+          :on_toggle,
+          :disabled,
+          :text,
+          :text_color,
+          :track_color,
+          :thumb_color,
+          :accessibility_id
+        ]),
       children: []
     }
   end
@@ -558,7 +607,7 @@ defmodule Dala.Ui.Widgets do
   def activity_indicator(%{} = props) do
     %{
       type: :activity_indicator,
-      props: Map.take(props, [:size, :color, :animating]),
+      props: Map.take(props, [:size, :color, :animating, :accessibility_id]),
       children: []
     }
   end
@@ -586,7 +635,16 @@ defmodule Dala.Ui.Widgets do
     %{
       type: :modal,
       props:
-        Map.take(props, [:visible, :on_dismiss, :presentation_style, :animation, :drag_indicator]),
+        Map.take(props, [
+          :visible,
+          :on_dismiss,
+          :presentation_style,
+          :animation,
+          :drag_indicator,
+          :background,
+          :corner_radius,
+          :accessibility_id
+        ]),
       children: children
     }
   end
@@ -609,7 +667,7 @@ defmodule Dala.Ui.Widgets do
   def refresh_control(%{} = props) do
     %{
       type: :refresh_control,
-      props: Map.take(props, [:on_refresh, :refreshing, :tint_color]),
+      props: Map.take(props, [:on_refresh, :refreshing, :tint_color, :accessibility_id]),
       children: []
     }
   end
@@ -669,7 +727,14 @@ defmodule Dala.Ui.Widgets do
   def pressable(%{} = props, children) when is_list(children) do
     %{
       type: :pressable,
-      props: Map.take(props, [:on_press, :on_long_press]),
+      props:
+        Map.take(props, [
+          :on_press,
+          :on_long_press,
+          :on_double_tap,
+          :disabled,
+          :accessibility_id
+        ]),
       children: children
     }
   end
@@ -679,13 +744,30 @@ defmodule Dala.Ui.Widgets do
 
   Renders children within the safe area boundaries (avoiding notches, status bar, etc.).
   """
-  @spec safe_area(list()) :: map()
-  def safe_area(children \\ [])
+  @spec safe_area(keyword() | map() | list()) :: map()
+  def safe_area(children_or_props \\ [])
 
   def safe_area(children) when is_list(children) do
+    %{type: :safe_area, props: %{}, children: children}
+  end
+
+  def safe_area(props) when is_list(props) do
+    safe_area(Map.new(props), [])
+  end
+
+  def safe_area(%{} = props) do
+    safe_area(props, [])
+  end
+
+  @spec safe_area(keyword() | map(), list()) :: map()
+  def safe_area(props, children) when is_list(props) do
+    safe_area(Map.new(props), children)
+  end
+
+  def safe_area(%{} = props, children) when is_list(children) do
     %{
       type: :safe_area,
-      props: %{},
+      props: Map.take(props, [:edges, :background, :accessibility_id]),
       children: children
     }
   end
@@ -705,7 +787,7 @@ defmodule Dala.Ui.Widgets do
   def status_bar(%{} = props) do
     %{
       type: :status_bar,
-      props: Map.take(props, [:bar_style, :hidden]),
+      props: Map.take(props, [:bar_style, :hidden, :background, :accessibility_id]),
       children: []
     }
   end
@@ -726,7 +808,7 @@ defmodule Dala.Ui.Widgets do
   def progress_bar(%{} = props) do
     %{
       type: :progress_bar,
-      props: Map.take(props, [:progress, :indeterminate, :color]),
+      props: Map.take(props, [:progress, :indeterminate, :color, :background, :height, :accessibility_id]),
       children: []
     }
   end
@@ -758,12 +840,24 @@ defmodule Dala.Ui.Widgets do
   def list(props) when is_list(props), do: list(Map.new(props))
 
   def list(%{} = props) do
-    items = props[:data] || []
+    items = props[:data] || props[:items] || []
     list_props = props |> Map.drop([:data]) |> Map.put(:items, items)
 
     %{
       type: :list,
-      props: Map.take(list_props, [:id, :items, :on_end_reached, :scroll]),
+      props:
+        Map.take(list_props, [
+          :id,
+          :items,
+          :data,
+          :on_end_reached,
+          :on_refresh,
+          :refreshing,
+          :empty_text,
+          :separator,
+          :scroll,
+          :accessibility_id
+        ]),
       children: []
     }
   end
@@ -790,12 +884,14 @@ defmodule Dala.Ui.Widgets do
 
   def webview(%{} = props) do
     allow_str = (props[:allow] || []) |> Enum.join(",")
+    url = props[:url] || props[:source] || ""
 
     node_props =
-      %{url: props[:url] || "", allow: allow_str, show_url: props[:show_url] || false}
+      %{url: url, allow: allow_str, show_url: props[:show_url] || false}
       |> then(fn p -> if props[:title], do: Map.put(p, :title, props[:title]), else: p end)
       |> then(fn p -> if props[:width], do: Map.put(p, :width, props[:width]), else: p end)
       |> then(fn p -> if props[:height], do: Map.put(p, :height, props[:height]), else: p end)
+      |> then(fn p -> if props[:accessibility_id], do: Map.put(p, :accessibility_id, props[:accessibility_id]), else: p end)
 
     %{type: :web_view, props: node_props, children: []}
   end
@@ -959,7 +1055,16 @@ defmodule Dala.Ui.Widgets do
   def badge(%{} = props, children) when is_list(children) do
     %{
       type: :badge,
-      props: Map.take(props, [:count, :color, :text_color, :visible]),
+      props:
+        Map.take(props, [
+          :count,
+          :color,
+          :text_color,
+          :text_size,
+          :position,
+          :visible,
+          :accessibility_id
+        ]),
       children: children
     }
   end
@@ -997,7 +1102,12 @@ defmodule Dala.Ui.Widgets do
           :on_tap,
           :icon,
           :on_remove,
+          :disabled,
           :enabled,
+          :text_color,
+          :text_size,
+          :background,
+          :corner_radius,
           :accessibility_id
         ]),
       children: []
@@ -1026,7 +1136,17 @@ defmodule Dala.Ui.Widgets do
   def snackbar(%{} = props) do
     %{
       type: :snackbar,
-      props: Map.take(props, [:message, :action_label, :on_action, :duration, :visible]),
+      props:
+        Map.take(props, [
+          :message,
+          :action_label,
+          :on_action,
+          :duration,
+          :visible,
+          :text_color,
+          :background,
+          :accessibility_id
+        ]),
       children: []
     }
   end
@@ -1064,8 +1184,10 @@ defmodule Dala.Ui.Widgets do
           :on_dismiss,
           :drag_indicator,
           :peek_height,
+          :height,
           :background,
-          :corner_radius
+          :corner_radius,
+          :accessibility_id
         ]),
       children: children
     }
@@ -1092,7 +1214,14 @@ defmodule Dala.Ui.Widgets do
   def tooltip(%{} = props, children) when is_list(children) do
     %{
       type: :tooltip,
-      props: Map.take(props, [:text, :position]),
+      props:
+        Map.take(props, [
+          :text,
+          :position,
+          :visible,
+          :delay,
+          :accessibility_id
+        ]),
       children: children
     }
   end
@@ -1130,6 +1259,7 @@ defmodule Dala.Ui.Widgets do
           :text,
           :background,
           :color,
+          :text_color,
           :corner_radius,
           :elevation,
           :accessibility_id
@@ -1169,7 +1299,10 @@ defmodule Dala.Ui.Widgets do
           :selected,
           :enabled,
           :color,
+          :text_color,
           :background,
+          :size,
+          :disabled,
           :accessibility_id
         ]),
       children: []
@@ -1201,7 +1334,15 @@ defmodule Dala.Ui.Widgets do
   def segmented_button(%{} = props) do
     %{
       type: :segmented_button,
-      props: Map.take(props, [:segments, :selected, :on_select, :accessibility_id]),
+      props:
+        Map.take(props, [
+          :segments,
+          :selected,
+          :on_select,
+          :text_color,
+          :background,
+          :accessibility_id
+        ]),
       children: []
     }
   end
@@ -1243,6 +1384,7 @@ defmodule Dala.Ui.Widgets do
           :trailing_actions,
           :background,
           :text_color,
+          :elevation,
           :accessibility_id
         ]),
       children: []
@@ -1274,7 +1416,15 @@ defmodule Dala.Ui.Widgets do
   def nav_bar(%{} = props) do
     %{
       type: :nav_bar,
-      props: Map.take(props, [:items, :active, :on_select, :accessibility_id]),
+      props:
+        Map.take(props, [
+          :items,
+          :active,
+          :on_select,
+          :text_color,
+          :background,
+          :accessibility_id
+        ]),
       children: []
     }
   end
@@ -1308,7 +1458,17 @@ defmodule Dala.Ui.Widgets do
   def nav_drawer(%{} = props) do
     %{
       type: :nav_drawer,
-      props: Map.take(props, [:visible, :on_dismiss, :items, :active, :on_select, :header]),
+      props:
+        Map.take(props, [
+          :visible,
+          :on_dismiss,
+          :items,
+          :active,
+          :on_select,
+          :header,
+          :background,
+          :accessibility_id
+        ]),
       children: []
     }
   end
@@ -1338,7 +1498,15 @@ defmodule Dala.Ui.Widgets do
   def nav_rail(%{} = props) do
     %{
       type: :nav_rail,
-      props: Map.take(props, [:items, :active, :on_select, :accessibility_id]),
+      props:
+        Map.take(props, [
+          :items,
+          :active,
+          :on_select,
+          :text_color,
+          :background,
+          :accessibility_id
+        ]),
       children: []
     }
   end
@@ -1369,7 +1537,16 @@ defmodule Dala.Ui.Widgets do
   def menu(%{} = props) do
     %{
       type: :menu,
-      props: Map.take(props, [:items, :visible, :on_dismiss, :on_select, :accessibility_id]),
+      props:
+        Map.take(props, [
+          :items,
+          :visible,
+          :on_dismiss,
+          :on_select,
+          :text_color,
+          :background,
+          :accessibility_id
+        ]),
       children: []
     }
   end
@@ -1410,7 +1587,8 @@ defmodule Dala.Ui.Widgets do
           :selected_date,
           :min_date,
           :max_date,
-          :title
+          :title,
+          :accessibility_id
         ]),
       children: []
     }
@@ -1442,7 +1620,15 @@ defmodule Dala.Ui.Widgets do
   def time_picker(%{} = props) do
     %{
       type: :time_picker,
-      props: Map.take(props, [:visible, :on_select, :on_dismiss, :selected_time, :title]),
+      props:
+        Map.take(props, [
+          :visible,
+          :on_select,
+          :on_dismiss,
+          :selected_time,
+          :title,
+          :accessibility_id
+        ]),
       children: []
     }
   end
@@ -1481,6 +1667,10 @@ defmodule Dala.Ui.Widgets do
           :on_focus,
           :active,
           :on_tap,
+          :value,
+          :text_color,
+          :background,
+          :corner_radius,
           :accessibility_id
         ]),
       children: []
@@ -1509,7 +1699,18 @@ defmodule Dala.Ui.Widgets do
   def carousel(%{} = props) do
     %{
       type: :carousel,
-      props: Map.take(props, [:data, :id, :on_page_change, :loop, :peek]),
+      props:
+        Map.take(props, [
+          :data,
+          :id,
+          :items,
+          :on_page_change,
+          :loop,
+          :autoplay,
+          :autoplay_interval,
+          :peek,
+          :accessibility_id
+        ]),
       children: []
     }
   end

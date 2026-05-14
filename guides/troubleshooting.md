@@ -327,7 +327,7 @@ Hot code loading in the BEAM takes effect on the *next function call* — if the
 screen is in the middle of a `handle_event/3` or `handle_info/2` call, it
 finishes with the old code first.
 
-Fix:** Trigger any event on the screen (a tap, a `Dala.Test.Test.tap/2`) to force
+Fix:** Trigger any event on the screen (a tap, a `Dala.Test.tap/2`) to force
 the process to make a new function call, picking up the new code. For layout
 changes, navigate away and back so `render/1` is called fresh.
 
@@ -358,8 +358,8 @@ Dala.Connectivity.Dist.ensure_started(node: :"my_app_android@127.0.0.1", cookie:
 
 ## iOS: `Dala.Test.pop` / `pop_to_root` crashes the BEAM
 
-**Symptom:** Calling `Dala.Test.Test.pop(node)`, `Dala.Test.Test.pop_to(node, ...)`, or
-`Dala.Test.Test.pop_to_root(node)` causes the iOS BEAM node to crash immediately.
+**Symptom:** Calling `Dala.Test.pop(node)`, `Dala.Test.pop_to(node, ...)`, or
+`Dala.Test.pop_to_root(node)` causes the iOS BEAM node to crash immediately.
 Logcat shows a signal or the node goes offline.
 
 **Cause:** The pop NIF calls SwiftUI's navigation stack from an Erlang distribution
@@ -369,16 +369,16 @@ path is guarded correctly; the pop path is not yet.
 **Workaround:** Drive backward navigation using platform taps instead:
 
 ```elixir
-# Instead of: Dala.Test.Test.pop_to_root(node)
+# Instead of: Dala.Test.pop_to_root(node)
 
 # iOS — tap the native Back button via MCP:
 mcp__ios_simulator__ui_tap(x: 20, y: 60)
 
 # Or navigate forward to the desired screen and reset:
-Dala.Test.Test.navigate(node, MyApp.HomeScreen)
+Dala.Test.navigate(node, MyApp.HomeScreen)
 ```
 
-`Dala.Test.Test.navigate/3` (push) is safe — it does not trigger the crash.
+`Dala.Test.navigate/3` (push) is safe — it does not trigger the crash.
 
 ---
 

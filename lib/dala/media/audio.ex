@@ -35,7 +35,7 @@ defmodule Dala.Media.Audio do
     - `format: :aac | :wav` (default `:aac`)
     - `quality: :low | :medium | :high` (default `:medium`)
   """
-  @spec start_recording(Dala.Ui.Socket.t(), keyword()) :: Dala.Ui.Socket.t()
+  @spec start_recording(Dala.Socket.t(), keyword()) :: Dala.Socket.t()
   def start_recording(socket, opts \\ []) do
     Dala.Platform.Native.audio_start_recording(:json.encode(recording_opts(opts)))
     socket
@@ -54,7 +54,7 @@ defmodule Dala.Media.Audio do
   Stop the in-progress recording and save it to a temp file.
   Result arrives as `{:audio, :recorded, %{path: ..., duration: ...}}`.
   """
-  @spec stop_recording(Dala.Ui.Socket.t()) :: Dala.Ui.Socket.t()
+  @spec stop_recording(Dala.Socket.t()) :: Dala.Socket.t()
   def stop_recording(socket) do
     Dala.Platform.Native.audio_stop_recording()
     socket
@@ -71,7 +71,7 @@ defmodule Dala.Media.Audio do
     - `{:audio, :playback_finished, %{path: path}}`
     - `{:audio, :playback_error, %{reason: reason}}`
   """
-  @spec play(Dala.Ui.Socket.t(), String.t(), keyword()) :: Dala.Ui.Socket.t()
+  @spec play(Dala.Socket.t(), String.t(), keyword()) :: Dala.Socket.t()
   def play(socket, path, opts \\ []) do
     Dala.Platform.Native.audio_play(path, :json.encode(play_opts(opts)))
     socket
@@ -87,14 +87,14 @@ defmodule Dala.Media.Audio do
   end
 
   @doc "Stop the currently playing audio."
-  @spec stop_playback(Dala.Ui.Socket.t()) :: Dala.Ui.Socket.t()
+  @spec stop_playback(Dala.Socket.t()) :: Dala.Socket.t()
   def stop_playback(socket) do
     Dala.Platform.Native.audio_stop_playback()
     socket
   end
 
   @doc "Adjust playback volume (0.0–1.0) without stopping playback."
-  @spec set_volume(Dala.Ui.Socket.t(), float()) :: Dala.Ui.Socket.t()
+  @spec set_volume(Dala.Socket.t(), float()) :: Dala.Socket.t()
   def set_volume(socket, volume) when is_float(volume) or is_integer(volume) do
     Dala.Platform.Native.audio_set_volume(volume / 1.0)
     socket

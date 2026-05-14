@@ -47,7 +47,7 @@ defmodule Dala.Platform.Notify do
     - `delay_seconds: integer` — trigger after N seconds (alternative to `at:`)
     - `data: %{}` — arbitrary map passed back in the `handle_info` payload
   """
-  @spec schedule(Dala.Ui.Socket.t(), keyword()) :: Dala.Ui.Socket.t()
+  @spec schedule(Dala.Socket.t(), keyword()) :: Dala.Socket.t()
   def schedule(socket, opts) do
     id = Keyword.fetch!(opts, :id)
     title = Keyword.fetch!(opts, :title)
@@ -80,7 +80,7 @@ defmodule Dala.Platform.Notify do
   Cancel a pending local notification by its id.
   Has no effect if the notification has already been delivered.
   """
-  @spec cancel(Dala.Ui.Socket.t(), String.t()) :: Dala.Ui.Socket.t()
+  @spec cancel(Dala.Socket.t(), String.t()) :: Dala.Socket.t()
   def cancel(socket, id) do
     Dala.Platform.Native.notify_cancel(id)
     socket
@@ -95,7 +95,7 @@ defmodule Dala.Platform.Notify do
   Send this token to your server and use the `dala_push` library to send
   notifications to it.
   """
-  @spec register_push(Dala.Ui.Socket.t()) :: Dala.Ui.Socket.t()
+  @spec register_push(Dala.Socket.t()) :: Dala.Socket.t()
   def register_push(socket) do
     Dala.Platform.Native.notify_register_push()
     socket

@@ -123,8 +123,8 @@ extension DalaNode: Equatable {
               lhs.borderColor == rhs.borderColor,
               lhs.paddingTop == rhs.paddingTop,
               lhs.paddingBottom == rhs.paddingBottom,
-              lhs.paddingLeading == rhs.paddingLeading,
-              lhs.paddingTrailing == rhs.paddingTrailing,
+              lhs.paddingLeft == rhs.paddingLeft,
+              lhs.paddingRight == rhs.paddingRight,
               lhs.fillWidth == rhs.fillWidth,
               lhs.fixedWidth == rhs.fixedWidth,
               lhs.fixedHeight == rhs.fixedHeight,
@@ -250,6 +250,34 @@ extension DalaNode {
         }
     }
 
+    /// SwiftUI HorizontalAlignment from alignItems byte (column)
+    var swiftUIHorizontalAlignment: HorizontalAlignment {
+        switch alignItems {
+        case 1: return .center
+        case 2: return .trailing
+        default: return .leading
+        }
+    }
+
+    /// SwiftUI VerticalAlignment from alignItems byte (row)
+    var swiftUIVerticalAlignment: VerticalAlignment {
+        switch alignItems {
+        case 1: return .center
+        case 2: return .bottom
+        case 3: return .top // stretch maps to fill via frame
+        default: return .top
+        }
+    }
+
+    /// SwiftUI alignment for frame modifier from justifyContent byte
+    var swiftUIAlignment: Alignment {
+        switch justifyContent {
+        case 1: return .center
+        case 2: return .bottomTrailing
+        default: return .topLeading
+        }
+    }
+
     /// Extra inter-line spacing derived from the lineHeight multiplier.
     var computedLineSpacing: CGFloat {
         guard lineHeight > 0 else { return 0 }
@@ -273,14 +301,15 @@ struct DalaNodeView: View, Equatable {
         Group {
             switch node.nodeType {
             case .column:
-                VStack(alignment: .leading, spacing: node.gap) {
+                VStack(alignment: node.swiftUIHorizontalAlignment, spacing: node.gap) {
                     ForEach(node.childNodes) { child in
                         DalaNodeView(node: child)
                     }
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(maxWidth: node.fillWidth ? .infinity : nil, alignment: node.swiftUIAlignment)
                 .padding(node.paddingEdgeInsets)
                 .background(node.backgroundColor.map { Color($0) } ?? Color.clear)
+                .clipShape(RoundedRectangle(cornerRadius: node.cornerRadius))
                 .ifLet(node.onTap) { view, tap in
                     view.contentShape(Rectangle()).onTapGesture { tap() }
                 }
@@ -290,13 +319,15 @@ struct DalaNodeView: View, Equatable {
                 .ifLet(node.accessibilityId) { view, id in view.accessibilityIdentifier(id) }
 
             case .row:
-                HStack(spacing: node.gap) {
+                HStack(alignment: node.swiftUIVerticalAlignment, spacing: node.gap) {
                     ForEach(node.childNodes) { child in
                         DalaNodeView(node: child)
                     }
                 }
+                .frame(maxWidth: node.fillWidth ? .infinity : nil, alignment: node.swiftUIAlignment)
                 .padding(node.paddingEdgeInsets)
                 .background(node.backgroundColor.map { Color($0) } ?? Color.clear)
+                .clipShape(RoundedRectangle(cornerRadius: node.cornerRadius))
                 .ifLet(node.onTap) { view, tap in
                     view.contentShape(Rectangle()).onTapGesture { tap() }
                 }
@@ -314,6 +345,7 @@ struct DalaNodeView: View, Equatable {
                 .frame(maxWidth: .infinity, alignment: .topLeading)
                 .padding(node.paddingEdgeInsets)
                 .background(node.backgroundColor.map { Color($0) } ?? Color.clear)
+                .clipShape(RoundedRectangle(cornerRadius: node.cornerRadius))
                 .overlay(
                     // Border opt-in via border_color + border_width on the BEAM side.
                     // When width is 0 (default) the stroke draws nothing — no perf cost.
@@ -534,8 +566,324 @@ struct DalaNodeView: View, Equatable {
                     view.padding(node.paddingEdgeInsets)
                 }
 
-            @unknown default:
-                EmptyView()
+            case .modal:
+                ZStack(alignment: .topLeading) {
+                    ForEach(node.childNodes) { child in
+                        DalaNodeView(node: child)
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                .padding(node.paddingEdgeInsets)
+                .background(node.backgroundColor.map { Color($0) } ?? Color.clear)
+                .clipShape(RoundedRectangle(cornerRadius: node.cornerRadius))
+                .ifLet(node.onTap) { view, tap in
+                    view.contentShape(Rectangle()).onTapGesture { tap() }
+                }
+                .ifLet(node.accessibilityId) { view, id in view.accessibilityIdentifier(id) }
+
+            case .pressable:
+                ZStack(alignment: .topLeading) {
+                    ForEach(node.childNodes) { child in
+                        DalaNodeView(node: child)
+                    }
+                }
+                .frame(maxWidth: node.fillWidth ? .infinity : nil, alignment: node.swiftUIAlignment)
+                .padding(node.paddingEdgeInsets)
+                .background(node.backgroundColor.map { Color($0) } ?? Color.clear)
+                .clipShape(RoundedRectangle(cornerRadius: node.cornerRadius))
+                .ifLet(node.onTap) { view, tap in
+                    view.contentShape(Rectangle()).onTapGesture { tap() }
+                }
+                .ifLet(node.accessibilityId) { view, id in view.accessibilityIdentifier(id) }
+
+            case .safeArea:
+                ZStack(alignment: .topLeading) {
+                    ForEach(node.childNodes) { child in
+                        DalaNodeView(node: child)
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                .ignoresSafeArea(.container, edges: .all)
+                .ifLet(node.accessibilityId) { view, id in view.accessibilityIdentifier(id) }
+
+            case .card:
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(node.childNodes) { child in
+                        DalaNodeView(node: child)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .topLeading)
+                .padding(node.paddingEdgeInsets)
+                .background(node.backgroundColor.map { Color($0) } ?? Color(UIColor.secondarySystemBackground))
+                .clipShape(RoundedRectangle(cornerRadius: node.cornerRadius > 0 ? node.cornerRadius : 12))
+                .ifLet(node.onTap) { view, tap in
+                    view.contentShape(Rectangle()).onTapGesture { tap() }
+                }
+                .ifLet(node.accessibilityId) { view, id in view.accessibilityIdentifier(id) }
+
+            case .badge:
+                Text(node.text ?? "")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(node.backgroundColor.map { Color($0) } ?? Color.red)
+                    .clipShape(Capsule())
+                    .ifLet(node.accessibilityId) { view, id in view.accessibilityIdentifier(id) }
+
+            case .chip:
+                HStack(spacing: 4) {
+                    if let icon = node.iconName {
+                        Image(systemName: sfSymbolName(icon))
+                            .font(.system(size: 14))
+                    }
+                    Text(node.text ?? "")
+                        .font(.system(size: 14, weight: .medium))
+                }
+                .foregroundColor(node.textColor.map { Color($0) } ?? Color.primary)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(node.backgroundColor.map { Color($0) } ?? Color(UIColor.systemGray5))
+                .clipShape(Capsule())
+                .ifLet(node.onTap) { view, tap in
+                    view.contentShape(Rectangle()).onTapGesture { tap() }
+                }
+                .ifLet(node.accessibilityId) { view, id in view.accessibilityIdentifier(id) }
+
+            case .snackbar:
+                HStack(spacing: 8) {
+                    Text(node.text ?? "")
+                        .font(.system(size: 14))
+                        .foregroundColor(.white)
+                    Spacer()
+                    if let action = node.iconName {
+                        Button(action: { node.onTap?() }) {
+                            Text(action)
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundColor(Color.yellow)
+                        }
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .background(Color(UIColor.darkGray))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .padding(node.paddingEdgeInsets)
+                .ifLet(node.accessibilityId) { view, id in view.accessibilityIdentifier(id) }
+
+            case .fab:
+                Button(action: { node.onTap?() }) {
+                    if let icon = node.iconName {
+                        Image(systemName: sfSymbolName(icon))
+                            .font(.system(size: 24))
+                            .foregroundColor(.white)
+                    } else {
+                        Text(node.text ?? "+")
+                            .font(.system(size: 24, weight: .bold))
+                            .foregroundColor(.white)
+                    }
+                }
+                .frame(width: 56, height: 56)
+                .background(node.backgroundColor.map { Color($0) } ?? Color.accentColor)
+                .clipShape(Circle())
+                .shadow(radius: 4)
+                .ifLet(node.accessibilityId) { view, id in view.accessibilityIdentifier(id) }
+
+            case .iconButton:
+                Button(action: { node.onTap?() }) {
+                    if let icon = node.iconName {
+                        Image(systemName: sfSymbolName(icon))
+                            .font(.system(size: node.textSize > 0 ? node.textSize : 22))
+                            .foregroundColor(node.textColor.map { Color($0) } ?? Color.primary)
+                    } else {
+                        Text(node.text ?? "")
+                            .font(node.resolvedFont)
+                            .foregroundColor(node.textColor.map { Color($0) } ?? Color.primary)
+                    }
+                }
+                .frame(width: 44, height: 44)
+                .background(node.backgroundColor.map { Color($0) } ?? Color.clear)
+                .clipShape(Circle())
+                .disabled(node.disabled)
+                .ifLet(node.accessibilityId) { view, id in view.accessibilityIdentifier(id) }
+
+            case .segmentedButton:
+                HStack(spacing: 0) {
+                    ForEach(Array(node.childNodes.enumerated()), id: \.offset) { index, child in
+                        Button(action: { child.onTap?() }) {
+                            Text(child.text ?? "")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(child.checked ? .white : .primary)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 8)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .background(child.checked ? Color.accentColor : Color.clear)
+                        if index < node.childNodes.count - 1 {
+                            Divider().frame(height: 20)
+                        }
+                    }
+                }
+                .background(Color(UIColor.systemGray6))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .ifLet(node.accessibilityId) { view, id in view.accessibilityIdentifier(id) }
+
+            case .tooltip:
+                Text(node.text ?? "")
+                    .font(.system(size: 12))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color(UIColor.darkGray))
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                    .ifLet(node.accessibilityId) { view, id in view.accessibilityIdentifier(id) }
+
+            case .appBar:
+                HStack(spacing: 8) {
+                    ForEach(node.childNodes) { child in
+                        DalaNodeView(node: child)
+                    }
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity)
+                .padding(node.paddingEdgeInsets)
+                .background(node.backgroundColor.map { Color($0) } ?? Color(UIColor.systemBackground))
+                .ifLet(node.accessibilityId) { view, id in view.accessibilityIdentifier(id) }
+
+            case .navBar:
+                HStack(spacing: 12) {
+                    if let backIcon = node.iconName {
+                        Button(action: { node.onTap?() }) {
+                            Image(systemName: sfSymbolName(backIcon))
+                                .font(.system(size: 18, weight: .medium))
+                        }
+                    }
+                    Text(node.text ?? "")
+                        .font(.system(size: 17, weight: .semibold))
+                    Spacer()
+                    ForEach(node.childNodes) { child in
+                        DalaNodeView(node: child)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .padding(node.paddingEdgeInsets)
+                .background(node.backgroundColor.map { Color($0) } ?? Color(UIColor.systemBackground))
+                .ifLet(node.accessibilityId) { view, id in view.accessibilityIdentifier(id) }
+
+            case .navDrawer:
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(node.childNodes) { child in
+                        DalaNodeView(node: child)
+                    }
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                .padding(node.paddingEdgeInsets)
+                .background(node.backgroundColor.map { Color($0) } ?? Color(UIColor.secondarySystemBackground))
+                .ifLet(node.accessibilityId) { view, id in view.accessibilityIdentifier(id) }
+
+            case .navRail:
+                VStack(spacing: 8) {
+                    ForEach(node.childNodes) { child in
+                        DalaNodeView(node: child)
+                    }
+                    Spacer()
+                }
+                .frame(maxHeight: .infinity)
+                .padding(node.paddingEdgeInsets)
+                .background(node.backgroundColor.map { Color($0) } ?? Color(UIColor.secondarySystemBackground))
+                .ifLet(node.accessibilityId) { view, id in view.accessibilityIdentifier(id) }
+
+            case .bottomSheet:
+                VStack(spacing: 0) {
+                    // Drag handle
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(Color(UIColor.systemGray3))
+                        .frame(width: 36, height: 4)
+                        .padding(.top, 8)
+                    ForEach(node.childNodes) { child in
+                        DalaNodeView(node: child)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .topLeading)
+                .padding(node.paddingEdgeInsets)
+                .background(node.backgroundColor.map { Color($0) } ?? Color(UIColor.systemBackground))
+                .clipShape(RoundedRectangle(cornerRadius: node.cornerRadius > 0 ? node.cornerRadius: 16))
+                .ifLet(node.accessibilityId) { view, id in view.accessibilityIdentifier(id) }
+
+            case .carousel:
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: node.gap) {
+                        ForEach(node.childNodes) { child in
+                            DalaNodeView(node: child)
+                        }
+                    }
+                    .padding(node.paddingEdgeInsets)
+                }
+                .ifLet(node.accessibilityId) { view, id in view.accessibilityIdentifier(id) }
+
+            case .menu:
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(node.childNodes) { child in
+                        DalaNodeView(node: child)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .topLeading)
+                .padding(node.paddingEdgeInsets)
+                .background(node.backgroundColor.map { Color($0) } ?? Color(UIColor.systemBackground))
+                .clipShape(RoundedRectangle(cornerRadius: node.cornerRadius > 0 ? node.cornerRadius : 12))
+                .shadow(radius: 8)
+                .ifLet(node.accessibilityId) { view, id in view.accessibilityIdentifier(id) }
+
+            case .datePicker:
+                DalaDatePicker(node: node)
+                    .padding(node.paddingEdgeInsets)
+                    .ifLet(node.accessibilityId) { view, id in view.accessibilityIdentifier(id) }
+
+            case .timePicker:
+                DalaTimePicker(node: node)
+                    .padding(node.paddingEdgeInsets)
+                    .ifLet(node.accessibilityId) { view, id in view.accessibilityIdentifier(id) }
+
+            case .searchBar:
+                DalaSearchBar(node: node)
+                    .padding(node.paddingEdgeInsets)
+                    .ifLet(node.accessibilityId) { view, id in view.accessibilityIdentifier(id) }
+
+            case .checkbox:
+                DalaCheckbox(node: node)
+                    .padding(node.paddingEdgeInsets)
+                    .ifLet(node.accessibilityId) { view, id in view.accessibilityIdentifier(id) }
+
+            case .radio:
+                DalaRadio(node: node)
+                    .padding(node.paddingEdgeInsets)
+                    .ifLet(node.accessibilityId) { view, id in view.accessibilityIdentifier(id) }
+
+            case .activityIndicator:
+                ProgressView()
+                    .progressViewStyle(.circular)
+                    .tint(node.color.map { Color($0) } ?? Color.accentColor)
+                    .scaleEffect(node.textSize > 0 ? node.textSize / 20.0 : 1.0)
+                    .padding(node.paddingEdgeInsets)
+                    .ifLet(node.accessibilityId) { view, id in view.accessibilityIdentifier(id) }
+
+            case .refreshControl:
+                // RefreshControl is applied via .refreshable modifier on a
+                // ScrollView by the parent; this node type acts as a marker.
+                // Render children only (typically a single scroll container).
+                ForEach(node.childNodes) { child in
+                    DalaNodeView(node: child)
+                }
+                .ifLet(node.accessibilityId) { view, id in view.accessibilityIdentifier(id) }
+
+            case .statusBar:
+                // Status bar styling is handled at the UIApplication level.
+                // This node is a no-op in SwiftUI — children render normally.
+                ForEach(node.childNodes) { child in
+                    DalaNodeView(node: child)
+                }
+                .ifLet(node.accessibilityId) { view, id in view.accessibilityIdentifier(id) }
             }
         }
     }
@@ -956,6 +1304,158 @@ private struct DalaImage: View {
             height: node.fixedHeight > 0 ? node.fixedHeight : nil
         )
         .clipShape(RoundedRectangle(cornerRadius: node.cornerRadius))
+    }
+}
+
+// ── Date picker ─────────────────────────────────────────────────────────────
+
+private struct DalaDatePicker: View {
+    let node: DalaNode
+    @State private var date: Date
+
+    init(node: DalaNode) {
+        self.node = node
+        if let timeInterval = node.value as? Double, timeInterval > 0 {
+            _date = State(initialValue: Date(timeIntervalSince1970: timeInterval))
+        } else {
+            _date = State(initialValue: Date())
+        }
+    }
+
+    var body: some View {
+        DatePicker(
+            node.text ?? "",
+            selection: $date,
+            displayedComponents: [.date]
+        )
+        .datePickerStyle(.compact)
+        .onChange(of: date) { _, newValue in
+            node.onChangeFloat?(newValue.timeIntervalSince1970)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+// ── Time picker ─────────────────────────────────────────────────────────────
+
+private struct DalaTimePicker: View {
+    let node: DalaNode
+    @State private var date: Date
+
+    init(node: DalaNode) {
+        self.node = node
+        if let timeInterval = node.value as? Double, timeInterval > 0 {
+            _date = State(initialValue: Date(timeIntervalSince1970: timeInterval))
+        } else {
+            _date = State(initialValue: Date())
+        }
+    }
+
+    var body: some View {
+        DatePicker(
+            node.text ?? "",
+            selection: $date,
+            displayedComponents: [.hourAndMinute]
+        )
+        .datePickerStyle(.compact)
+        .onChange(of: date) { _, newValue in
+            node.onChangeFloat?(newValue.timeIntervalSince1970)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+// ── Search bar ──────────────────────────────────────────────────────────────
+
+private struct DalaSearchBar: View {
+    let node: DalaNode
+    @State private var text: String
+    @FocusState private var isFocused: Bool
+
+    init(node: DalaNode) {
+        self.node = node
+        _text = State(initialValue: node.text ?? "")
+    }
+
+    var body: some View {
+        HStack {
+            Image(systemName: "magnifyingglass")
+                .foregroundColor(.secondary)
+            TextField(node.placeholder ?? "Search", text: $text)
+                .focused($isFocused)
+                .submitLabel(.search)
+                .onSubmit { node.onSubmit?() }
+                .onChange(of: text) { _, newValue in
+                    node.onChangeStr?(newValue)
+                }
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .background(Color(UIColor.systemGray6))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .frame(maxWidth: .infinity)
+    }
+}
+
+// ── Checkbox ────────────────────────────────────────────────────────────────
+
+private struct DalaCheckbox: View {
+    let node: DalaNode
+    @State private var isChecked: Bool
+
+    init(node: DalaNode) {
+        self.node = node
+        _isChecked = State(initialValue: node.checked)
+    }
+
+    var body: some View {
+        Button(action: {
+            isChecked.toggle()
+            node.onChangeBool?(isChecked)
+        }) {
+            HStack(alignment: .center, spacing: 8) {
+                Image(systemName: isChecked ? "checkmark.square.fill" : "square")
+                    .font(.system(size: 22))
+                    .foregroundColor(isChecked ? .accentColor : .secondary)
+                if let label = node.text, !label.isEmpty {
+                    Text(label)
+                        .foregroundColor(.primary)
+                }
+                Spacer()
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+// ── Radio ───────────────────────────────────────────────────────────────────
+
+private struct DalaRadio: View {
+    let node: DalaNode
+    @State private var isSelected: Bool
+
+    init(node: DalaNode) {
+        self.node = node
+        _isSelected = State(initialValue: node.checked)
+    }
+
+    var body: some View {
+        Button(action: {
+            isSelected = true
+            node.onChangeBool?(true)
+        }) {
+            HStack(alignment: .center, spacing: 8) {
+                Image(systemName: isSelected ? "largecircle.fill.circle" : "circle")
+                    .font(.system(size: 22))
+                    .foregroundColor(isSelected ? .accentColor : .secondary)
+                if let label = node.text, !label.isEmpty {
+                    Text(label)
+                        .foregroundColor(.primary)
+                }
+                Spacer()
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 

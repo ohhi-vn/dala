@@ -18,7 +18,7 @@ defmodule Dala.Platform.Share do
   @doc """
   Open the share sheet with plain text. Returns the socket unchanged.
   """
-  @spec text(Dala.Ui.Socket.t(), binary()) :: Dala.Ui.Socket.t()
+  @spec text(Dala.Socket.t(), binary()) :: Dala.Socket.t()
   def text(socket, content) when is_binary(content) do
     Dala.Platform.Native.share_text(content)
     socket

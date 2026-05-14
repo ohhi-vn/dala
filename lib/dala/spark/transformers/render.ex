@@ -99,6 +99,26 @@ defmodule Dala.Spark.Transformers.Render do
   defp struct_to_type(Dala.Spark.Dsl.Modal), do: :modal
   defp struct_to_type(Dala.Spark.Dsl.Pressable), do: :pressable
   defp struct_to_type(Dala.Spark.Dsl.SafeArea), do: :safe_area
+  defp struct_to_type(Dala.Spark.Dsl.Checkbox), do: :checkbox
+  defp struct_to_type(Dala.Spark.Dsl.Radio), do: :radio
+  defp struct_to_type(Dala.Spark.Dsl.Card), do: :card
+  defp struct_to_type(Dala.Spark.Dsl.Badge), do: :badge
+  defp struct_to_type(Dala.Spark.Dsl.Chip), do: :chip
+  defp struct_to_type(Dala.Spark.Dsl.Snackbar), do: :snackbar
+  defp struct_to_type(Dala.Spark.Dsl.Fab), do: :fab
+  defp struct_to_type(Dala.Spark.Dsl.IconButton), do: :icon_button
+  defp struct_to_type(Dala.Spark.Dsl.SegmentedButton), do: :segmented_button
+  defp struct_to_type(Dala.Spark.Dsl.AppBar), do: :app_bar
+  defp struct_to_type(Dala.Spark.Dsl.NavBar), do: :nav_bar
+  defp struct_to_type(Dala.Spark.Dsl.NavDrawer), do: :nav_drawer
+  defp struct_to_type(Dala.Spark.Dsl.NavRail), do: :nav_rail
+  defp struct_to_type(Dala.Spark.Dsl.Menu), do: :menu
+  defp struct_to_type(Dala.Spark.Dsl.DatePicker), do: :date_picker
+  defp struct_to_type(Dala.Spark.Dsl.TimePicker), do: :time_picker
+  defp struct_to_type(Dala.Spark.Dsl.SearchBar), do: :search_bar
+  defp struct_to_type(Dala.Spark.Dsl.Carousel), do: :carousel
+  defp struct_to_type(Dala.Spark.Dsl.BottomSheet), do: :bottom_sheet
+  defp struct_to_type(Dala.Spark.Dsl.Tooltip), do: :tooltip
 
   # ── Props building ────────────────────────────────────────────────────────
 

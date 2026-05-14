@@ -96,12 +96,58 @@ pub fn log_with_level(level: &str, msg: &str) {
 // App lifecycle
 // ============================================================================
 
-pub fn set_root_binary(_data: &[u8], _transition: &str) {
-    // TODO: implement via JNI call to DalaBridge.setRootFromBinary
-    eprintln!(
-        "[Dala] set_root_binary called with {} bytes (stub)",
-        _data.len()
-    );
+pub fn set_root_binary(data: &[u8], transition: &str) {
+    unsafe {
+        let mut jni_env = match get_jni_env() {
+            Some(env) => env,
+            None => {
+                eprintln!("[Dala] set_root_binary: failed to get JNIEnv");
+                return;
+            }
+        };
+
+        if let Some(class) = get_bridge_class(&mut jni_env) {
+            // Create jbyteArray from the binary data
+            let byte_array = match jni_env.new_byte_array(data.len() as i32) {
+                Ok(arr) => arr,
+                Err(e) => {
+                    eprintln!(
+                        "[Dala] set_root_binary: failed to allocate byte array: {:?}",
+                        e
+                    );
+                    return;
+                }
+            };
+            if let Err(e) = jni_env.set_byte_array_region(&byte_array, 0, data) {
+                eprintln!("[Dala] set_root_binary: failed to copy bytes: {:?}", e);
+                return;
+            }
+
+            // Create jstring for transition
+            let jtransition = match jni_env.new_string(transition) {
+                Ok(s) => s,
+                Err(e) => {
+                    eprintln!(
+                        "[Dala] set_root_binary: failed to create transition string: {:?}",
+                        e
+                    );
+                    return;
+                }
+            };
+
+            // Call DalaBridge.setRootFromBinary(byte[], String)
+            let args = [
+                jni::objects::JValue::Object(byte_array.into()),
+                jni::objects::JValue::Object(jtransition.into()),
+            ];
+            let _ = jni_env.call_static_method(
+                class,
+                "setRootFromBinary",
+                "([BLjava/lang/String;)V",
+                &args,
+            );
+        }
+    }
 }
 
 pub fn exit_app() {

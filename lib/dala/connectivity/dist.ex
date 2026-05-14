@@ -1,3 +1,17 @@
+defmodule Dala.Dist do
+  @moduledoc """
+  Convenience shorthand for `Dala.Connectivity.Dist`.
+
+  All functions are delegated to `Dala.Connectivity.Dist`.
+  """
+
+  defdelegate cookie_from_env(env_var, app_name), to: Dala.Connectivity.Dist
+  defdelegate ensure_started(opts), to: Dala.Connectivity.Dist
+  defdelegate stop(), to: Dala.Connectivity.Dist
+  defdelegate release_mode?(), to: Dala.Connectivity.Dist
+  defdelegate apply_suffix(base_node, suffix), to: Dala.Connectivity.Dist
+end
+
 defmodule Dala.Connectivity.Dist do
   @compile {:nowarn_undefined, [:Nx]}
   @moduledoc """

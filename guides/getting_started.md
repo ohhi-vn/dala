@@ -467,7 +467,7 @@ BEAM on the device. You can inspect state, call functions, and push code live.
 Node.list()
 #=> [:"my_app_ios@127.0.0.1"]
 
-Dala.Test.Test.assigns(:"my_app_ios@127.0.0.1")
+Dala.Test.assigns(:"my_app_ios@127.0.0.1")
 #=> %{count: 0, safe_area: %{top: 62.0, ...}}
 ```
 

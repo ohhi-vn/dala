@@ -51,7 +51,7 @@ defmodule Dala.Hardware.Bluetooth do
 
   Found devices arrive as `:bluetooth, :device_found` messages.
   """
-  @spec start_scan(Dala.Ui.Socket.t(), keyword()) :: Dala.Ui.Socket.t()
+  @spec start_scan(Dala.Socket.t(), keyword()) :: Dala.Socket.t()
   def start_scan(socket, opts \\ []) do
     services = Keyword.get(opts, :services, [])
     timeout_ms = Keyword.get(opts, :timeout_ms, 10_000)
@@ -62,7 +62,7 @@ defmodule Dala.Hardware.Bluetooth do
   @doc """
   Stop scanning for devices.
   """
-  @spec stop_scan(Dala.Ui.Socket.t()) :: Dala.Ui.Socket.t()
+  @spec stop_scan(Dala.Socket.t()) :: Dala.Socket.t()
   def stop_scan(socket) do
     Dala.Platform.Native.bluetooth_stop_scan()
     socket
@@ -73,7 +73,7 @@ defmodule Dala.Hardware.Bluetooth do
 
   Device ID is obtained from `:device_found` event.
   """
-  @spec connect(Dala.Ui.Socket.t(), device_id()) :: Dala.Ui.Socket.t()
+  @spec connect(Dala.Socket.t(), device_id()) :: Dala.Socket.t()
   def connect(socket, device_id) do
     Dala.Platform.Native.bluetooth_connect(device_id)
     socket
@@ -82,7 +82,7 @@ defmodule Dala.Hardware.Bluetooth do
   @doc """
   Disconnect from a BLE device.
   """
-  @spec disconnect(Dala.Ui.Socket.t(), device_id()) :: Dala.Ui.Socket.t()
+  @spec disconnect(Dala.Socket.t(), device_id()) :: Dala.Socket.t()
   def disconnect(socket, device_id) do
     Dala.Platform.Native.bluetooth_disconnect(device_id)
     socket
@@ -91,7 +91,7 @@ defmodule Dala.Hardware.Bluetooth do
   @doc """
   Discover services for a connected device.
   """
-  @spec discover_services(Dala.Ui.Socket.t(), device_id()) :: Dala.Ui.Socket.t()
+  @spec discover_services(Dala.Socket.t(), device_id()) :: Dala.Socket.t()
   def discover_services(socket, device_id) do
     Dala.Platform.Native.bluetooth_discover_services(device_id)
     socket
@@ -102,7 +102,7 @@ defmodule Dala.Hardware.Bluetooth do
 
   Results arrive as `:bluetooth, :characteristic_read` message.
   """
-  @spec read_characteristic(Dala.Ui.Socket.t(), device_id(), uuid(), uuid()) :: Dala.Ui.Socket.t()
+  @spec read_characteristic(Dala.Socket.t(), device_id(), uuid(), uuid()) :: Dala.Socket.t()
   def read_characteristic(socket, device_id, service_uuid, characteristic_uuid) do
     Dala.Platform.Native.bluetooth_read_characteristic(
       device_id,
@@ -118,8 +118,8 @@ defmodule Dala.Hardware.Bluetooth do
 
   Value should be a binary (for bytes) or integer/list for simple values.
   """
-  @spec write_characteristic(Dala.Ui.Socket.t(), device_id(), uuid(), uuid(), binary()) ::
-          Dala.Ui.Socket.t()
+  @spec write_characteristic(Dala.Socket.t(), device_id(), uuid(), uuid(), binary()) ::
+          Dala.Socket.t()
   def write_characteristic(socket, device_id, service_uuid, characteristic_uuid, value) do
     Dala.Platform.Native.bluetooth_write_characteristic(
       device_id,
@@ -136,7 +136,7 @@ defmodule Dala.Hardware.Bluetooth do
 
   Notifications arrive as `:bluetooth, :notification_received` messages.
   """
-  @spec subscribe(Dala.Ui.Socket.t(), device_id(), uuid(), uuid()) :: Dala.Ui.Socket.t()
+  @spec subscribe(Dala.Socket.t(), device_id(), uuid(), uuid()) :: Dala.Socket.t()
   def subscribe(socket, device_id, service_uuid, characteristic_uuid) do
     Dala.Platform.Native.bluetooth_subscribe(device_id, service_uuid, characteristic_uuid)
     socket
@@ -145,7 +145,7 @@ defmodule Dala.Hardware.Bluetooth do
   @doc """
   Unsubscribe from notifications for a characteristic.
   """
-  @spec unsubscribe(Dala.Ui.Socket.t(), device_id(), uuid(), uuid()) :: Dala.Ui.Socket.t()
+  @spec unsubscribe(Dala.Socket.t(), device_id(), uuid(), uuid()) :: Dala.Socket.t()
   def unsubscribe(socket, device_id, service_uuid, characteristic_uuid) do
     Dala.Platform.Native.bluetooth_unsubscribe(device_id, service_uuid, characteristic_uuid)
     socket

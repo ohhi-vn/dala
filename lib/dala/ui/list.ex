@@ -62,7 +62,7 @@ defmodule Dala.Ui.List do
   Call this from `mount/3` or `handle_info/2` — it is stored in `socket.__dala__`
   and picked up at render time.
   """
-  @spec put_renderer(Dala.Ui.Socket.t(), atom(), (term() -> map())) :: Dala.Ui.Socket.t()
+  @spec put_renderer(Dala.Socket.t(), atom(), (term() -> map())) :: Dala.Socket.t()
   def put_renderer(socket, id, renderer) when is_atom(id) and is_function(renderer, 1) do
     existing = Map.get(socket.__dala__, :list_renderers, %{})
     Dala.Socket.put_dala(socket, :list_renderers, Map.put(existing, id, renderer))

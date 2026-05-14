@@ -77,6 +77,28 @@ public class DalaBridge {
     }
 
     // ========================================================================
+    // UI Rendering
+    // ========================================================================
+
+    /**
+     * Set the root UI tree from binary data.
+     * Called from the Rust NIF via JNI to push rendered UI trees to the native side.
+     *
+     * @param data       Binary-encoded UI tree (Dala binary protocol v3)
+     * @param transition Navigation transition type (e.g. "none", "push", "pop")
+     */
+    public static void setRootFromBinary(byte[] data, String transition) {
+        Log.i(TAG, "setRootFromBinary: " + data.length + " bytes, transition=" + transition);
+        // TODO: Decode binary protocol and update the Android UI tree.
+        // This requires a DalaViewModel equivalent on Android that can
+        // observe the decoded node tree and trigger Compose re-rendering.
+        //
+        // For now, this method serves as the JNI bridge endpoint so that
+        // the Rust NIF can successfully deliver binary data to the Java side.
+        // The actual Compose rendering integration is tracked separately.
+    }
+
+    // ========================================================================
     // Bluetooth State
     // ========================================================================
 

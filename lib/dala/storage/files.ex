@@ -18,7 +18,7 @@ defmodule Dala.Storage.Files do
   iOS: `UIDocumentPickerViewController`. Android: `OpenMultipleDocuments`.
   """
 
-  @spec pick(Dala.Ui.Socket.t(), keyword()) :: Dala.Ui.Socket.t()
+  @spec pick(Dala.Socket.t(), keyword()) :: Dala.Socket.t()
   def pick(socket, opts \\ []) do
     types = Keyword.get(opts, :types, ["*/*"])
     types_json = :json.encode(types)

@@ -47,7 +47,7 @@ defmodule Dala.ML.Preprocess do
         end
 
       {:error, reason} ->
-        {:error, "Failed to load image: #{Exception.message(reason)}"}
+        {:error, "Failed to load image: #{format_error(reason)}"}
     end
   end
 
@@ -146,7 +146,7 @@ defmodule Dala.ML.Preprocess do
         {:ok, {samples, 16000}}
 
       {:error, reason} ->
-        {:error, "Failed to load audio: #{Exception.message(reason)}"}
+        {:error, "Failed to load audio: #{format_error(reason)}"}
     end
   end
 
@@ -182,12 +182,25 @@ defmodule Dala.ML.Preprocess do
   # Private
   # ---------------------------------------------------------------------------
 
+  defp format_error(reason) when is_atom(reason), do: Atom.to_string(reason)
+  defp format_error(reason), do: Exception.message(reason)
+
   defp stft(samples, n_fft, _hop_length) do
     # Simplified STFT — real implementation would use NxSignal
     frames = Nx.from_binary(Nx.to_binary(samples), :f32)
     # Pad and frame
     pad_size = div(n_fft, 2)
     padded = Nx.pad(frames, 0.0, [{pad_size, pad_size, 0}])
+    # Ensure total size is a multiple of n_fft for reshape
+    padded_size = elem(Nx.shape(padded), 0)
+    remainder = rem(padded_size, n_fft)
+    padded =
+      if remainder != 0 do
+        extra = n_fft - remainder
+        Nx.pad(padded, 0.0, [{0, extra, 0}])
+      else
+        padded
+      end
     # Return frames (simplified)
     Nx.reshape(padded, {:auto, n_fft})
   end

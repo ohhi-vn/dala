@@ -20,7 +20,7 @@ defmodule Dala.Hardware.Biometric do
   Android: `BiometricPrompt`
   """
 
-  @spec authenticate(Dala.Ui.Socket.t(), keyword()) :: Dala.Ui.Socket.t()
+  @spec authenticate(Dala.Socket.t(), keyword()) :: Dala.Socket.t()
   def authenticate(socket, opts \\ []) do
     reason = Keyword.get(opts, :reason, "Authenticate")
     Dala.Platform.Native.biometric_authenticate(reason)

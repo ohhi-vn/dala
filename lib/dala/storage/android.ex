@@ -49,7 +49,7 @@ defmodule Dala.Storage.Android do
   `type` is `:image`, `:video`, or `:audio`. Defaults to `:auto`, which
   infers the type from the file extension.
   """
-  @spec save_to_media_store(Dala.Ui.Socket.t(), String.t(), atom()) :: Dala.Ui.Socket.t()
+  @spec save_to_media_store(Dala.Socket.t(), String.t(), atom()) :: Dala.Socket.t()
   def save_to_media_store(socket, path, type \\ :auto) do
     Dala.Platform.Native.storage_save_to_media_store(path, type)
     socket
