@@ -83,7 +83,7 @@ defmodule Dala.Ui.Widgets do
       ])
   """
   @spec column(keyword() | map(), list()) :: map()
-  def column(props \\ [], children \\ [])
+  def column(props, children \\ [])
   def column(props, children) when is_list(props), do: column(Map.new(props), children)
 
   def column(%{} = props, children) when is_list(children) do
@@ -93,7 +93,7 @@ defmodule Dala.Ui.Widgets do
       |> Map.put_new(:align_items, props[:alignment])
       |> Map.put_new(:justify_content, props[:justify])
 
-    allowed = @layout_props ++ @gesture_props ++ @accessibility_props ++ [:align_items, :justify_content]
+    allowed = @layout_props ++ @gesture_props ++ @accessibility_props ++ [:align_items, :justify_content, :alignment, :justify]
 
     %{
       type: :column,
@@ -108,7 +108,7 @@ defmodule Dala.Ui.Widgets do
   Same props as `column/2`.
   """
   @spec row(keyword() | map(), list()) :: map()
-  def row(props \\ [], children \\ [])
+  def row(props, children \\ [])
   def row(props, children) when is_list(props), do: row(Map.new(props), children)
 
   def row(%{} = props, children) when is_list(children) do
@@ -118,7 +118,7 @@ defmodule Dala.Ui.Widgets do
       |> Map.put_new(:align_items, props[:alignment])
       |> Map.put_new(:justify_content, props[:justify])
 
-    allowed = @layout_props ++ @gesture_props ++ @accessibility_props ++ [:align_items, :justify_content]
+    allowed = @layout_props ++ @gesture_props ++ @accessibility_props ++ [:align_items, :justify_content, :alignment, :justify]
 
     %{
       type: :row,
@@ -133,7 +133,7 @@ defmodule Dala.Ui.Widgets do
   Same props as `column/2`. Useful for overlays, badges, and absolute positioning.
   """
   @spec box(keyword() | map(), list()) :: map()
-  def box(props \\ [], children \\ [])
+  def box(props, children \\ [])
   def box(props, children) when is_list(props), do: box(Map.new(props), children)
 
   def box(%{} = props, children) when is_list(children) do
@@ -331,7 +331,7 @@ defmodule Dala.Ui.Widgets do
 
     %{
       type: :spacer,
-      props: Map.take(props, [:fixed_size]),
+      props: Map.take(props, [:fixed_size, :size]),
       children: []
     }
   end
@@ -628,7 +628,7 @@ defmodule Dala.Ui.Widgets do
       ])
   """
   @spec modal(keyword() | map(), list()) :: map()
-  def modal(props \\ [], children \\ [])
+  def modal(props, children \\ [])
   def modal(props, children) when is_list(props), do: modal(Map.new(props), children)
 
   def modal(%{} = props, children) when is_list(children) do
@@ -690,7 +690,7 @@ defmodule Dala.Ui.Widgets do
       ])
   """
   @spec scroll(keyword() | map(), list()) :: map()
-  def scroll(props \\ [], children \\ [])
+  def scroll(props, children \\ [])
   def scroll(props, children) when is_list(props), do: scroll(Map.new(props), children)
 
   def scroll(%{} = props, children) when is_list(children) do
@@ -721,7 +721,7 @@ defmodule Dala.Ui.Widgets do
       ])
   """
   @spec pressable(keyword() | map(), list()) :: map()
-  def pressable(props \\ [], children \\ [])
+  def pressable(props, children \\ [])
   def pressable(props, children) when is_list(props), do: pressable(Map.new(props), children)
 
   def pressable(%{} = props, children) when is_list(children) do
@@ -1006,7 +1006,7 @@ defmodule Dala.Ui.Widgets do
       ])
   """
   @spec card(keyword() | map(), list()) :: map()
-  def card(props \\ [], children \\ [])
+  def card(props, children \\ [])
   def card(props, children) when is_list(props), do: card(Map.new(props), children)
 
   def card(%{} = props, children) when is_list(children) do
@@ -1049,7 +1049,7 @@ defmodule Dala.Ui.Widgets do
       ])
   """
   @spec badge(keyword() | map(), list()) :: map()
-  def badge(props \\ [], children \\ [])
+  def badge(props, children \\ [])
   def badge(props, children) when is_list(props), do: badge(Map.new(props), children)
 
   def badge(%{} = props, children) when is_list(children) do
@@ -1170,7 +1170,7 @@ defmodule Dala.Ui.Widgets do
       ])
   """
   @spec bottom_sheet(keyword() | map(), list()) :: map()
-  def bottom_sheet(props \\ [], children \\ [])
+  def bottom_sheet(props, children \\ [])
 
   def bottom_sheet(props, children) when is_list(props),
     do: bottom_sheet(Map.new(props), children)
@@ -1208,7 +1208,7 @@ defmodule Dala.Ui.Widgets do
       ])
   """
   @spec tooltip(keyword() | map(), list()) :: map()
-  def tooltip(props \\ [], children \\ [])
+  def tooltip(props, children \\ [])
   def tooltip(props, children) when is_list(props), do: tooltip(Map.new(props), children)
 
   def tooltip(%{} = props, children) when is_list(children) do

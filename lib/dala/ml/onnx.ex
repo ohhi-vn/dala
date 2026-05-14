@@ -32,7 +32,7 @@ defmodule Dala.ML.ONNX do
   @spec available?() :: boolean()
   def available? do
     Code.ensure_loaded?(Dala.Native) and
-      function_exported?(Dala.Native, :onnx_is_available, 1)
+      function_exported?(Dala.Native, :onnx_is_available, 0)
   end
 
   @doc """

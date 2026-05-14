@@ -93,11 +93,47 @@ defmodule Dala.Node do
   Compute a stable numeric u64 ID by hashing the string/atom ID.
 
   Uses SHA-256 and takes the first 8 bytes as a big-endian unsigned 64-bit integer.
+  Results are cached in an ETS table so repeated lookups for the same ID
+  (which is the common case across renders) are O(1) map reads instead of
+  full SHA-256 computation.
   """
   @spec stable_id(String.t() | atom()) :: non_neg_integer()
   def stable_id(id) do
     id_str = to_string(id)
-    <<hash::unsigned-64-big, _rest::binary>> = :crypto.hash(:sha256, id_str)
+    case :ets.lookup(:dala_id_cache, id_str) do
+      [{^id_str, hash}] -> hash
+      [] ->
+        hash = compute_sha256_u64(id_str)
+        :ets.insert(:dala_id_cache, {id_str, hash})
+        hash
+    end
+  end
+
+  @doc false
+  @spec init_id_cache() :: :ok
+  def init_id_cache do
+    case :ets.whereis(:dala_id_cache) do
+      :undefined ->
+        :ets.new(:dala_id_cache, [:set, :public, :named_table, read_concurrency: true])
+      _ ->
+        :ok
+    end
+    :ok
+  end
+
+  @doc false
+  @spec clear_id_cache() :: :ok
+  def clear_id_cache do
+    case :ets.whereis(:dala_id_cache) do
+      :undefined -> :ok
+      _ ->
+        :ets.delete_all_objects(:dala_id_cache)
+        :ok
+    end
+  end
+
+  defp compute_sha256_u64(data) when is_binary(data) do
+    <<hash::unsigned-64-big, _rest::binary>> = :crypto.hash(:sha256, data)
     hash
   end
 

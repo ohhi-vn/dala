@@ -50,9 +50,14 @@ defmodule Dala.Diff do
 
   Returns a list of patches to transform `old_tree` into `new_tree`.
   """
-  @spec diff(Dala.Node.t() | nil, Dala.Node.t() | nil) :: [patch()]
+  @spec diff(Dala.Node.t() | map() | nil, Dala.Node.t() | map() | nil) :: [patch()]
   def diff(nil, nil), do: []
   def diff(nil, %Dala.Node{} = new), do: Diff.diff(nil, new)
+  def diff(nil, %{} = new_map), do: Diff.diff(nil, new_map)
   def diff(%Dala.Node{} = old, nil), do: Diff.diff(old, nil)
+  def diff(%{} = old_map, nil), do: Diff.diff(old_map, nil)
   def diff(%Dala.Node{} = old, %Dala.Node{} = new), do: Diff.diff(old, new)
+  def diff(%Dala.Node{} = old, %{} = new_map), do: Diff.diff(old, new_map)
+  def diff(%{} = old_map, %Dala.Node{} = new), do: Diff.diff(old_map, new)
+  def diff(%{} = old_map, %{} = new_map), do: Diff.diff(old_map, new_map)
 end

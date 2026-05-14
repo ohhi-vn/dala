@@ -636,25 +636,26 @@ defmodule Dala.Screen.Screen do
         |> Dala.Ui.List.expand(list_renderers, self())
         |> Dala.Ui.NativeView.expand(self(), platform)
 
-      # Convert to Dala.Node struct for proper diffing
-      new_node = Dala.Node.from_map(tree, "root")
-
       Dala.Ui.NativeView.Registry.reconcile(self(), active_component_keys)
 
       # Get previous tree from socket metadata
       old_tree = Dala.Socket.get_dala(socket, :last_tree)
 
-      # Use patch-based rendering
+      # Use patch-based rendering — pass the map tree directly to avoid
+      # the intermediate Dala.Node struct allocation. The diff engine
+      # handles both maps and structs.
       {:ok, _patches} =
         Dala.Ui.Renderer.render_patches(
           old_tree,
-          new_node,
+          tree,
           platform,
           Dala.Platform.Native,
           transition
         )
 
-      # Store the new tree for next diff
+      # Store the new tree for next diff — convert to Node only once,
+      # after we know the render succeeded.
+      new_node = Dala.Node.from_map(tree, "root")
       socket = Dala.Socket.put_dala(socket, :last_tree, new_node)
       socket = Dala.Socket.clear_changed(socket)
       Dala.Socket.put_root_view(socket, :rendered)

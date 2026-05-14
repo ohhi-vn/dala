@@ -291,7 +291,14 @@ fn start_beam(app_module: &str) {
     let default_flags: Vec<String> = if cfg!(feature = "beam_untuned") {
         vec![]
     } else if cfg!(feature = "beam_sbwt_only") {
-        vec!["-sbwt".into(), "none".into(), "-sbwtdcpu".into(), "none".into(), "-sbwtdio".into(), "none".into()]
+        vec![
+            "-sbwt".into(),
+            "none".into(),
+            "-sbwtdcpu".into(),
+            "none".into(),
+            "-sbwtdio".into(),
+            "none".into(),
+        ]
     } else {
         // Default: BEAM_FULL_NERVES (optimized for mobile)
         // Allow override via DALA_BEAM_SCHEDULERS env var (format: "online:dirty")
@@ -334,6 +341,7 @@ fn start_beam(app_module: &str) {
         default_flags.iter().map(|s| s.as_str()).collect()
     };
 
+    let boot_path = format!("{}/releases/29/start_clean", otp_root);
 
     // Build args using CString for proper null-terminated strings
     let mut args: Vec<CString> = vec![CString::new("beam").unwrap()];

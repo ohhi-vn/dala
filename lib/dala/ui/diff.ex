@@ -36,9 +36,6 @@ defmodule Dala.Ui.Diff do
   changed, a full `{:update_props, ...}` is sent instead.
   """
 
-  # Auto-generated from Dala.Ui.Component registry
-  # Limited to original 12 props that participate in field masks
-
   @original_mask_props [
     :text,
     :title,
@@ -74,15 +71,40 @@ defmodule Dala.Ui.Diff do
   Compute the diff between two UI trees.
 
   Returns a list of patches to transform `old_tree` into `new_tree`.
+  Trees can be either `Dala.Node` structs or raw maps (as produced by
+  `Dala.Ui.Widgets` / `render/1`).
   """
-  @spec diff(Dala.Node.t() | nil, Dala.Node.t() | nil) :: [patch()]
+  @spec diff(Dala.Node.t() | map() | nil, Dala.Node.t() | map() | nil) :: [patch()]
   def diff(nil, %Dala.Node{id: id} = new), do: [{:replace, id, new}]
+  def diff(nil, %{} = new_map), do: diff_map(nil, new_map)
   def diff(%Dala.Node{id: id}, nil), do: [{:remove, id}]
+  def diff(%{} = old_map, nil), do: diff_map(old_map, nil)
   def diff(%Dala.Node{id: id} = old, %Dala.Node{id: id} = new), do: do_diff(old, new)
 
   def diff(%Dala.Node{id: old_id} = _old, %Dala.Node{id: new_id} = new) do
-    # Different IDs at root level - full replacement
-    [{:replace, old_id, %Dala.Node{new | id: new_id}}]
+    # Different IDs at root level - full replacement via remove + insert
+    [{:remove, old_id}, {:insert, :root, 0, %Dala.Node{new | id: new_id}}]
+  end
+
+  def diff(%Dala.Node{} = old, %{} = new_map), do: do_diff(old, Dala.Node.from_map(new_map, "root"))
+  def diff(%{} = old_map, %Dala.Node{} = new), do: do_diff(Dala.Node.from_map(old_map, "root"), new)
+  def diff(%{} = old_map, %{} = new_map), do: diff_map(old_map, new_map)
+
+  # Map-based diff entry points — convert to Nodes for the diff algorithm.
+  defp diff_map(nil, %{} = new_map) do
+    new_node = Dala.Node.from_map(new_map, "root")
+    [{:replace, new_node.id, new_node}]
+  end
+
+  defp diff_map(%{} = old_map, nil) do
+    old_node = Dala.Node.from_map(old_map, "root")
+    [{:remove, old_node.id}]
+  end
+
+  defp diff_map(%{} = old_map, %{} = new_map) do
+    old_node = Dala.Node.from_map(old_map, "root")
+    new_node = Dala.Node.from_map(new_map, "root")
+    do_diff(old_node, new_node)
   end
 
   # Same node - check for changes
@@ -145,52 +167,34 @@ defmodule Dala.Ui.Diff do
     end)
   end
 
-  # Children diff with keyed reconciliation
+  # Children diff with keyed reconciliation — single pass over new children
+  # plus a single pass over old children for removals.
   defp diff_children(%Dala.Node{id: parent_id, children: old_children}, %Dala.Node{
          children: new_children
        }) do
     old_map = Map.new(old_children, &{&1.id, &1})
     new_map = Map.new(new_children, &{&1.id, &1})
+    old_ids = MapSet.new(Map.keys(old_map))
+    new_ids = MapSet.new(Map.keys(new_map))
 
-    []
-    |> diff_removed(old_map, new_map)
-    |> diff_inserted(parent_id, old_map, new_children)
-    |> diff_existing(old_map, new_map)
-  end
+    # Removed: in old but not in new
+    removed_ids = MapSet.difference(old_ids, new_ids)
+    removed_patches = Enum.map(removed_ids, fn id -> {:remove, id} end)
 
-  # Remove nodes that are in old but not in new
-  defp diff_removed(patches, old_map, new_map) do
-    Enum.reduce(old_map, patches, fn {id, _old_node}, acc ->
-      if Map.has_key?(new_map, id) do
-        acc
-      else
-        [{:remove, id} | acc]
-      end
-    end)
-  end
+    # Inserted + existing: single pass over new children with index
+    {insert_patches, update_patches} =
+      new_children
+      |> Enum.with_index()
+      |> Enum.reduce({[], []}, fn {child, index}, {inserts, updates} ->
+        case Map.get(old_map, child.id) do
+          nil ->
+            {[{:insert, parent_id, index, child} | inserts], updates}
 
-  # Insert new nodes with correct index
-  defp diff_inserted(patches, parent_id, old_map, new_children) do
-    Enum.with_index(new_children)
-    |> Enum.reduce(patches, fn {child, index}, acc ->
-      if Map.has_key?(old_map, child.id) do
-        acc
-      else
-        [{:insert, parent_id, index, child} | acc]
-      end
-    end)
-  end
+          old_node ->
+            {inserts, updates ++ diff(old_node, child)}
+        end
+      end)
 
-  # Diff existing nodes recursively
-  defp diff_existing(patches, old_map, new_map) do
-    Enum.reduce(new_map, patches, fn {id, new_node}, acc ->
-      case Map.get(old_map, id) do
-        nil ->
-          acc
-
-        old_node ->
-          acc ++ diff(old_node, new_node)
-      end
-    end)
+    removed_patches ++ Enum.reverse(insert_patches) ++ update_patches
   end
 end

@@ -56,6 +56,7 @@ defmodule Dala.ML.EMLX do
       Nx.default_backend({EMLX.Backend, device: :gpu})
       :ok
     else
+      Application.put_env(:emlx, :jit_enabled, false)
       Nx.default_backend(Nx.BinaryBackend)
       :ok
     end

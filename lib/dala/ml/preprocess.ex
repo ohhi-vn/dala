@@ -160,7 +160,7 @@ defmodule Dala.ML.Preprocess do
   - `:n_mels` — Number of mel bands (default: 80)
   - `:hop_length` — Hop length (default: 160)
   """
-  @spec mel_spectrogram(Nx.Tensor.t(), keyword()) :: Nx.Tensor.t()
+  @spec mel_spectrogram(Nx.Tensor.t(), keyword()) :: Nx.Tensor.t() | {:ok, Nx.Tensor.t()}
   def mel_spectrogram(samples, opts \\ []) do
     sample_rate = Keyword.get(opts, :sample_rate, 16000)
     n_fft = Keyword.get(opts, :n_fft, 400)
@@ -170,12 +170,18 @@ defmodule Dala.ML.Preprocess do
     # Compute STFT
     frames = stft(samples, n_fft, hop_length)
 
-    # Compute power spectrum
+    # Compute power spectrum (magnitude squared)
     power = Nx.multiply(frames, frames)
 
-    # Apply mel filterbank
-    mel_fb = mel_filterbank(n_mels, n_fft, sample_rate)
-    Nx.dot(mel_fb, power)
+    # Apply mel filterbank: project frequency bins to mel bands
+    # power shape: {num_frames, n_fft}
+    # We reduce n_fft dims to n_mels via a simple linear projection
+    n_freqs = elem(Nx.shape(power), 1)
+    mel_fb = mel_filterbank(n_mels, n_freqs)
+    # mel_fb shape: {n_mels, n_freqs}, power shape: {num_frames, n_freqs}
+    # Result: {n_mels, num_frames} then transpose to {num_frames, n_mels}
+    result = Nx.dot(mel_fb, Nx.transpose(power))
+    {:ok, Nx.transpose(result)}
   end
 
   # ---------------------------------------------------------------------------
@@ -187,10 +193,10 @@ defmodule Dala.ML.Preprocess do
 
   defp stft(samples, n_fft, _hop_length) do
     # Simplified STFT — real implementation would use NxSignal
-    frames = Nx.from_binary(Nx.to_binary(samples), :f32)
+    samples = Nx.from_binary(Nx.to_binary(samples), :f32)
     # Pad and frame
     pad_size = div(n_fft, 2)
-    padded = Nx.pad(frames, 0.0, [{pad_size, pad_size, 0}])
+    padded = Nx.pad(samples, 0.0, [{pad_size, pad_size, 0}])
     # Ensure total size is a multiple of n_fft for reshape
     padded_size = elem(Nx.shape(padded), 0)
     remainder = rem(padded_size, n_fft)
@@ -205,11 +211,12 @@ defmodule Dala.ML.Preprocess do
     Nx.reshape(padded, {:auto, n_fft})
   end
 
-  defp mel_filterbank(n_mels, n_fft, _sample_rate) do
-    # Simplified mel filterbank — returns identity-like matrix
-    n_freqs = div(n_fft, 2) + 1
-
-    Nx.eye(n_mels)
-    |> Nx.slice([0, 0], [n_mels, min(n_mels, n_freqs)])
+  defp mel_filterbank(n_mels, n_freqs) do
+    # Simplified mel filterbank — returns a matrix of shape {n_mels, n_freqs}
+    # that projects frequency bins to mel bands
+    base = Nx.broadcast(Nx.tensor(1.0, type: :f32), {n_mels, n_freqs})
+    # Scale rows to simulate mel filterbank
+    scales = Nx.iota({n_mels}, axis: 0) |> Nx.divide(max(n_mels, 1)) |> Nx.add(1.0)
+    Nx.multiply(base, Nx.reshape(scales, {n_mels, 1}))
   end
 end

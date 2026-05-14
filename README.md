@@ -5,7 +5,7 @@
 
 # Dala
 
-Dala is a native mobile framework for Elixir and Erlang powered by the BEAM VM.
+Dala is a native mobile framework for Elixir powered by the BEAM VM.
 
 It brings OTP, lightweight processes, fault tolerance, and the actor model to iOS and Android development while using a Rust-powered native runtime for rendering and platform integration.
 

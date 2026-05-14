@@ -226,10 +226,30 @@ defmodule Dala.Ui.NativeView do
   end
 
   # "Elixir.MyApp.ChartComponent" → "MyApp_ChartComponent"
+  # Cached per-module since the same module appears on every render.
   defp module_name(module) do
-    module
-    |> Atom.to_string()
-    |> String.replace_prefix("Elixir.", "")
-    |> String.replace(".", "_")
+    case :ets.lookup(:dala_module_names, module) do
+      [{^module, name}] -> name
+      [] ->
+        name =
+          module
+          |> Atom.to_string()
+          |> String.replace_prefix("Elixir.", "")
+          |> String.replace(".", "_")
+        :ets.insert(:dala_module_names, {module, name})
+        name
+    end
+  end
+
+  @doc false
+  @spec init_module_name_cache() :: :ok
+  def init_module_name_cache do
+    case :ets.whereis(:dala_module_names) do
+      :undefined ->
+        :ets.new(:dala_module_names, [:set, :public, :named_table, read_concurrency: true])
+      _ ->
+        :ok
+    end
+    :ok
   end
 end

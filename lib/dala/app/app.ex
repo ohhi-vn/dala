@@ -76,6 +76,10 @@ defmodule Dala.App.App do
         # Always called — even with [] this seeds the default theme explicitly.
         Dala.Theme.Theme.set(unquote(theme_opts))
 
+        # Initialize the ID hash cache for fast node ID lookups
+        Dala.Node.init_id_cache()
+        Dala.Ui.NativeView.init_module_name_cache()
+
         # Start core services — crash on real errors, ignore already-started
         ensure_started(Dala.Nav.Registry, __MODULE__)
         ensure_started(Dala.State)
