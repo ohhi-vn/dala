@@ -192,6 +192,13 @@ defmodule Dala.Screen.Screen do
         )
 
         {:stop, reason}
+
+      {:stop, reason} ->
+        Dala.Platform.Native.log(
+          "Dala.Screen: mount halted for #{inspect(screen_module)}: #{inspect(reason)}"
+        )
+
+        {:stop, reason}
     end
   end
 

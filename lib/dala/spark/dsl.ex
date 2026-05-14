@@ -374,6 +374,7 @@ defmodule Dala.Spark.Dsl do
     @moduledoc false
     defstruct value: nil,
               on_toggle: nil,
+              text: nil,
               track_color: nil,
               thumb_color: nil,
               accessibility_id: nil,
@@ -388,6 +389,7 @@ defmodule Dala.Spark.Dsl do
     schema: [
       value: [type: :boolean, doc: "On/off state"],
       on_toggle: [type: :atom, doc: "Event handler for toggle"],
+      text: [type: :string, doc: "Label text displayed beside the switch"],
       track_color: [type: :any, doc: "Track color when on"],
       thumb_color: [type: :any, doc: "Thumb color"],
       accessibility_id: [type: :atom, doc: "Test identifier"]
@@ -713,6 +715,8 @@ defmodule Dala.Spark.Dsl do
               fill_width: nil,
               width: nil,
               height: nil,
+              alignment: nil,
+              justify: nil,
               on_tap: nil,
               on_long_press: nil,
               on_double_tap: nil,
@@ -757,7 +761,9 @@ defmodule Dala.Spark.Dsl do
       on_swipe_right: [type: :atom, doc: "Event handler for swipe right"],
       on_swipe_up: [type: :atom, doc: "Event handler for swipe up"],
       on_swipe_down: [type: :atom, doc: "Event handler for swipe down"],
-      accessibility_id: [type: :atom, doc: "Test identifier"]
+      accessibility_id: [type: :atom, doc: "Test identifier"],
+      alignment: [type: {:one_of, [:start, :center, :end, :stretch]}, doc: "Horizontal alignment of children (:start, :center, :end, :stretch)"],
+      justify: [type: {:one_of, [:start, :center, :end, :space_between]}, doc: "Vertical justification of children (:start, :center, :end, :space_between)"]
     ]
   }
 
@@ -778,6 +784,8 @@ defmodule Dala.Spark.Dsl do
               fill_width: nil,
               width: nil,
               height: nil,
+              alignment: nil,
+              justify: nil,
               on_tap: nil,
               on_long_press: nil,
               on_double_tap: nil,
@@ -822,7 +830,9 @@ defmodule Dala.Spark.Dsl do
       on_swipe_right: [type: :atom, doc: "Event handler for swipe right"],
       on_swipe_up: [type: :atom, doc: "Event handler for swipe up"],
       on_swipe_down: [type: :atom, doc: "Event handler for swipe down"],
-      accessibility_id: [type: :atom, doc: "Test identifier"]
+      accessibility_id: [type: :atom, doc: "Test identifier"],
+      alignment: [type: {:one_of, [:start, :center, :end, :stretch]}, doc: "Vertical alignment of children (:start, :center, :end, :stretch)"],
+      justify: [type: {:one_of, [:start, :center, :end, :space_between]}, doc: "Horizontal justification of children (:start, :center, :end, :space_between)"]
     ]
   }
 

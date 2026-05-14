@@ -21,7 +21,7 @@ defmodule Dala.Platform.Linking do
       end
   """
 
-  @spec open_url(Dala.Ui.Socket.t(), String.t()) :: Dala.Ui.Socket.t()
+  @spec open_url(Dala.Socket.t(), String.t()) :: Dala.Socket.t()
   def open_url(socket, url) when is_binary(url) do
     Dala.Platform.Native.linking_open_url(url)
     socket

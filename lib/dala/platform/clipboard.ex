@@ -26,7 +26,7 @@ defmodule Dala.Platform.Clipboard do
   @doc """
   Write `text` to the system clipboard. Fire-and-forget; returns the socket.
   """
-  @spec put(Dala.Ui.Socket.t(), binary()) :: Dala.Ui.Socket.t()
+  @spec put(Dala.Socket.t(), binary()) :: Dala.Socket.t()
   def put(socket, text) when is_binary(text) do
     Dala.Platform.Native.clipboard_put(text)
     socket
@@ -37,7 +37,7 @@ defmodule Dala.Platform.Clipboard do
 
   Returns `{:clipboard, :ok, text}` or `{:clipboard, :empty}`.
   """
-  @spec get(Dala.Ui.Socket.t()) :: {:clipboard, :ok, binary()} | {:clipboard, :empty}
+  @spec get(Dala.Socket.t()) :: {:clipboard, :ok, binary()} | {:clipboard, :empty}
   def get(_socket) do
     case Dala.Platform.Native.clipboard_get() do
       {:ok, text} -> {:clipboard, :ok, text}

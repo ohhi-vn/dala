@@ -27,7 +27,7 @@ defmodule Dala.Ui.Sensor.Motion do
     - `sensors: [:accelerometer] | [:gyro] | [:accelerometer, :gyro]` (default both)
     - `interval_ms: integer` — update interval in milliseconds (default `100`)
   """
-  @spec start(Dala.Ui.Socket.t(), keyword()) :: Dala.Ui.Socket.t()
+  @spec start(Dala.Socket.t(), keyword()) :: Dala.Socket.t()
   def start(socket, opts \\ []) do
     sensors =
       Keyword.get(opts, :sensors, [:accelerometer, :gyro])
@@ -41,7 +41,7 @@ defmodule Dala.Ui.Sensor.Motion do
   @doc """
   Stop sensor updates.
   """
-  @spec stop(Dala.Ui.Socket.t()) :: Dala.Ui.Socket.t()
+  @spec stop(Dala.Socket.t()) :: Dala.Socket.t()
   def stop(socket) do
     Dala.Platform.Native.motion_stop()
     socket

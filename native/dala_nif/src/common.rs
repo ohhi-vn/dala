@@ -1,5 +1,7 @@
 // common.rs - Shared types and platform dispatch
 
+#![allow(dead_code)]
+
 #[cfg(target_os = "android")]
 use jni::JNIEnv;
 use rustler::{Env, Term};

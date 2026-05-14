@@ -1,4 +1,4 @@
-defmodule Dala.Test.Test do
+defmodule Dala.Test do
   @moduledoc """
   Remote inspection and interaction helpers for connected Dala apps.
 

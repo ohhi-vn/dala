@@ -32,12 +32,12 @@ Used by `Dala.Ui.Renderer.encode_tree/1` and `Dala.Platform.Native.set_root_bina
 ### Header
 
 ```
-[2 bytes magic 0xD100][2 bytes version=3][8 bytes node_count]
+[2 bytes magic 0xDAA1][2 bytes version=3][8 bytes node_count]
 ```
 
 | Field | Size | Description |
 |-------|------|-------------|
-| magic | 2 bytes | `0xD1, 0x00` — identifies Dala protocol |
+| magic | 2 bytes | `0xDA, 0xA1` — identifies Dala protocol |
 | version | 2 bytes | Always `3` (little-endian) |
 | node_count | 8 bytes | Total number of nodes in the tree (little-endian) |
 
@@ -103,12 +103,12 @@ Used by `Dala.Ui.Renderer.encode_frame/1` and `Dala.Platform.Native.apply_patche
 ### Header
 
 ```
-[2 bytes magic 0xD100][2 bytes version=3][2 bytes flags][2 bytes patch_count]
+[2 bytes magic 0xDAA1][2 bytes version=3][2 bytes flags][2 bytes patch_count]
 ```
 
 | Field | Size | Description |
 |-------|------|-------------|
-| magic | 2 bytes | `0xD1, 0x00` — identifies Dala protocol |
+| magic | 2 bytes | `0xDA, 0xA1` — identifies Dala protocol |
 | version | 2 bytes | Always `3` (little-endian) |
 | flags | 2 bytes | Reserved (currently `0`) |
 | patch_count | 2 bytes | Number of patches in this frame (little-endian) |
@@ -273,7 +273,7 @@ The Rust NIF (`native/dala_nif/src/protocol.rs`) receives binaries via Rustler:
 #[rustler::nif]
 fn set_root_binary(binary: Binary) -> NifResult<Atom> {
     let bytes: &[u8] = binary.as_slice();
-    // Parse header: magic (0xD100), version (3), node_count
+    // Parse header: magic (0xDAA1), version (3), node_count
     // Then parse each node...
 }
 ```
@@ -302,7 +302,7 @@ node = %Dala.Node{
 }
 
 binary = Dala.Ui.Renderer.encode_tree(node)
-# => <<209, 0, 3, 0, 0, 0, 0, 0, 0, 0, 2, ...>>
+# => <<218, 161, 3, 0, 0, 0, 0, 0, 0, 0, 2, ...>>
 ```
 
 ### Encoding Patches
@@ -315,7 +315,7 @@ patches = [
 ]
 
 binary = Dala.Ui.Renderer.encode_frame(patches)
-# => <<209, 0, 3, 0, 2, 0, ...>>
+# => <<218, 161, 3, 0, 2, 0, ...>>
 ```
 
 ### In Render Functions
@@ -375,8 +375,8 @@ The encoder uses Elixir's iodata to build the binary efficiently:
 
 ```elixir
 IO.iodata_to_binary([
-  <<209, 0, version::little-16, flags::little-16, node_count::little-64>>,
-  node_binaries
+  <<0xDA, 0xA1, version::little-16, flags::little-16, node_count::little-64>>,
+node_binaries
 ])
 ```
 

@@ -31,7 +31,7 @@ defmodule Dala.ML.Training do
   - `:epochs` — Number of training epochs (default: 5)
   - `:batch_size` — Mini-batch size (default: 32)
   - `:learning_rate` — Optimizer learning rate (default: 0.001)
-  - `:optimizer` — Optimizer function (default: `Axon.Optimizers.adam/1`)
+  - `:optimizer` — Optimizer function (default: `Polaris.Optimizers.adam/1`)
   - `:loss` — Loss function (default: `:categorical_cross_entropy`)
   - `:progress` — Callback `(epoch, loss) -> :ok` (default: no-op)
   - `:validation_data` — `{val_data, val_labels}` tuple for eval
@@ -43,7 +43,7 @@ defmodule Dala.ML.Training do
     lr = Keyword.get(opts, :learning_rate, 0.001)
     progress_fn = Keyword.get(opts, :progress, fn _, _ -> :ok end)
     loss_fn = Keyword.get(opts, :loss, :categorical_cross_entropy)
-    optimizer = Keyword.get(opts, :optimizer, &Axon.Optimizers.adam(&1, lr: lr))
+    optimizer = Keyword.get(opts, :optimizer, Polaris.Optimizers.adam(learning_rate: lr))
 
     try do
       model

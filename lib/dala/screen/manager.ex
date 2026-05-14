@@ -3,6 +3,7 @@ defmodule Dala.Screen.Manager do
   Central registry for tracking all active screens in the application.
 
   Screens auto-register when started and can be queried by id, name, or pid.
+  Monitors registered screens so crashed processes are cleaned up automatically.
   """
 
   use GenServer
@@ -26,7 +27,27 @@ defmodule Dala.Screen.Manager do
     end
 
     :ets.insert(@id_counter, {:counter, 0})
-    {:ok, %{}}
+    {:ok, %{monitors: %{}}}
+  end
+
+  @impl true
+  def terminate(_reason, _state) do
+    # Clean up ETS tables when the manager stops
+    if :ets.whereis(@table) != :undefined, do: :ets.delete(@table)
+    if :ets.whereis(@id_counter) != :undefined, do: :ets.delete(@id_counter)
+    :ok
+  end
+
+  @impl true
+  def handle_info({:DOWN, _ref, :process, pid, _reason}, %{monitors: monitors} = state) do
+    # A monitored screen process crashed — clean up its ETS entries
+    :ets.match_delete(@table, {:_, :_, pid, :_})
+    monitors = Map.delete(monitors, pid)
+    {:noreply, %{state | monitors: monitors}}
+  end
+
+  def handle_info(_message, state) do
+    {:noreply, state}
   end
 
   @doc """
@@ -46,7 +67,19 @@ defmodule Dala.Screen.Manager do
   """
   def register(id, name, pid, module) when is_integer(id) and is_pid(pid) do
     :ets.insert(@table, {id, name, pid, module})
+    # Monitor the screen process so we clean up if it crashes
+    GenServer.cast(__MODULE__, {:monitor, pid})
     :ok
+  end
+
+  @impl true
+  def handle_cast({:monitor, pid}, %{monitors: monitors} = state) do
+    unless Map.has_key?(monitors, pid) do
+      ref = Process.monitor(pid)
+      {:noreply, %{state | monitors: Map.put(monitors, pid, ref)}}
+    else
+      {:noreply, state}
+    end
   end
 
   @doc "Unregisters a screen by its PID (called when screen stops)."

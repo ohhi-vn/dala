@@ -77,7 +77,7 @@ nif.set_root_binary(binary)
 
 Binary format (version 3):
 ```
-[2 bytes magic][2 bytes version=3][8 bytes node_count][node1][node2]...[nodeN]
+[2 bytes magic 0xDAA1][2 bytes version=3][8 bytes node_count][node1][node2]...[nodeN]
 ```
 
 #### Incremental Patch Encoding
@@ -133,9 +133,14 @@ pub fn set_root_binary(data: &[u8], transition: &str) {
 
 ```swift
 // ios/DalaViewModel.swift
-@objc public func setRootFromBinary(_ data: NSData, transition: String) {
-    let bytes = data.bytes.bindMemory(to: UInt8.self, capacity: data.length)
-    let node = DalaNode.fromBinary(bytes, length: data.length)
+@objc public func setRootFromBinary(_ data: Data, transition: String) {
+    let bytes = data.withUnsafeBytes { ptr -> [UInt8] in
+        Array(ptr.bindMemory(to: UInt8.self))
+    }
+    guard let node = DalaNode.fromBinary(bytes, length: bytes.count) else {
+        NSLog("[Dala] Failed to decode binary tree")
+        return
+    }
     setRoot(node, transition: transition)
 }
 ```
@@ -165,7 +170,7 @@ For complete details on the binary format, see [Binary Protocol](binary_protocol
 
 | Element | Size | Description |
 |---------|------|-------------|
-| Magic | 2 bytes | `0xD1, 0x00` — identifies Dala protocol |
+| Magic | 2 bytes | `0xDA, 0xA1` — identifies Dala protocol |
 | Version | 2 bytes | `3` for full trees and patches |
 | Flags | 2 bytes | Reserved (currently `0`) |
 | Node Count | 8 bytes | Total nodes in tree (little-endian) |
@@ -308,7 +313,7 @@ This prevents full view teardown on state updates (e.g., typing in text field).
 
 1. **Inspect the tree** (Elixir side):
    ```elixir
-   Dala.Test.Test.inspect(node)  # Returns full tree with assigns
+   Dala.Test.inspect(node)  # Returns full tree with assigns
    ```
 
 2. **Check binary size**:

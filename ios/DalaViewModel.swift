@@ -85,6 +85,18 @@ import SwiftUI
         }
     }
 
+    /// Parse binary data and update root. Called from Rust NIF via ObjC bridge.
+    @objc public func setRootFromBinary(_ data: Data, transition: String) {
+        let bytes = data.withUnsafeBytes { ptr -> [UInt8] in
+            Array(ptr.bindMemory(to: UInt8.self))
+        }
+        guard let node = DalaNode.fromBinary(bytes, length: bytes.count) else {
+            NSLog("[Dala] Failed to decode binary tree")
+            return
+        }
+        setRoot(node, transition: transition)
+    }
+
     @objc public func setStartupPhase(_ phase: String) {
         DispatchQueue.main.async { self.startupPhase = phase }
     }

@@ -37,7 +37,7 @@ defmodule Dala.Platform.Permissions do
   Capabilities that do not require permission (haptics, clipboard, share sheet,
   file picker) will raise `FunctionClauseError` — do not call `request/2` for them.
   """
-  @spec request(Dala.Ui.Socket.t(), capability()) :: Dala.Ui.Socket.t()
+  @spec request(Dala.Socket.t(), capability()) :: Dala.Socket.t()
   def request(socket, capability)
       when capability in [
              :camera,

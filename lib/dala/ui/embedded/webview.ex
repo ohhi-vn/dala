@@ -54,7 +54,7 @@ defmodule Dala.Ui.Embedded.Webview do
 
   The result is JSON-decoded before delivery.
   """
-  @spec eval_js(Dala.Ui.Socket.t(), String.t()) :: Dala.Ui.Socket.t()
+  @spec eval_js(Dala.Socket.t(), String.t()) :: Dala.Socket.t()
   def eval_js(socket, code) when is_binary(code) do
     Dala.Platform.Native.webview_eval_js(code)
     socket
@@ -63,7 +63,7 @@ defmodule Dala.Ui.Embedded.Webview do
   @doc """
   Navigate to a new URL in the WebView.
   """
-  @spec navigate(Dala.Ui.Socket.t(), String.t()) :: Dala.Ui.Socket.t()
+  @spec navigate(Dala.Socket.t(), String.t()) :: Dala.Socket.t()
   def navigate(socket, url) when is_binary(url) do
     js = "window.location.href = #{Jason.encode!(url)}"
     Dala.Platform.Native.webview_eval_js(js)
@@ -73,7 +73,7 @@ defmodule Dala.Ui.Embedded.Webview do
   @doc """
   Reload the current page.
   """
-  @spec reload(Dala.Ui.Socket.t()) :: Dala.Ui.Socket.t()
+  @spec reload(Dala.Socket.t()) :: Dala.Socket.t()
   def reload(socket) do
     Dala.Platform.Native.webview_eval_js("window.location.reload()")
     socket
@@ -82,7 +82,7 @@ defmodule Dala.Ui.Embedded.Webview do
   @doc """
   Stop loading the current page.
   """
-  @spec stop_loading(Dala.Ui.Socket.t()) :: Dala.Ui.Socket.t()
+  @spec stop_loading(Dala.Socket.t()) :: Dala.Socket.t()
   def stop_loading(socket) do
     Dala.Platform.Native.webview_eval_js("window.stop()")
     socket
@@ -91,7 +91,7 @@ defmodule Dala.Ui.Embedded.Webview do
   @doc """
   Go forward in the WebView history (if possible).
   """
-  @spec go_forward(Dala.Ui.Socket.t()) :: Dala.Ui.Socket.t()
+  @spec go_forward(Dala.Socket.t()) :: Dala.Socket.t()
   def go_forward(socket) do
     Dala.Platform.Native.webview_eval_js(
       "if (window.history.length > 1) window.history.forward()"
@@ -113,7 +113,7 @@ defmodule Dala.Ui.Embedded.Webview do
 
   Results arrive as `handle_info({:webview, :interact_result, %{"action" => ..., "success" => ...}}, socket)`.
   """
-  @spec interact(Dala.Ui.Socket.t(), tuple()) :: Dala.Ui.Socket.t()
+  @spec interact(Dala.Socket.t(), tuple()) :: Dala.Socket.t()
   def interact(socket, action) do
     js = interact_js(action)
     Dala.Platform.Native.webview_eval_js(js)
@@ -206,7 +206,7 @@ defmodule Dala.Ui.Embedded.Webview do
 
   Note: Currently not implemented on all platforms.
   """
-  @spec screenshot(Dala.Ui.Socket.t()) :: Dala.Ui.Socket.t()
+  @spec screenshot(Dala.Socket.t()) :: Dala.Socket.t()
   def screenshot(socket) do
     Dala.Platform.Native.webview_screenshot()
     socket
@@ -216,7 +216,7 @@ defmodule Dala.Ui.Embedded.Webview do
   Push a message from Elixir into the WebView page. Calls `window.dala._dispatch(json)`
   in JS, which delivers the data to all `window.dala.onMessage` handlers.
   """
-  @spec post_message(Dala.Ui.Socket.t(), term()) :: Dala.Ui.Socket.t()
+  @spec post_message(Dala.Socket.t(), term()) :: Dala.Socket.t()
   def post_message(socket, data) do
     json = :json.encode(data)
     Dala.Platform.Native.webview_post_message(json)

@@ -82,7 +82,7 @@ defmodule Dala.Ui.Diff do
 
   def diff(%Dala.Node{id: old_id} = _old, %Dala.Node{id: new_id} = new) do
     # Different IDs at root level - full replacement
-    [{:remove, old_id}, {:insert, :root, 0, %Dala.Node{new | id: new_id}}]
+    [{:replace, old_id, %Dala.Node{new | id: new_id}}]
   end
 
   # Same node - check for changes

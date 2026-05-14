@@ -55,7 +55,7 @@ defmodule Dala.Connectivity.Wifi do
 
   iOS: Not supported by public APIs (will return `{:error, :not_supported}`).
   """
-  @spec scan(Dala.Ui.Socket.t()) :: Dala.Ui.Socket.t()
+  @spec scan(Dala.Socket.t()) :: Dala.Socket.t()
   def scan(socket) do
     Dala.Platform.Native.wifi_scan()
     socket

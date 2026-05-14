@@ -53,7 +53,7 @@ defmodule Dala.Storage.Apple do
 
   Type (`:image` or `:video`) is inferred from the file extension.
   """
-  @spec save_to_photo_library(Dala.Ui.Socket.t(), String.t()) :: Dala.Ui.Socket.t()
+  @spec save_to_photo_library(Dala.Socket.t(), String.t()) :: Dala.Socket.t()
   def save_to_photo_library(socket, path) do
     Dala.Platform.Native.storage_save_to_photo_library(path)
     socket

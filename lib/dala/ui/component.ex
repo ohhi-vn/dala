@@ -158,7 +158,8 @@ defmodule Dala.Ui.Component do
         type: :spacer,
         category: :leaf,
         props: [
-          :size
+          :size,
+          :fixed_size
         ],
         defaults: %{},
         doc: "Flexible or fixed space",
@@ -178,10 +179,15 @@ defmodule Dala.Ui.Component do
           :on_focus,
           :on_blur,
           :on_submit,
+          :on_compose,
           :secure,
           :keyboard_type,
           :return_key,
           :max_length,
+          :auto_capitalize,
+          :auto_correct,
+          :min_lines,
+          :max_lines,
           :disabled,
           :text_color,
           :text_size,
@@ -208,6 +214,8 @@ defmodule Dala.Ui.Component do
           :disabled,
           :text_color,
           :text_size,
+          :track_color,
+          :thumb_color,
           :accessibility_id
         ],
         defaults: %{value: false},
@@ -244,7 +252,10 @@ defmodule Dala.Ui.Component do
           :value,
           :on_toggle,
           :disabled,
+          :text,
           :text_color,
+          :track_color,
+          :thumb_color,
           :accessibility_id
         ],
         defaults: %{value: false},
@@ -259,11 +270,15 @@ defmodule Dala.Ui.Component do
         category: :leaf,
         props: [
           :source,
+          :src,
           :width,
           :height,
           :resize_mode,
           :corner_radius,
           :background,
+          :placeholder_color,
+          :on_error,
+          :on_load,
           :accessibility_id
         ],
         defaults: %{source: ""},
@@ -279,6 +294,7 @@ defmodule Dala.Ui.Component do
         category: :leaf,
         props: [
           :source,
+          :src,
           :autoplay,
           :loop,
           :muted,
@@ -299,7 +315,9 @@ defmodule Dala.Ui.Component do
         category: :leaf,
         props: [
           :size,
-          :color
+          :color,
+          :animating,
+          :accessibility_id
         ],
         defaults: %{},
         doc: "Loading spinner",
@@ -313,9 +331,11 @@ defmodule Dala.Ui.Component do
         category: :leaf,
         props: [
           :progress,
+          :indeterminate,
           :color,
           :background,
-          :height
+          :height,
+          :accessibility_id
         ],
         defaults: %{progress: 0.0},
         doc: "Progress bar",
@@ -330,7 +350,8 @@ defmodule Dala.Ui.Component do
         props: [
           :bar_style,
           :hidden,
-          :background
+          :background,
+          :accessibility_id
         ],
         defaults: %{},
         doc: "Status bar configuration",
@@ -345,7 +366,8 @@ defmodule Dala.Ui.Component do
         props: [
           :on_refresh,
           :refreshing,
-          :tint_color
+          :tint_color,
+          :accessibility_id
         ],
         defaults: %{refreshing: false},
         doc: "Pull-to-refresh control",
@@ -358,8 +380,10 @@ defmodule Dala.Ui.Component do
         type: :webview,
         category: :leaf,
         props: [
+          :url,
           :source,
           :show_url,
+          :title,
           :width,
           :height,
           :allow,
@@ -495,7 +519,9 @@ defmodule Dala.Ui.Component do
           :selected,
           :on_tap,
           :icon,
+          :on_remove,
           :disabled,
+          :enabled,
           :text_color,
           :text_size,
           :background,
@@ -537,6 +563,7 @@ defmodule Dala.Ui.Component do
           :text,
           :on_tap,
           :background,
+          :color,
           :text_color,
           :elevation,
           :corner_radius,
@@ -555,6 +582,9 @@ defmodule Dala.Ui.Component do
         props: [
           :icon,
           :on_tap,
+          :selected,
+          :enabled,
+          :color,
           :text_color,
           :background,
           :size,
@@ -633,6 +663,7 @@ defmodule Dala.Ui.Component do
           :items,
           :active,
           :on_select,
+          :header,
           :background,
           :accessibility_id
         ],
@@ -685,9 +716,11 @@ defmodule Dala.Ui.Component do
         props: [
           :visible,
           :on_select,
+          :on_dismiss,
           :selected_date,
           :min_date,
           :max_date,
+          :title,
           :accessibility_id
         ],
         defaults: %{visible: false},
@@ -703,7 +736,9 @@ defmodule Dala.Ui.Component do
         props: [
           :visible,
           :on_select,
+          :on_dismiss,
           :selected_time,
+          :title,
           :accessibility_id
         ],
         defaults: %{visible: false},
@@ -718,8 +753,12 @@ defmodule Dala.Ui.Component do
         category: :leaf,
         props: [
           :placeholder,
+          :text,
           :on_change,
           :on_submit,
+          :on_focus,
+          :active,
+          :on_tap,
           :value,
           :text_color,
           :background,
@@ -739,10 +778,12 @@ defmodule Dala.Ui.Component do
         props: [
           :id,
           :items,
+          :data,
           :on_page_change,
           :loop,
           :autoplay,
           :autoplay_interval,
+          :peek,
           :accessibility_id
         ],
         defaults: %{items: []},
@@ -881,6 +922,9 @@ defmodule Dala.Ui.Component do
           :on_dismiss,
           :background,
           :corner_radius,
+          :presentation_style,
+          :animation,
+          :drag_indicator,
           :accessibility_id
         ],
         defaults: %{visible: false},
@@ -914,7 +958,8 @@ defmodule Dala.Ui.Component do
         category: :container,
         props: [
           :edges,
-          :background
+          :background,
+          :accessibility_id
         ],
         defaults: %{edges: [:top, :bottom]},
         doc: "Safe area inset container",
@@ -955,6 +1000,7 @@ defmodule Dala.Ui.Component do
           :text_color,
           :text_size,
           :position,
+          :visible,
           :accessibility_id
         ],
         defaults: %{count: 0, position: :top_end},

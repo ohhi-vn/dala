@@ -6,16 +6,61 @@ use std::hash::{Hash, Hasher};
 // NodeId - using u64 for cheap, stable identity
 pub type NodeId = u64;
 
-// NodeKind - represents the type of UI node
+// NodeKind - represents the type of UI node.
+// The discriminant values match the binary protocol node type tags (u8)
+// as defined in protocol.rs and the Elixir Dala.Ui.Component registry.
+// Leaf components: 0-35, Container components: 36-46.
 #[derive(Debug, Clone, PartialEq)]
 pub enum NodeKind {
-    Column,
-    Row,
-    Text,
-    Button,
-    Image,
-    Scroll,
-    WebView,
+    // Leaf components (indices match Elixir Component.all() |> Enum.with_index)
+    Text = 0,
+    Button = 1,
+    Icon = 2,
+    Divider = 3,
+    Spacer = 4,
+    TextField = 5,
+    Toggle = 6,
+    Slider = 7,
+    Switch = 8,
+    Image = 9,
+    Video = 10,
+    ActivityIndicator = 11,
+    ProgressBar = 12,
+    StatusBar = 13,
+    RefreshControl = 14,
+    WebView = 15,
+    CameraPreview = 16,
+    NativeView = 17,
+    TabBar = 18,
+    List = 19,
+    Checkbox = 20,
+    Radio = 21,
+    Chip = 22,
+    Snackbar = 23,
+    Fab = 24,
+    IconButton = 25,
+    SegmentedButton = 26,
+    AppBar = 27,
+    NavBar = 28,
+    NavDrawer = 29,
+    NavRail = 30,
+    Menu = 31,
+    DatePicker = 32,
+    TimePicker = 33,
+    SearchBar = 34,
+    Carousel = 35,
+    // Container components
+    Column = 36,
+    Row = 37,
+    Box = 38,
+    Scroll = 39,
+    Modal = 40,
+    Pressable = 41,
+    SafeArea = 42,
+    Card = 43,
+    Badge = 44,
+    BottomSheet = 45,
+    Tooltip = 46,
 }
 
 // FlexDirection
@@ -168,15 +213,8 @@ impl Node {
         let mut hasher = std::collections::hash_map::DefaultHasher::new();
 
         // Hash the kind
-        let kind_byte = match self.kind {
-            NodeKind::Column => 0u8,
-            NodeKind::Row => 1u8,
-            NodeKind::Text => 2u8,
-            NodeKind::Button => 3u8,
-            NodeKind::Image => 4u8,
-            NodeKind::Scroll => 5u8,
-            NodeKind::WebView => 6u8,
-        };
+        let kind_byte = self.kind.clone() as u8;
+
         kind_byte.hash(&mut hasher);
 
         // Hash layout-relevant props (f32 doesn't impl Hash, so use to_bits)
@@ -701,13 +739,17 @@ impl Tree {
     // Draw a single node (static, no self borrow)
     fn draw_node_static(kind: &NodeKind, layout: &Layout) {
         match kind {
-            NodeKind::Text => {
-                println!("Draw TEXT at ({}, {})", layout.x, layout.y);
-            }
-            NodeKind::Button => {
-                println!("Draw BUTTON at ({}, {})", layout.x, layout.y);
-            }
-            NodeKind::Column | NodeKind::Row => {
+            NodeKind::Column
+            | NodeKind::Row
+            | NodeKind::Box
+            | NodeKind::Scroll
+            | NodeKind::Modal
+            | NodeKind::Pressable
+            | NodeKind::SafeArea
+            | NodeKind::Card
+            | NodeKind::Badge
+            | NodeKind::BottomSheet
+            | NodeKind::Tooltip => {
                 // Container nodes don't draw anything themselves
             }
             _ => {

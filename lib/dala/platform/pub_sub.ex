@@ -1,4 +1,4 @@
-defmodule Dala.Platform.Pubsub do
+defmodule Dala.Platform.PubSub do
   @moduledoc """
   Simplified PubSub for Dala apps using Elixir's built-in Registry.
 

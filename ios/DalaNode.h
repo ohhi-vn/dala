@@ -36,6 +36,32 @@ typedef NS_ENUM(NSInteger, DalaNodeType) {
     DalaNodeTypeWebView,
     DalaNodeTypeNativeView,
     DalaNodeTypeIcon,
+    DalaNodeTypeModal,
+    DalaNodeTypePressable,
+    DalaNodeTypeSafeArea,
+    DalaNodeTypeCard,
+    DalaNodeTypeBadge,
+    DalaNodeTypeChip,
+    DalaNodeTypeSnackbar,
+    DalaNodeTypeFab,
+    DalaNodeTypeIconButton,
+    DalaNodeTypeSegmentedButton,
+    DalaNodeTypeAppBar,
+    DalaNodeTypeNavBar,
+    DalaNodeTypeNavDrawer,
+    DalaNodeTypeNavRail,
+    DalaNodeTypeMenu,
+    DalaNodeTypeDatePicker,
+    DalaNodeTypeTimePicker,
+    DalaNodeTypeSearchBar,
+    DalaNodeTypeCarousel,
+    DalaNodeTypeBottomSheet,
+    DalaNodeTypeTooltip,
+    DalaNodeTypeCheckbox,
+    DalaNodeTypeRadio,
+    DalaNodeTypeActivityIndicator,
+    DalaNodeTypeRefreshControl,
+    DalaNodeTypeStatusBar,
 };
 
 NS_ASSUME_NONNULL_BEGIN
@@ -155,6 +181,10 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic) CGFloat gap;          // spacing between children in VStack/HStack (default 0)
 @property (nonatomic) BOOL    disabled;     // disables interaction (default NO)
 
+// Flex layout (column/row)
+@property (nonatomic) uint8_t justifyContent; // 0=start, 1=center, 2=end, 3=space_between
+@property (nonatomic) uint8_t alignItems;     // 0=start, 1=center, 2=end, 3=stretch
+
 // Border (currently honored on box). Both must be set for a border to draw.
 @property (nonatomic, strong, nullable) UIColor* borderColor;
 @property (nonatomic) CGFloat borderWidth;  // pt; default 0 = no border
@@ -215,6 +245,10 @@ NS_ASSUME_NONNULL_BEGIN
 /// Create a DalaNode tree from a parsed JSON dictionary (Elixir map → NSDictionary).
 /// Returns nil if the dictionary is malformed.
 + (nullable instancetype)fromDictionary:(nonnull NSDictionary*)dict;
+
+/// Create a DalaNode tree from binary protocol v3 data.
+/// Returns nil if the data is malformed or unsupported version.
++ (nullable instancetype)fromBinary:(const UInt8 *)bytes length:(NSUInteger)length;
 
 @end
 

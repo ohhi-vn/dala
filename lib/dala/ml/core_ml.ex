@@ -47,11 +47,7 @@ defmodule Dala.ML.CoreML do
   @spec load_model(String.t(), String.t()) :: :ok | {:error, term()} | :not_supported
   def load_model(model_path, identifier)
       when is_binary(model_path) and is_binary(identifier) do
-    case Dala.Native.coreml_load_model(model_path, identifier) do
-      :ok -> :ok
-      {:error, reason} -> {:error, reason}
-      :not_supported -> :not_supported
-    end
+    Dala.Native.coreml_load_model(model_path, identifier)
   end
 
   @doc """
