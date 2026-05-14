@@ -6,6 +6,7 @@ mod android;
 mod common;
 #[cfg(target_os = "ios")]
 mod ios;
+mod onnx;
 mod protocol;
 mod tree;
 
@@ -335,5 +336,199 @@ fn wakelock_enabled<'a>(env: Env<'a>) -> NifResult<Term<'a>> {
         Ok(atom(env, "true"))
     } else {
         Ok(atom(env, "false"))
+    }
+}
+
+// ============================================================================
+// CoreML (iOS only)
+// ============================================================================
+
+#[cfg(target_os = "ios")]
+#[rustler::nif(schedule = "DirtyCpu")]
+fn coreml_load_model<'a>(
+    env: Env<'a>,
+    model_path: String,
+    identifier: String,
+) -> NifResult<Term<'a>> {
+    match ios::coreml_load_model(&model_path, &identifier) {
+        Ok(()) => Ok(atom(env, "ok")),
+        Err(e) => Ok((atom(env, "error"), e).encode(env)),
+    }
+}
+
+#[cfg(not(target_os = "ios"))]
+#[rustler::nif]
+fn coreml_load_model<'a>(
+    env: Env<'a>,
+    _model_path: String,
+    _identifier: String,
+) -> NifResult<Term<'a>> {
+    Ok(atom(env, "not_supported"))
+}
+
+#[cfg(target_os = "ios")]
+#[rustler::nif(schedule = "DirtyCpu")]
+fn coreml_unload_model<'a>(env: Env<'a>, identifier: String) -> NifResult<Term<'a>> {
+    ios::coreml_unload_model(&identifier);
+    ok(env)
+}
+
+#[cfg(not(target_os = "ios"))]
+#[rustler::nif]
+fn coreml_unload_model<'a>(env: Env<'a>, _identifier: String) -> NifResult<Term<'a>> {
+    Ok(atom(env, "not_supported"))
+}
+
+#[cfg(target_os = "ios")]
+#[rustler::nif(schedule = "DirtyCpu")]
+fn coreml_is_model_loaded<'a>(env: Env<'a>, identifier: String) -> NifResult<Term<'a>> {
+    if ios::coreml_is_model_loaded(&identifier) {
+        Ok(atom(env, "true"))
+    } else {
+        Ok(atom(env, "false"))
+    }
+}
+
+#[cfg(not(target_os = "ios"))]
+#[rustler::nif]
+fn coreml_is_model_loaded<'a>(env: Env<'a>, _identifier: String) -> NifResult<Term<'a>> {
+    Ok(atom(env, "false"))
+}
+
+/// Global storage for CoreML prediction result (callback → NIF bridge)
+#[cfg(target_os = "ios")]
+static COREML_RESULT: Mutex<Option<(String, String)>> = Mutex::new(None);
+
+/// C callback for CoreML predictions — stores result in global Mutex
+#[cfg(target_os = "ios")]
+unsafe extern "C" fn coreml_callback(
+    _model_identifier: *const libc::c_char,
+    result_json: *const libc::c_char,
+    error: *const libc::c_char,
+) {
+    let mut guard = COREML_RESULT.lock().unwrap();
+    if !error.is_null() {
+        let err = std::ffi::CStr::from_ptr(error)
+            .to_string_lossy()
+            .to_string();
+        *guard = Some((String::new(), err));
+    } else if !result_json.is_null() {
+        let result = std::ffi::CStr::from_ptr(result_json)
+            .to_string_lossy()
+            .to_string();
+        *guard = Some((result, String::new()));
+    }
+}
+
+#[cfg(target_os = "ios")]
+#[rustler::nif(schedule = "DirtyCpu")]
+fn coreml_predict<'a>(
+    env: Env<'a>,
+    identifier: String,
+    inputs_json: String,
+) -> NifResult<Term<'a>> {
+    // Clear previous result
+    *COREML_RESULT.lock().unwrap() = None;
+
+    ios::coreml_predict(&identifier, &inputs_json, coreml_callback);
+
+    // Retrieve result
+    let guard = COREML_RESULT.lock().unwrap();
+    match guard.as_ref() {
+        Some((result, _)) if !result.is_empty() => {
+            Ok((atom(env, "ok"), result.clone()).encode(env))
+        }
+        Some((_, err)) if !err.is_empty() => Ok((atom(env, "error"), err.clone()).encode(env)),
+        _ => Ok((atom(env, "error"), "CoreML prediction returned no result").encode(env)),
+    }
+}
+
+#[cfg(not(target_os = "ios"))]
+#[rustler::nif]
+fn coreml_predict<'a>(
+    env: Env<'a>,
+    _identifier: String,
+    _inputs_json: String,
+) -> NifResult<Term<'a>> {
+    Ok(atom(env, "not_supported"))
+}
+
+#[cfg(target_os = "ios")]
+#[rustler::nif(schedule = "DirtyCpu")]
+fn coreml_loaded_models<'a>(env: Env<'a>) -> NifResult<Term<'a>> {
+    let models = ios::coreml_loaded_models();
+    Ok(models.encode(env))
+}
+
+#[cfg(not(target_os = "ios"))]
+#[rustler::nif]
+fn coreml_loaded_models<'a>(env: Env<'a>) -> NifResult<Term<'a>> {
+    Ok(Vec::<String>::new().encode(env))
+}
+
+// ============================================================================
+// ONNX Runtime (cross-platform)
+// ============================================================================
+
+#[rustler::nif(schedule = "DirtyCpu")]
+fn onnx_create_session<'a>(env: Env<'a>, model_data: Binary<'a>) -> NifResult<Term<'a>> {
+    let id = onnx::create_session(model_data.as_slice());
+    if id == 0 {
+        Ok((atom(env, "error"), "Failed to create ONNX session").encode(env))
+    } else {
+        Ok((atom(env, "ok"), id).encode(env))
+    }
+}
+
+#[rustler::nif(schedule = "DirtyCpu")]
+fn onnx_destroy_session<'a>(env: Env<'a>, session_id: u64) -> NifResult<Term<'a>> {
+    match onnx::destroy_session(session_id) {
+        0 => ok(env),
+        _ => Ok((atom(env, "error"), "Session not found").encode(env)),
+    }
+}
+
+#[rustler::nif(schedule = "DirtyCpu")]
+fn onnx_run<'a>(env: Env<'a>, session_id: u64, input_data: Binary<'a>) -> NifResult<Term<'a>> {
+    match onnx::run(session_id, input_data.as_slice()) {
+        Some(output) => Ok((atom(env, "ok"), output).encode(env)),
+        None => Ok((atom(env, "error"), "ONNX inference failed").encode(env)),
+    }
+}
+
+#[rustler::nif(schedule = "DirtyCpu")]
+fn onnx_is_available<'a>(env: Env<'a>) -> NifResult<Term<'a>> {
+    if onnx::is_available() {
+        Ok(atom(env, "true"))
+    } else {
+        Ok(atom(env, "false"))
+    }
+}
+
+#[rustler::nif]
+fn onnx_session_count<'a>(env: Env<'a>) -> NifResult<Term<'a>> {
+    Ok(onnx::session_count().encode(env))
+}
+
+#[rustler::nif]
+fn onnx_load_model_from_file<'a>(env: Env<'a>, path: String) -> NifResult<Term<'a>> {
+    match std::fs::read(&path) {
+        Ok(data) => {
+            let id = onnx::create_session(&data);
+            if id == 0 {
+                Ok((
+                    atom(env, "error"),
+                    "Failed to create ONNX session from file",
+                )
+                    .encode(env))
+            } else {
+                Ok((atom(env, "ok"), id).encode(env))
+            }
+        }
+        Err(e) => Ok((
+            atom(env, "error"),
+            format!("Failed to read model file: {}", e),
+        )
+            .encode(env)),
     }
 }

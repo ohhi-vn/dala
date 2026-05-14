@@ -1,11 +1,12 @@
 defmodule MLApp.HomeScreen do
   @moduledoc """
-  Home screen for ML App with YOLO object detection demo.
+  Home screen for ML App demonstrating Dala ML capabilities.
 
   ## Features demonstrated:
-  - Auto-configured EMLX backend (zero config!)
+  - Auto-configured EMLX/CoreML backend
+  - ML status and benchmark
   - Simulated YOLO object detection
-  - Camera integration ready
+  - Model management
   """
   use Dala.Screen
 
@@ -15,6 +16,8 @@ defmodule MLApp.HomeScreen do
       |> Dala.Socket.assign(:detections, [])
       |> Dala.Socket.assign(:is_detecting, false)
       |> Dala.Socket.assign(:backend, detect_backend())
+      |> Dala.Socket.assign(:benchmark, nil)
+      |> Dala.Socket.assign(:ml_status, Dala.ML.status())
 
     {:ok, socket}
   end
@@ -25,17 +28,22 @@ defmodule MLApp.HomeScreen do
       props: %{padding: 16, spacing: 12},
       children:
         [
-          %{type: :text, props: %{text: "YOLO Object Detection", text_size: :xl}},
+          %{type: :text, props: %{text: "Dala ML Demo", text_size: :xl}},
           %{type: :text, props: %{text: "Backend: #{assigns.backend}"}},
           %{
-            type: :button,
-            props: %{text: "Run YOLO Detection"},
-            on_tap: {self(), :detect}
+            type: :text,
+            props: %{text: "Platform: #{assigns.ml_status.platform}"}
           },
           %{
             type: :button,
-            props: %{text: "Open Camera"},
-            on_tap: {self(), :open_camera}
+            props: %{text: "Run Benchmark"},
+            on_tap: {self(), :benchmark}
+          },
+          maybe_benchmark_result(assigns.benchmark),
+          %{
+            type: :button,
+            props: %{text: "Run Detection"},
+            on_tap: {self(), :detect}
           },
           %{type: :separator, props: %{}},
           %{type: :text, props: %{text: "Detections:", text_size: :lg}}
@@ -43,8 +51,19 @@ defmodule MLApp.HomeScreen do
     }
   end
 
+  defp maybe_benchmark_result(nil), do: %{}
+
+  defp maybe_benchmark_result(benchmark) do
+    %{
+      type: :text,
+      props: %{
+        text: "Benchmark: #{benchmark.time_ms}ms (#{benchmark.gflops} GFLOPS)"
+      }
+    }
+  end
+
   defp render_detections([]) do
-    [%{type: :text, props: %{text: "No detections yet. Tap 'Run YOLO Detection' to start."}}]
+    [%{type: :text, props: %{text: "No detections yet."}}]
   end
 
   defp render_detections(detections) do
@@ -56,10 +75,13 @@ defmodule MLApp.HomeScreen do
     end)
   end
 
+  def handle_event(:benchmark, _params, socket) do
+    result = Dala.ML.benchmark(size: 100, iterations: 10)
+    {:noreply, Dala.Socket.assign(socket, :benchmark, result)}
+  end
+
   def handle_event(:detect, _params, socket) do
     socket = Dala.Socket.assign(socket, :is_detecting, true)
-
-    # Simulate YOLO detection (in real app, this would use camera frame)
     detections = simulate_yolo_detection()
 
     socket =
@@ -70,14 +92,7 @@ defmodule MLApp.HomeScreen do
     {:noreply, socket}
   end
 
-  def handle_event(:open_camera, _params, socket) do
-    # Open camera for live detection
-    # Dala.Camera.start_preview(label: "camera_preview")
-    {:noreply, socket}
-  end
-
   defp simulate_yolo_detection do
-    # Simulated YOLO output - in production, use real EMLX model
     [
       %{label: "person", confidence: 0.92},
       %{label: "car", confidence: 0.87},
@@ -87,10 +102,12 @@ defmodule MLApp.HomeScreen do
   end
 
   defp detect_backend do
-    if Code.ensure_loaded?(EMLX) do
-      "EMLX (Metal GPU)"
-    else
-      "Nx (CPU)"
+    status = Dala.ML.status()
+
+    cond do
+      status.emlx_available -> "EMLX (Metal GPU)"
+      status.coreml_available -> "CoreML (Neural Engine)"
+      true -> "Nx (CPU)"
     end
   end
 end
