@@ -2,31 +2,16 @@ defmodule Dala.ML.CoreML do
   @moduledoc """
   CoreML integration for iOS.
 
-  This module provides an Elixir API for using Apple's CoreML framework
-  on iOS devices. CoreML is optimized by Apple and can use the Neural Engine
-  for hardware-accelerated ML inference.
+  Provides an Elixir API for Apple's CoreML framework via NIF calls.
+  CoreML uses the Apple Neural Engine (ANE) for hardware-accelerated
+  ML inference on iOS devices and simulators.
+
+  All NIF functions run on the dirty CPU scheduler.
 
   ## Prerequisites
 
-  - iOS device or simulator (CoreML is iOS-only)
+  - iOS device or simulator
   - CoreML model file (.mlmodel or .mlpackage)
-
-  ## Converting models
-
-  You can convert models from other formats to CoreML:
-
-  1. **Axon → ONNX → CoreML**:
-     ```elixir
-     # Train with Axon
-     model = Axon.input("input", shape: {nil, 784}) |> Axon.dense(10, activation: :softmax)
-     {init_fn, predict_fn} = Axon.build(model)
-     params = init_fn.(Nx.template({1, 784}, :f32), %{})
-
-     # Export to ONNX (requires ortex or onnx package)
-     # Then convert ONNX to CoreML using Apple's coremltools (Python)
-     ```
-
-  2. **Use pre-trained CoreML models** from Apple or third parties.
 
   ## Usage
 
@@ -51,58 +36,41 @@ defmodule Dala.ML.CoreML do
   ## Parameters
 
   - `model_path`: Path to the .mlmodel or .mlpackage file
-  - `identifier`: A unique identifier for this model (used in later calls)
+  - `identifier`: A unique identifier for this model
 
   ## Returns
 
-  - `:ok` if successful
-  - `{:error, reason}` if failed
+  - `:ok` on success
+  - `{:error, reason}` on failure
+  - `:not_supported` on non-iOS platforms
   """
-  def load_model(model_path, identifier) when is_binary(model_path) and is_binary(identifier) do
-    try do
-      case apply(Dala.Native, :coreml_load_model, [model_path, identifier]) do
-        :ok -> :ok
-        {:error, reason} -> {:error, reason}
-        error when is_binary(error) -> {:error, error}
-        :not_supported -> :not_supported
-      end
-    rescue
-      UndefinedFunctionError -> :not_supported
-      e -> {:error, Exception.message(e)}
+  @spec load_model(String.t(), String.t()) :: :ok | {:error, term()} | :not_supported
+  def load_model(model_path, identifier)
+      when is_binary(model_path) and is_binary(identifier) do
+    case Dala.Native.coreml_load_model(model_path, identifier) do
+      :ok -> :ok
+      {:error, reason} -> {:error, reason}
+      :not_supported -> :not_supported
     end
   end
 
   @doc """
   Unloads a previously loaded model.
-
-  ## Parameters
-
-  - `identifier`: The identifier used when loading the model
   """
+  @spec unload_model(String.t()) :: :ok | :not_supported
   def unload_model(identifier) when is_binary(identifier) do
-    apply(Dala.Native, :coreml_unload_model, [identifier])
-    :ok
+    Dala.Native.coreml_unload_model(identifier)
   end
 
   @doc """
   Checks if a model is loaded.
 
-  ## Parameters
-
-  - `identifier`: The model identifier
-
-  ## Returns
-
-  `true` if the model is loaded, `false` otherwise.
+  Returns `true` if loaded, `false` otherwise.
   Returns `false` on non-iOS platforms.
   """
+  @spec loaded?(String.t()) :: boolean()
   def loaded?(identifier) when is_binary(identifier) do
-    try do
-      apply(Dala.Native, :coreml_is_model_loaded, [identifier]) == "true"
-    rescue
-      UndefinedFunctionError -> false
-      _ -> false
-    end
+    Dala.Native.coreml_is_model_loaded(identifier)
   end
 
   @doc """
@@ -111,74 +79,34 @@ defmodule Dala.ML.CoreML do
   ## Parameters
 
   - `identifier`: The model identifier
-  - `inputs`: A map of input names to values
-
-  Input values can be:
-  - Numbers (floats/integers)
-  - Strings
-  - Lists (converted to MLMultiArray)
-  - Base64-encoded data (for large multi-array inputs)
+  - `inputs`: A map of input names to values (numbers, strings, lists)
 
   ## Returns
 
-  `{:ok, result_json}` where `result_json` is a JSON string of the outputs.
-  `{:error, reason}` if the prediction fails.
-  `:not_supported` on non-iOS platforms.
-
-  ## Example
-
-      inputs = %{
-        "input1" => 1.0,
-        "input2" => [1.0, 2.0, 3.0]
-      }
-
-      case Dala.ML.CoreML.predict("my_model", inputs) do
-        {:ok, json} ->
-          result = Jason.decode!(json)
-          # Use result...
-        {:error, reason} ->
-          # Handle error...
-        :not_supported ->
-          # CoreML not available
-      end
+  - `{:ok, result_json}` on success
+  - `{:error, reason}` on failure
+  - `:not_supported` on non-iOS platforms
   """
+  @spec predict(String.t(), map()) :: {:ok, String.t()} | {:error, term()} | :not_supported
   def predict(identifier, inputs) when is_binary(identifier) and is_map(inputs) do
-    try do
-      inputs_json = Jason.encode!(inputs)
-
-      case apply(Dala.Native, :coreml_predict, [identifier, inputs_json]) do
-        {:ok, result_json} -> {:ok, result_json}
-        {:error, reason} -> {:error, reason}
-        :not_supported -> :not_supported
-        error -> {:error, error}
-      end
-    rescue
-      UndefinedFunctionError -> :not_supported
-      e -> {:error, Exception.message(e)}
-    end
+    inputs_json = Jason.encode!(inputs)
+    Dala.Native.coreml_predict(identifier, inputs_json)
   end
 
   @doc """
   Lists all loaded model identifiers.
-
-  ## Returns
-
-  A list of model identifiers, or `:none` on non-iOS platforms.
   """
+  @spec loaded_models() :: [String.t()]
   def loaded_models do
-    try do
-      apply(Dala.Native, :coreml_loaded_models, [])
-    rescue
-      UndefinedFunctionError -> :none
-      _ -> :none
-    end
+    Dala.Native.coreml_loaded_models()
   end
 
   @doc """
-  Convenience function to load and predict in one call.
-
-  Note: Model must be loaded first using `load_model/2`.
+  Convenience: load and predict in one call.
+  Model must be loaded first.
   """
+  @spec predict_with_loaded_model(String.t(), map()) ::
+          {:ok, String.t()} | {:error, term()} | :not_supported
   def predict_with_loaded_model(identifier, inputs) do
     if loaded?(identifier) do
       predict(identifier, inputs)

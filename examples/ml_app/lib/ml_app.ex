@@ -1,45 +1,27 @@
 defmodule MLApp do
   @moduledoc """
-  ML App demonstrating on-device object detection with YOLO and EMLX.
+  ML App demonstrating on-device ML with Dala.
 
   ## Features:
-  - Real-time object detection using YOLO (via EMLX)
-  - Camera integration for live detection
-  - No configuration needed - everything auto-setups!
-
-  ## How to run:
-
-      cd examples/ml_app
-      mix deps.get
-      # For iOS (requires EMLX dependencies):
-      mix dala.deploy --native --ios-sim
-      # For Android:
-      mix dala.deploy --native --android-emu
-
-  ## Dependencies (automatically added by mix.exs):
-
-  - {:dala, path: ".."} - Dala framework
-  - {:nx, github: "elixir-nx/nx", sparse: "nx"} - Tensor library
-  - {:emlx, github: "elixir-nx/emlx", branch: "main"} - MLX backend for Apple Silicon
-  - {:axon, "~> 0.6"} - Neural network library
-
-  Note: EMLX only works on iOS/Android with Metal/Vulkan GPU support.
-  On other platforms, the app falls back to CPU-based Nx.
+  - Auto-configured EMLX/CoreML backend (zero config!)
+  - YOLO object detection demo
+  - Model management (download, cache)
+  - Training fine-tuning demo
   """
   use Dala.App
 
   def navigation(_platform) do
-    stack(:home, root: MLApp.HomeScreen, title: "Object Detection")
+    stack(:home, root: MLApp.HomeScreen, title: "ML Demo")
   end
 
   def on_start do
-    # Auto-configure ML backend (zero config!)
     case Dala.ML.setup() do
-      {:ok, config} ->
-        Dala.Native.log("MLApp: EMLX configured - device: #{config.device}")
-
       :ok ->
-        Dala.Native.log("MLApp: Using default Nx backend (non-iOS)")
+        status = Dala.ML.status()
+        Dala.Native.log("MLApp: backend=#{inspect(status.backend)}")
+
+      {:error, reason} ->
+        Dala.Native.log("MLApp: setup failed: #{reason}")
     end
 
     {:ok, _pid} = Dala.Screen.start_root(MLApp.HomeScreen)

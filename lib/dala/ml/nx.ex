@@ -13,14 +13,12 @@ defmodule Dala.Ml.Nx do
   Priority:
   1. EMLX (if available) - best for Apple Silicon
   2. Nx.BinaryBackend (pure Elixir fallback)
-
-  Works on all platforms, not just iOS.
-  Also see `Dala.ML` for the unified entry point.
   """
+  @spec init() :: :emlx | :nx_binary
   def init do
     cond do
       emlx_available?() ->
-        apply(Dala.ML.EMLX, :setup, [])
+        Dala.ML.EMLX.setup()
         :emlx
 
       true ->
@@ -30,28 +28,17 @@ defmodule Dala.Ml.Nx do
   end
 
   @doc """
-  Initializes Nx with the best available backend for iOS.
-
-  Deprecated: Use `init/0` instead, which works on all platforms.
-  """
-  @deprecated "Use init/0 instead"
-  def init_for_ios do
-    init()
-  end
-
-  @doc """
   Checks if EMLX is available.
   """
+  @spec emlx_available?() :: boolean()
   def emlx_available? do
-    try do
-      Code.ensure_loaded?(EMLX)
-    rescue
-      _ -> false
-    end
+    Code.ensure_loaded?(EMLX) and Code.ensure_loaded?(EMLX.Backend)
+  rescue
+    _ -> false
   end
 
   @doc """
-  Creates a tensor on iOS with platform-appropriate backend.
+  Creates a tensor with the platform-appropriate backend.
   """
   def tensor(data, opts \\ []) do
     backend = Keyword.get(opts, :backend, default_backend())
@@ -59,53 +46,21 @@ defmodule Dala.Ml.Nx do
   end
 
   @doc """
-  Returns the default backend for the current iOS platform.
+  Returns the default backend for the current platform.
   """
+  @spec default_backend() :: module() | tuple()
   def default_backend do
     if emlx_available?() do
-      {EMLX.Backend, device: apply(Dala.ML.EMLX, :default_device, [])}
+      {EMLX.Backend, device: Dala.ML.EMLX.default_device()}
     else
       Nx.BinaryBackend
     end
   end
 
   @doc """
-  Example: Simple neural network layer using Axon.
-
-  Axon is now a direct dependency - here's how to use it:
-
-      model =
-        Axon.input("input", shape: {nil, 784})
-        |> Axon.dense(128, activation: :relu)
-        |> Axon.dense(10, activation: :softmax)
-
-      {init_fn, predict_fn} = Axon.build(model)
-      params = init_fn.(Nx.template({1, 784}, :f32), %{})
-      predict_fn.(params, input_tensor)
-  """
-  def example_dense_layer do
-    :see_docs
-  end
-
-  @doc """
-  Loads a pre-trained Axon model for inference.
-
-  Note: Check Axon documentation for the current serialization API.
-  Axon models can be saved/loaded using Axon's built-in serialization.
-  """
-  def load_model(_model_path) do
-    {:error, "Use Axon's serialization API directly"}
-  end
-
-  @doc """
   Runs inference with an Axon model using the best available backend.
-
-  ## Example
-
-      {:ok, model, params} = Dala.ML.Nx.load_model("model.axmodel")
-      input = Nx.tensor([[1.0, 2.0, 3.0]])
-      result = Dala.ML.Nx.inference(model, params, input)
   """
+  @spec inference(term(), term(), term()) :: {:ok, term()} | {:error, term()}
   def inference(model, params, input_data) do
     backend = default_backend()
     input_tensor = Nx.tensor(input_data, backend: backend)
@@ -121,11 +76,10 @@ defmodule Dala.Ml.Nx do
   @doc """
   Checks if Axon is available.
   """
+  @spec axon_available?() :: boolean()
   def axon_available? do
-    try do
-      Code.ensure_loaded?(Axon)
-    rescue
-      _ -> false
-    end
+    Code.ensure_loaded?(Axon)
+  rescue
+    _ -> false
   end
 end

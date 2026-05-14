@@ -2,86 +2,151 @@ defmodule Dala.ML.CoreML.Test do
   @moduledoc """
   Tests for Dala.ML.CoreML.
 
-  Note: These tests only run on iOS devices/simulators with CoreML available.
-  On other platforms, they will skip or return `:not_supported`.
+  Verifies the rewritten module that uses Dala.Native NIF functions directly.
+  On non-iOS platforms, most operations return :not_supported.
   """
 
   use ExUnit.Case, async: true
 
-  test "load_model returns error for non-existent file" do
-    result = Dala.ML.CoreML.load_model("/non/existent/path.mlmodel", "test_model")
-
-    case result do
-      {:error, _} -> :ok
-      :not_supported -> :ok
-      other -> flunk("Unexpected result: #{inspect(other)}")
+  describe "module loading" do
+    test "CoreML module is available" do
+      assert Code.ensure_loaded?(Dala.ML.CoreML)
     end
   end
 
-  test "load_model validates arguments" do
-    # Should accept only binary path and identifier
-    assert_raise FunctionClauseError, fn ->
-      Dala.ML.CoreML.load_model(123, "test")
+  describe "load_model/2" do
+    test "returns error for non-existent file" do
+      result = Dala.ML.CoreML.load_model("/non/existent/path.mlmodel", "test_model")
+
+      assert match?({:error, _}, result) or match?(:not_supported, result)
     end
 
-    assert_raise FunctionClauseError, fn ->
-      Dala.ML.CoreML.load_model("path.mlmodel", 123)
+    test "validates path argument type" do
+      assert_raise FunctionClauseError, fn ->
+        Dala.ML.CoreML.load_model(123, "test")
+      end
     end
-  end
 
-  test "loaded? returns false for unloaded model" do
-    result = Dala.ML.CoreML.loaded?("non_existent_model")
-
-    case result do
-      false -> :ok
-      true -> :ok
-      other -> flunk("Unexpected result: #{inspect(other)}")
+    test "validates identifier argument type" do
+      assert_raise FunctionClauseError, fn ->
+        Dala.ML.CoreML.load_model("path.mlmodel", 123)
+      end
     end
-  end
 
-  test "loaded_models returns a list or atom" do
-    result = Dala.ML.CoreML.loaded_models()
-
-    case result do
-      list when is_list(list) -> :ok
-      :none -> :ok
-      other -> flunk("Unexpected result: #{inspect(other)}")
+    test "accepts valid binary arguments" do
+      # Should not raise — returns {:error, _} or :not_supported
+      result = Dala.ML.CoreML.load_model("valid_path.mlmodel", "valid_id")
+      assert is_tuple(result) or result == :not_supported
     end
   end
 
-  test "predict returns not_supported or error for unloaded model" do
-    result = Dala.ML.CoreML.predict("non_existent_model", %{"input" => 1.0})
+  describe "unload_model/1" do
+    test "accepts binary identifier" do
+      result = Dala.ML.CoreML.unload_model("some_model")
+      assert result == :ok or result == :not_supported
+    end
 
-    case result do
-      {:ok, _json} -> :ok
-      {:error, _reason} -> :ok
-      :not_supported -> :ok
-      other -> flunk("Unexpected result: #{inspect(other)}")
+    test "validates argument type" do
+      assert_raise FunctionClauseError, fn ->
+        Dala.ML.CoreML.unload_model(123)
+      end
     end
   end
 
-  test "predict validates arguments" do
-    assert_raise FunctionClauseError, fn ->
-      Dala.ML.CoreML.predict(123, %{"input" => 1.0})
+  describe "loaded?/1" do
+    test "returns boolean for any identifier" do
+      result = Dala.ML.CoreML.loaded?("non_existent_model")
+      assert is_boolean(result)
     end
 
-    assert_raise FunctionClauseError, fn ->
-      Dala.ML.CoreML.predict("model", "not_a_map")
+    test "returns false for unloaded model" do
+      result = Dala.ML.CoreML.loaded?("definitely_not_loaded_#{:erlang.unique_integer()}")
+      assert result == false
     end
-  end
 
-  test "predict_with_loaded_model returns error for unloaded model" do
-    result = Dala.ML.CoreML.predict_with_loaded_model("non_existent_model", %{"input" => 1.0})
-
-    case result do
-      {:error, "Model not loaded: non_existent_model"} -> :ok
-      {:error, _} -> :ok
-      :not_supported -> :ok
-      other -> flunk("Unexpected result: #{inspect(other)}")
+    test "validates argument type" do
+      assert_raise FunctionClauseError, fn ->
+        Dala.ML.CoreML.loaded?(123)
+      end
     end
   end
 
-  test "CoreML module is available" do
-    assert Code.ensure_loaded?(Dala.ML.CoreML)
+  describe "loaded_models/0" do
+    test "returns a list" do
+      result = Dala.ML.CoreML.loaded_models()
+      assert is_list(result)
+    end
+
+    test "list contains only strings" do
+      result = Dala.ML.CoreML.loaded_models()
+      Enum.each(result, fn id -> assert is_binary(id) end)
+    end
+  end
+
+  describe "predict/2" do
+    test "returns error or not_supported for unloaded model" do
+      result = Dala.ML.CoreML.predict("non_existent_model", %{"input" => 1.0})
+      assert match?({:error, _}, result) or match?(:not_supported, result)
+    end
+
+    test "validates identifier argument type" do
+      assert_raise FunctionClauseError, fn ->
+        Dala.ML.CoreML.predict(123, %{"input" => 1.0})
+      end
+    end
+
+    test "validates inputs argument type" do
+      assert_raise FunctionClauseError, fn ->
+        Dala.ML.CoreML.predict("model", "not_a_map")
+      end
+    end
+
+    test "accepts valid arguments" do
+      result = Dala.ML.CoreML.predict("model_id", %{"input" => [1.0, 2.0]})
+      assert is_tuple(result) or result == :not_supported
+    end
+  end
+
+  describe "predict_with_loaded_model/2" do
+    test "returns specific error for unloaded model" do
+      unique = "unloaded_#{:erlang.unique_integer([:positive])}"
+      result = Dala.ML.CoreML.predict_with_loaded_model(unique, %{"input" => 1.0})
+
+      if result == :not_supported do
+        :ok
+      else
+        assert match?({:error, "Model not loaded: " <> _}, result)
+      end
+    end
+
+    test "validates argument types" do
+      assert_raise FunctionClauseError, fn ->
+        Dala.ML.CoreML.predict_with_loaded_model(123, %{})
+      end
+
+      assert_raise FunctionClauseError, fn ->
+        Dala.ML.CoreML.predict_with_loaded_model("model", "not_a_map")
+      end
+    end
+  end
+
+  describe "full lifecycle" do
+    test "load → check → unload → check sequence" do
+      model_id = "lifecycle_test_#{:erlang.unique_integer([:positive])}"
+
+      # Load (may fail on non-existent file)
+      load_result = Dala.ML.CoreML.load_model("/non/existent.mlmodel", model_id)
+
+      if load_result == :not_supported do
+        :ok
+      else
+        # loaded? should return a boolean
+        _ = Dala.ML.CoreML.loaded?(model_id)
+
+        # Unload should succeed
+        assert Dala.ML.CoreML.unload_model(model_id) == :ok or
+                 Dala.ML.CoreML.unload_model(model_id) == :not_supported
+      end
+    end
   end
 end

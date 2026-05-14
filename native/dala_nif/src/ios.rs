@@ -789,7 +789,7 @@ pub fn linking_initial_url<'a>(env: rustler::Env<'a>) -> rustler::Term<'a> {
 use std::ffi::{c_char, c_void};
 use std::os::raw::c_int;
 
-type DalaCoreMLPredictionCallback = unsafe extern "C" fn(
+pub type DalaCoreMLPredictionCallback = unsafe extern "C" fn(
     model_identifier: *const c_char,
     result_json: *const c_char,
     error: *const c_char,
