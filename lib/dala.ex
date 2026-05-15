@@ -168,9 +168,7 @@ defmodule Dala do
   - `Dala.Plugin.Registry` — plugin lookup and capability negotiation
 
   See the [Getting Started](guides/getting_started.html) guide to create your
-  first app. See [Architecture & Prior Art](guides/architecture.html) for how
-  Dala compares to LiveView Native, Elixir Desktop, React Native, Flutter, and
-  native development.
+  first app. See [Architecture & Prior Art](guides/architecture.html) for Dala architecture.
   """
 
   defdelegate assign(socket, key, value), to: Dala.Socket
