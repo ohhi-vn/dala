@@ -255,7 +255,7 @@ end
 Full documentation at [hexdocs.pm/dala](https://hexdocs.pm/dala), including:
 
 - [Getting Started](https://hexdocs.pm/dala/getting_started.html)
-- [Architecture & Prior Art](https://hexdocs.pm/dala/architecture.html) — comparison to LiveView Native, Elixir Desktop, React Native, Flutter, and native development
+- [Architecture & Prior Art](https://hexdocs.pm/dala/architecture.html)
 - [Screen Lifecycle](https://hexdocs.pm/dala/screen_lifecycle.html)
 - [Components](https://hexdocs.pm/dala/components.html)
 - [Theming](https://hexdocs.pm/dala/theming.html)
