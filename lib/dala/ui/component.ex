@@ -470,6 +470,21 @@ defmodule Dala.Ui.Component do
           |> Map.drop([:data])
         end
       },
+      list_item: %__MODULE__{
+        name: :list_item,
+        type: :list_item,
+        category: :leaf,
+        props: [
+          :on_tap,
+          :on_long_press,
+          :accessibility_id
+        ],
+        defaults: %{},
+        doc: "List item container",
+        examples: [
+          ~s(list_item on_tap: :item_selected)
+        ]
+      },
       checkbox: %__MODULE__{
         name: :checkbox,
         type: :checkbox,

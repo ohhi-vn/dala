@@ -91,7 +91,7 @@ defmodule Dala.Preview.Codegen do
   defp normalize_tree(%{"type" => type, "props" => props, "children" => children}) do
     %{
       type: type,
-      props: props || %{},
+      props: to_atom_keys(props || %{}),
       children: Enum.map(children || [], &normalize_tree/1)
     }
   end
@@ -99,9 +99,22 @@ defmodule Dala.Preview.Codegen do
   defp normalize_tree(%{"type" => type} = node) when is_atom(type) do
     %{
       type: type,
-      props: Map.get(node, "props", %{}),
+      props: to_atom_keys(Map.get(node, "props", %{})),
       children: Enum.map(Map.get(node, "children", []), &normalize_tree/1)
     }
+  end
+
+  defp to_atom_keys(map) when is_map(map) do
+    Map.new(map, fn
+      {k, v} when is_binary(k) -> {String.to_existing_atom(k), v}
+      {k, v} -> {k, v}
+    end)
+  rescue
+    ArgumentError ->
+      Map.new(map, fn
+        {k, v} when is_binary(k) -> {String.to_atom(k), v}
+        {k, v} -> {k, v}
+      end)
   end
 
   # ── Handler extraction ──────────────────────────────────────────────────────

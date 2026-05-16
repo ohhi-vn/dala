@@ -576,8 +576,10 @@ defmodule Dala.Preview.RenderTest do
     test "escapes HTML in placeholder" do
       ui_tree = %{type: :text_field, props: %{placeholder: "<script>"}, children: []}
       html = Dala.Preview.preview(ui_tree)
-      refute html =~ "<script>"
-      assert html =~ "&lt;script&gt;"
+      # The page template includes legitimate <script> tags (Alpine.js, event logger),
+      # so we check the placeholder attribute specifically contains escaped HTML
+      assert html =~ "placeholder=\"&lt;script&gt;\""
+      refute html =~ "placeholder=\"<script>\""
     end
 
     test "escapes HTML in tree inspector" do
