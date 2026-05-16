@@ -454,8 +454,6 @@ defmodule Dala.Preview.Canvas do
       </div>
       <%= for {group_name, type_list} <- @palette_groups do %>
         <% items = Enum.filter(type_list, fn t ->
-          spec = Map.get(@component_specs, t, [])
-          icon = Map.get(@component_icons, t, "•")
           label = format_type(t)
           search = String.downcase(@search)
           search == "" or String.contains?(String.downcase(label), search)
@@ -523,6 +521,12 @@ defmodule Dala.Preview.Canvas do
     collapsed = assigns.collapsed || MapSet.new()
     is_collapsed = MapSet.member?(collapsed, assigns.node.id)
 
+    assigns =
+      assign(assigns,
+        is_collapsed: is_collapsed,
+        icon: Map.get(@component_icons, assigns.node.type, "•")
+      )
+
     ~H"""
     <div
       class={"tree-node #{tree_node_classes(@node, @selected_id)}"}
@@ -535,15 +539,14 @@ defmodule Dala.Preview.Canvas do
       >
         <%= if container_type?(@node.type) do %>
           <span
-            class={"tree-node-toggle #{if is_collapsed, do: "tree-node-toggle--collapsed"}"}
+            class={"tree-node-toggle #{if @is_collapsed, do: "tree-node-toggle--collapsed"}"}
             phx-click="toggle_node"
             phx-value-id={@node.id}
           >▾</span>
         <% else %>
           <span class="tree-node-toggle tree-node-toggle--leaf">•</span>
         <% end %>
-        <% icon = Map.get(@component_icons, @node.type, "•") %>
-        <span class="tree-node-icon"><%= icon %></span>
+        <span class="tree-node-icon"><%= @icon %></span>
         <span class="tree-node-type"><%= format_type(@node.type) %></span>
         <%= if @node.props[:text] do %>
           <span class="tree-node-text">"<%= truncate(@node.props[:text], 18) %>"</span>
@@ -552,7 +555,7 @@ defmodule Dala.Preview.Canvas do
           <span class="tree-node-badge"><%= length(@node.children || []) %></span>
         <% end %>
       </div>
-      <%= if container_type?(@node.type) and has_children?(@node) and not is_collapsed do %>
+      <%= if container_type?(@node.type) and has_children?(@node) and not @is_collapsed do %>
         <div
           class="tree-node-children drop-zone"
           data-drop-target={@node.id}
@@ -562,11 +565,11 @@ defmodule Dala.Preview.Canvas do
           <% end %>
         </div>
       <% end %>
-      <%= if container_type?(@node.type) and (not has_children?(@node) or is_collapsed) do %>
+      <%= if container_type?(@node.type) and (not has_children?(@node) or @is_collapsed) do %>
         <div
           class="tree-node-children tree-node-empty drop-zone"
           data-drop-target={@node.id}
-          style={if is_collapsed, do: "display: none;", else: ""}
+          style={if @is_collapsed, do: "display: none;", else: ""}
         >
           Drop here
         </div>
@@ -1340,7 +1343,9 @@ defmodule Dala.Preview.Canvas do
       :border_width,
       :corner_radius,
       :width,
-      :height
+      :height,
+      :fill_width,
+      :fill_height
     ]
 
     props
@@ -1383,6 +1388,8 @@ defmodule Dala.Preview.Canvas do
   defp preview_css_property(:corner_radius), do: "border-radius"
   defp preview_css_property(:width), do: "width"
   defp preview_css_property(:height), do: "height"
+  defp preview_css_property(:fill_width), do: "width"
+  defp preview_css_property(:fill_height), do: "height"
   defp preview_css_property(_), do: ""
 
   defp preview_css_value(:space_xs), do: "4px"
@@ -1399,6 +1406,8 @@ defmodule Dala.Preview.Canvas do
   defp preview_css_value(:on_surface), do: "#212121"
   defp preview_css_value(:on_primary), do: "#FFFFFF"
   defp preview_css_value(value) when is_binary(value), do: value
+  defp preview_css_value(true), do: "100%"
+  defp preview_css_value(false), do: "auto"
   defp preview_css_value(value), do: "#{value}"
 
   defp preview_text_size(:xl), do: 24
@@ -1414,7 +1423,7 @@ defmodule Dala.Preview.Canvas do
   defp preview_color(:on_surface), do: "#212121"
   defp preview_color(:surface), do: "#FFFFFF"
   defp preview_color(color) when is_binary(color), do: color
-  defp preview_color(color), do: "##{color}"
+  defp preview_color(color), do: "#{color}"
 
   defp escape_html(text) when is_binary(text) do
     text

@@ -66,7 +66,7 @@ defmodule Dala.Preview do
   def open_in_browser(path) do
     path
     |> Path.expand()
-    |> System.cmd("open", [])
+    |> then(&System.cmd("open", [&1]))
   end
 
   @doc """
@@ -194,7 +194,9 @@ defmodule Dala.Preview do
             style = build_style(props)
             draggable = build_data_attr(props, :draggable, "data-draggable")
             droppable = build_data_attr(props, :droppable, "data-droppable")
-            ~s(<div class="dala-#{type}" style="#{style}" #{draggable} #{droppable}>#{render_children(children)}</div>)
+            on_long_press = build_data_attr(props, :on_long_press, "data-on-long-press")
+            on_swipe = build_data_attr(props, :on_swipe, "data-on-swipe")
+            ~s(<div class="dala-#{type}" style="#{style}" #{draggable} #{droppable} #{on_long_press} #{on_swipe}>#{render_children(children)}</div>)
 
           :leaf ->
             render_leaf_component(type, props, comp, children)
@@ -205,8 +207,11 @@ defmodule Dala.Preview do
   defp render_leaf_component(:button, props, _comp, _children) do
     text = html_escape(props[:text] || props[:title] || "Button")
     on_tap = props[:on_tap]
+    disabled = props[:disabled]
     data_attr = if on_tap, do: ~s(data-on-tap="#{on_tap}"), else: ""
-    ~s(<button class="dala-button" #{data_attr} style="cursor: pointer;">#{text}</button>)
+    disabled_attr = if disabled, do: " disabled", else: ""
+    cursor_style = if disabled, do: "cursor: not-allowed; opacity: 0.5;", else: "cursor: pointer;"
+    ~s(<button class="dala-button" #{data_attr}#{disabled_attr} style="#{cursor_style}">#{text}</button>)
   end
 
   defp render_leaf_component(:text, props, _comp, _children) do
@@ -303,7 +308,9 @@ defmodule Dala.Preview do
         :border_width,
         :corner_radius,
         :width,
-        :height
+        :height,
+        :fill_width,
+        :fill_height
       ]
     end)
     |> Enum.map(fn {k, v} -> "#{css_property(k)}: #{css_value(v)};" end)
@@ -333,6 +340,11 @@ defmodule Dala.Preview do
         do: ["text-align: #{props[:text_align]}" | styles],
         else: styles
 
+    styles =
+      if props[:italic],
+        do: ["font-style: italic" | styles],
+        else: styles
+
     Enum.join(styles, "; ")
   end
 
@@ -348,6 +360,8 @@ defmodule Dala.Preview do
   defp css_property(:corner_radius), do: "border-radius"
   defp css_property(:width), do: "width"
   defp css_property(:height), do: "height"
+  defp css_property(:fill_width), do: "width"
+  defp css_property(:fill_height), do: "height"
   defp css_property(_), do: ""
 
   defp css_value(:space_xs), do: "4px"
@@ -364,6 +378,8 @@ defmodule Dala.Preview do
   defp css_value(:on_surface), do: "#212121"
   defp css_value(:on_primary), do: "#FFFFFF"
   defp css_value(value) when is_binary(value), do: value
+  defp css_value(true), do: "100%"
+  defp css_value(false), do: "auto"
   defp css_value(value), do: "#{value}"
 
   defp text_size_to_px(:xl), do: 24
@@ -379,7 +395,7 @@ defmodule Dala.Preview do
   defp color_to_css(:on_surface), do: "#212121"
   defp color_to_css(:surface), do: "#FFFFFF"
   defp color_to_css(color) when is_binary(color), do: color
-  defp color_to_css(color), do: "##{color}"
+  defp color_to_css(color), do: "#{color}"
 
   defp html_escape(text) when is_binary(text) do
     text
