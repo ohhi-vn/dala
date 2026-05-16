@@ -88,9 +88,28 @@ defmodule Dala.Preview.Codegen do
     }
   end
 
+  defp normalize_tree(%{"type" => type, "props" => props, "children" => children}) do
+    %{
+      type: type,
+      props: props || %{},
+      children: Enum.map(children || [], &normalize_tree/1)
+    }
+  end
+
+  defp normalize_tree(%{"type" => type} = node) when is_atom(type) do
+    %{
+      type: type,
+      props: Map.get(node, "props", %{}),
+      children: Enum.map(Map.get(node, "children", []), &normalize_tree/1)
+    }
+  end
+
   # ── Handler extraction ──────────────────────────────────────────────────────
 
   defp collect_handlers(%{props: props, children: children}) do
+    props = props || %{}
+    children = children || []
+
     from_props =
       for key <- @event_handler_props,
           value = Map.get(props, key),
@@ -113,6 +132,10 @@ defmodule Dala.Preview.Codegen do
   defp extract_handler_tag(other), do: other
 
   # ── DSL rendering ───────────────────────────────────────────────────────────
+
+  defp render_dsl_node(%{"type" => type, "props" => props, "children" => children}, depth) do
+    render_dsl_node(%{type: type, props: props, children: children}, depth)
+  end
 
   defp render_dsl_node(%{type: type, props: props, children: children}, depth) do
     indent = String.duplicate("  ", depth)
@@ -145,6 +168,8 @@ defmodule Dala.Preview.Codegen do
       end
     end
   end
+
+  defp split_dsl_props(nil, _type), do: {nil, []}
 
   defp split_dsl_props(props, type) do
     text_key = if type in @text_arg_types, do: :text, else: nil

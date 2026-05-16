@@ -422,7 +422,7 @@ defmodule Dala.Onboarding.FailureModesTest do
          ) do
       {json, 0} ->
         json
-        |> Jason.decode!()
+        |> JSON.decode!()
         |> get_in(["devices"])
         |> Enum.flat_map(fn {_runtime, devices} -> devices end)
         |> Enum.find_value(fn d ->

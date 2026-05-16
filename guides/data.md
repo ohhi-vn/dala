@@ -87,7 +87,7 @@ For most queries you will notice nothing different. A few things to be aware of:
 
 - **`pool_size: 1`** — SQLite supports only one writer at a time. The Repo is pre-configured with a single connection; no tuning needed.
 - **Limited `ALTER TABLE`** — SQLite cannot drop or rename columns in older versions. Write migrations that add columns or recreate tables instead.
-- **No arrays or JSONB indexes** — use `string` fields with `Jason` encode/decode if you need nested data, or normalise into a separate table.
+- **No arrays or JSONB indexes** — use `string` fields with `JSON` encode/decode if you need nested data, or normalise into a separate table.
 - **UUIDs stored as binary** — use `:binary_id` primary keys as normal; the adapter handles encoding transparently.
 
 For a full reference see the [ecto_sqlite3 documentation](https://hexdocs.pm/ecto_sqlite3) and the [Ecto query API](https://hexdocs.pm/ecto/Ecto.Query.html).

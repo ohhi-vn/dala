@@ -144,7 +144,7 @@ true = Dala.ML.CoreML.loaded?("my_model")
 })
 
 # Parse result
-result = Jason.decode!(result_json)
+result = JSON.decode!(result_json)
 
 # Unload when done
 :ok = Dala.ML.CoreML.unload_model("my_model")

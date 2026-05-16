@@ -192,76 +192,94 @@ defmodule Dala.Preview do
         case comp.category do
           :container ->
             style = build_style(props)
-            ~s(<div class="dala-#{type}" style="#{style}">#{render_children(children)}</div>)
+            draggable = build_data_attr(props, :draggable, "data-draggable")
+            droppable = build_data_attr(props, :droppable, "data-droppable")
+            ~s(<div class="dala-#{type}" style="#{style}" #{draggable} #{droppable}>#{render_children(children)}</div>)
 
           :leaf ->
-            render_leaf_component(type, props, comp)
+            render_leaf_component(type, props, comp, children)
         end
     end
   end
 
-  defp render_leaf_component(:button, props, _comp) do
+  defp render_leaf_component(:button, props, _comp, _children) do
     text = html_escape(props[:text] || props[:title] || "Button")
     on_tap = props[:on_tap]
     data_attr = if on_tap, do: ~s(data-on-tap="#{on_tap}"), else: ""
     ~s(<button class="dala-button" #{data_attr} style="cursor: pointer;">#{text}</button>)
   end
 
-  defp render_leaf_component(:text, props, _comp) do
+  defp render_leaf_component(:text, props, _comp, _children) do
     text = html_escape(props[:text] || "")
     style = build_text_style(props)
     ~s(<div class="dala-text" style="#{style}">#{text}</div>)
   end
 
-  defp render_leaf_component(:toggle, props, _comp) do
+  defp render_leaf_component(:toggle, props, _comp, _children) do
     on_tap = props[:on_tap]
     data_attr = if on_tap, do: ~s(data-toggle="#{on_tap}"), else: ""
     ~s(<div class="dala-toggle" #{data_attr} data-state="off" style="cursor: pointer;">Toggle</div>)
   end
 
-  defp render_leaf_component(:switch, props, _comp) do
+  defp render_leaf_component(:switch, props, _comp, _children) do
     on_tap = props[:on_tap]
     data_attr = if on_tap, do: ~s(data-toggle="#{on_tap}"), else: ""
     ~s(<div class="dala-switch" #{data_attr} data-state="off" style="cursor: pointer;">Switch</div>)
   end
 
-  defp render_leaf_component(:slider, props, _comp) do
+  defp render_leaf_component(:slider, props, _comp, _children) do
     value = props[:value] || 50
     on_change = props[:on_change]
     data_attr = if on_change, do: ~s(data-slider="#{on_change}"), else: ""
     ~s(<input type="range" class="dala-slider" min="0" max="100" value="#{value}" #{data_attr} /><span class="slider-value">#{value}%</span>)
   end
 
-  defp render_leaf_component(:progress_bar, props, _comp) do
-    value = props[:value] || 0
+  defp render_leaf_component(:progress_bar, props, _comp, _children) do
+    value = props[:value] || props[:progress] || 0
     ~s(<div class="dala-progress-bar" style="width: #{value}%;">#{value}%</div>)
   end
 
-  defp render_leaf_component(:text_field, props, _comp) do
-    placeholder = props[:placeholder] || ""
-    value = props[:value] || ""
+  defp render_leaf_component(:text_field, props, _comp, _children) do
+    placeholder = html_escape(props[:placeholder] || "")
+    value = html_escape(props[:value] || "")
     on_change = props[:on_change]
     data_attr = if on_change, do: ~s(data-text-input="#{on_change}"), else: ""
     ~s(<input type="text" class="dala-text-field" placeholder="#{placeholder}" value="#{value}" #{data_attr} />)
   end
 
-  defp render_leaf_component(:icon, props, _comp) do
+  defp render_leaf_component(:icon, props, _comp, _children) do
     name = props[:name] || "star"
     ~s(<span class="dala-icon" data-icon="#{name}">[#{name}]</span>)
   end
 
-  defp render_leaf_component(:spacer, _props, _comp) do
+
+
+  defp render_leaf_component(:spacer, _props, _comp, _children) do
     ~s(<div class="dala-spacer" style="height: 16px;"></div>)
   end
 
-  defp render_leaf_component(:divider, _props, _comp) do
+  defp render_leaf_component(:divider, _props, _comp, _children) do
     ~s(<hr class="dala-divider" />)
   end
 
-  defp render_leaf_component(type, props, _comp) do
-    # Generic leaf component
+  defp render_leaf_component(type, props, _comp, children) do
+    # Render children for leaf components that have them
+    children_html = render_children(children)
+    # Generic leaf component — convert underscores to hyphens for CSS class
+    class = type |> Atom.to_string() |> String.replace("_", "-")
     style = build_style(props)
-    ~s(<div class="dala-#{type}" style="#{style}"></div>)
+    on_tap = build_data_attr(props, :on_tap, "data-on-tap")
+    on_long_press = build_data_attr(props, :on_long_press, "data-on-long-press")
+    on_swipe = build_data_attr(props, :on_swipe, "data-on-swipe")
+    ~s(<div class="dala-#{class}" style="#{style}" #{on_tap} #{on_long_press} #{on_swipe}>#{children_html}</div>)
+  end
+
+  defp build_data_attr(props, key, attr_name) do
+    case props[key] do
+      nil -> ""
+      val when is_boolean(val) -> if val, do: ~s(#{attr_name}="#{key}"), else: ""
+      val -> ~s(#{attr_name}="#{val}")
+    end
   end
 
   defp render_children(children) when is_list(children) do
@@ -303,6 +321,16 @@ defmodule Dala.Preview do
     styles =
       if props[:text_color],
         do: ["color: #{color_to_css(props[:text_color])}" | styles],
+        else: styles
+
+    styles =
+      if props[:font_weight],
+        do: ["font-weight: #{props[:font_weight]}" | styles],
+        else: styles
+
+    styles =
+      if props[:text_align],
+        do: ["text-align: #{props[:text_align]}" | styles],
         else: styles
 
     Enum.join(styles, "; ")
@@ -509,7 +537,7 @@ defmodule Dala.Preview do
 
   defp generate_tree_inspector(ui_tree) do
     ~s(
-    <div class="component-tree" x-data="{ open: true }">
+    <div class="component-tree tree-inspector" x-data="{ open: true }">
       <h3 @click="open = !open" style="cursor: pointer;">
         Component Tree <span x-text="open ? '▼' : '▶'"></span>
       </h3>
