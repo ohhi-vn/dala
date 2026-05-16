@@ -153,9 +153,9 @@ defmodule Dala.MixProject do
   end
 
   defp elixirc_paths(:test),
-    do: ["lib", "test/onboarding", "test/onboarding/support", "dev_tools", "dev_tools/test"]
+    do: ["lib", "test/onboarding", "test/onboarding/support", "dev_tools","dev_tools/dala/preview",  "dev_tools/test"]
 
-  defp elixirc_paths(:dev), do: ["lib", "dev_tools", "dev_tools/test"]
+  defp elixirc_paths(:dev), do: ["lib", "dev_tools", "dev_tools/dala/preview", "dev_tools/test"]
   defp elixirc_paths(_), do: ["lib"]
 
   defp package do
@@ -173,19 +173,19 @@ defmodule Dala.MixProject do
 
   defp deps do
     [
-      # JSON encoding — used by Plugin.Manifest
-      {:jason, "~> 1.4"},
-      # HTML/HEEx template engine — same one Phoenix uses
-      {:phoenix_live_view, "~> 1.0", only: [:dev, :test]},
-      {:nimble_parsec, "~> 1.0"},
+      {:nimble_parsec, "~> 1.4"},
       {:spark, "~> 2.7"},
       {:rustler, "~> 0.37", runtime: false},
+
+      # Dev deps.
+      {:phoenix_live_view, "~> 1.1", only: [:dev, :test]},
       {:ex_doc, "~> 0.40", only: :dev, runtime: false},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:jump_credo_checks, "~> 0.2", only: [:dev, :test], runtime: false},
 
       # ML dependencies (all pure Elixir, compatible with iOS/Android)
-      {:nx, "~> 0.11"},
+      {:nx, "~> 0.12"},
+      {:emlx, "~> 0.3"},
       {:polaris, "~> 0.1"},
       {:scholar, "~> 0.4"},
       {:nx_signal, "~> 0.3"},

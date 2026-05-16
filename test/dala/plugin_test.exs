@@ -391,7 +391,7 @@ defmodule Dala.PluginTest do
     test "to_json/1 encodes manifest as JSON" do
       plugin = ManifestTestPlugin.__plugin_info__()
       json = Manifest.to_json(plugin)
-      decoded = Jason.decode!(json)
+      decoded = JSON.decode!(json)
 
       assert decoded["schema_version"] == "2.0.0"
       assert decoded["protocol_version"] == 5
