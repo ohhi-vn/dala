@@ -1,0 +1,24 @@
+[package]
+name = "dala_gpu"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[features]
+default = ["metal"]
+metal = []
+opengl = []
+
+[dependencies]
+crossbeam-channel = "0.5"
+once_cell = "1.19"
+rustler = "0.37.4"
+lazy_static = "1.5"
+
+[target.'cfg(target_os = "ios")'.dependencies]
+objc = "0.2"
+
+[target.'cfg(target_os = "android")'.dependencies]
+jni = { version = "0.21", default-features = false }

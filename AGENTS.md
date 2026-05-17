@@ -458,6 +458,7 @@ These are the things we've burned ourselves on. Following them isn't optional.
 | Alerts, toasts, WebView bridge, Motion sensors | `lib/dala/ui/feedback/alert.ex`, `lib/dala/ui/embedded/webview.ex`, `lib/dala/ui/sensor/motion.ex` |
 | Wakelock, List rendering, PubSub | `lib/dala/hardware/wakelock.ex`, `lib/dala/list.ex`, `lib/dala/pubsub.ex` |
 | Distribution, Permissions | `lib/dala/connectivity/dist.ex`, `lib/dala/permissions.ex` |
+| **Media Runtime** (video, scene graph, clock, filters, subtitles, adaptive bitrate, GPU surface) | `guides/media_runtime.md`, `lib/dala/media/`, `lib/dala/gpu.ex`, `lib/dala/gpu/command.ex`, `native/dala_gpu/` |
 
 ## iOS ML Support (Nx ecosystem + CoreML + ONNX)
 
