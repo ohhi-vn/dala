@@ -8,7 +8,7 @@ use rustler::{Env, Term};
 use std::sync::Mutex;
 
 // Helper: create an atom term
-fn atom<'a>(env: Env<'a>, name: &str) -> Term<'a> {
+pub fn atom<'a>(env: Env<'a>, name: &str) -> Term<'a> {
     rustler::types::atom::Atom::from_str(env, name)
         .unwrap()
         .to_term(env)
@@ -650,6 +650,43 @@ pub fn platform_swipe_xy(_x1: f64, _y1: f64, _x2: f64, _y2: f64) {
 
     #[cfg(not(any(target_os = "ios", target_os = "android")))]
     println!("[Dala] swipe_xy stub");
+}
+
+// ============================================================================
+// Bluetooth (BLE)
+// ============================================================================
+
+pub fn platform_device_locale<'a>(env: Env<'a>) -> Term<'a> {
+    #[cfg(target_os = "ios")]
+    return ios::device_locale(env);
+
+    #[cfg(target_os = "android")]
+    return android::device_locale(env);
+
+    #[cfg(not(any(target_os = "ios", target_os = "android")))]
+    return atom(env, "unknown");
+}
+
+pub fn platform_device_language<'a>(env: Env<'a>) -> Term<'a> {
+    #[cfg(target_os = "ios")]
+    return ios::device_language(env);
+
+    #[cfg(target_os = "android")]
+    return android::device_language(env);
+
+    #[cfg(not(any(target_os = "ios", target_os = "android")))]
+    return atom(env, "unknown");
+}
+
+pub fn platform_device_region<'a>(env: Env<'a>) -> Term<'a> {
+    #[cfg(target_os = "ios")]
+    return ios::device_region(env);
+
+    #[cfg(target_os = "android")]
+    return android::device_region(env);
+
+    #[cfg(not(any(target_os = "ios", target_os = "android")))]
+    return atom(env, "unknown");
 }
 
 // ============================================================================

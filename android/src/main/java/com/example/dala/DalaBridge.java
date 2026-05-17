@@ -617,6 +617,58 @@ public class DalaBridge {
     }
 
     // ========================================================================
+    // Locale / Language / Region
+    // ========================================================================
+
+    /**
+     * Get the current locale identifier (e.g. "en_US", "fr_FR").
+     * Uses Locale.getDefault().toString().
+     */
+    public static String getLocale() {
+        try {
+            java.util.Locale locale = java.util.Locale.getDefault();
+            String localeStr = locale.toString();
+            Log.d(TAG, "getLocale: " + localeStr);
+            return localeStr;
+        } catch (Exception e) {
+            Log.e(TAG, "Error getting locale", e);
+            return "";
+        }
+    }
+
+    /**
+     * Get the current language code (e.g. "en", "fr").
+     * Uses Locale.getDefault().getLanguage().
+     */
+    public static String getLanguage() {
+        try {
+            java.util.Locale locale = java.util.Locale.getDefault();
+            String lang = locale.getLanguage();
+            Log.d(TAG, "getLanguage: " + lang);
+            return lang;
+        } catch (Exception e) {
+            Log.e(TAG, "Error getting language", e);
+            return "";
+        }
+    }
+
+    /**
+     * Get the current region/country code (e.g. "US", "FR").
+     * Uses Locale.getDefault().getCountry().
+     */
+    public static String getRegion() {
+        try {
+            java.util.Locale locale = java.util.Locale.getDefault();
+            String country = locale.getCountry();
+            Log.d(TAG, "getRegion: " + country);
+            return country;
+        } catch (Exception e) {
+            Log.e(TAG, "Error getting region", e);
+            return "";
+        }
+    }
+
+    // ========================================================================
     // Wakelock
     // ========================================================================
 

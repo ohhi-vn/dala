@@ -140,6 +140,18 @@ defmodule Dala.Device.Device do
   @spec model() :: String.t()
   def model, do: to_string(Dala.Platform.Native.device_model())
 
+  @doc "Current locale identifier (e.g. \"en_US\", \"fr_FR\")."
+  @spec locale() :: String.t()
+  def locale, do: to_string(Dala.Platform.Native.device_locale())
+
+  @doc "Current language code (e.g. \"en\", \"fr\")."
+  @spec language() :: String.t()
+  def language, do: to_string(Dala.Platform.Native.device_language())
+
+  @doc "Current region/country code (e.g. \"US\", \"FR\")."
+  @spec region() :: String.t()
+  def region, do: to_string(Dala.Platform.Native.device_region())
+
   # ── GenServer ─────────────────────────────────────────────────────────────
 
   @impl true

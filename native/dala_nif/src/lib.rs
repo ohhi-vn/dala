@@ -532,3 +532,28 @@ fn onnx_load_model_from_file<'a>(env: Env<'a>, path: String) -> NifResult<Term<'
             .encode(env)),
     }
 }
+
+// ============================================================================
+// Locale / Language / Region
+// ============================================================================
+
+#[rustler::nif]
+fn device_locale<'a>(env: Env<'a>) -> NifResult<Term<'a>> {
+    Ok(platform_device_locale(env))
+}
+
+#[rustler::nif]
+fn device_language<'a>(env: Env<'a>) -> NifResult<Term<'a>> {
+    Ok(platform_device_language(env))
+}
+
+#[rustler::nif]
+fn device_region<'a>(env: Env<'a>) -> NifResult<Term<'a>> {
+    Ok(platform_device_region(env))
+}
+
+// ============================================================================
+// NIF initialization
+// ============================================================================
+
+rustler::init!("Elixir.Dala.Platform.Native");
