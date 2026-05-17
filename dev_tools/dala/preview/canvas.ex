@@ -22,14 +22,6 @@ defmodule Dala.Preview.Canvas do
   @components Component.all() |> Enum.map(fn {_name, comp} -> comp end)
   @container_types @components |> Enum.filter(&(&1.category == :container)) |> Enum.map(& &1.name)
 
-  @layout_palette @components
-                |> Enum.filter(&(&1.category == :container))
-                |> Enum.map(fn comp -> {comp.name, Atom.to_string(comp.name), comp.doc || ""} end)
-
-  @leaf_palette @components
-              |> Enum.filter(&(&1.category == :leaf))
-              |> Enum.map(fn comp -> {comp.name, Atom.to_string(comp.name), comp.doc || ""} end)
-
   # Component icon mapping — emoji icons for visual palette
   @component_icons %{
     # Containers
@@ -60,6 +52,8 @@ defmodule Dala.Preview.Canvas do
     {"Navigation", [:app_bar, :nav_bar, :nav_drawer, :nav_rail, :tab_bar, :segmented_button, :fab, :icon_button]},
     {"Data & Lists", [:list, :carousel, :snackbar, :menu, :date_picker, :time_picker, :native_view, :status_bar, :refresh_control]}
   ]
+
+  defp palette_groups, do: @palette_groups
 
   @component_specs %{
     column: [
@@ -452,7 +446,7 @@ defmodule Dala.Preview.Canvas do
           phx-debounce="200"
         />
       </div>
-      <%= for {group_name, type_list} <- @palette_groups do %>
+      <%= for {group_name, type_list} <- palette_groups() do %>
         <% items = Enum.filter(type_list, fn t ->
           label = format_type(t)
           search = String.downcase(@search)
@@ -1016,9 +1010,6 @@ defmodule Dala.Preview.Canvas do
   defp has_children?(node), do: node[:children] != nil and node.children != []
 
   # ── Rendering helpers ────────────────────────────────────────────────────────
-
-  defp layout_palette, do: @layout_palette
-  defp leaf_palette, do: @leaf_palette
 
   defp format_type(:text_field), do: "TextField"
   defp format_type(:activity_indicator), do: "ActivityIndicator"

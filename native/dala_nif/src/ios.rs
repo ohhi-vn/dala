@@ -5,6 +5,8 @@ use objc::{class, msg_send, sel, sel_impl};
 use std::ffi::{CStr, CString};
 use std::ptr;
 
+use crate::common::atom;
+
 // For WiFi IP address lookup
 #[cfg(target_os = "ios")]
 use libc::{freeifaddrs, getifaddrs, ifaddrs, sockaddr_in, AF_INET, IFF_RUNNING, IFF_UP};
@@ -889,5 +891,54 @@ pub fn coreml_loaded_models() -> Vec<String> {
         } else {
             vec![]
         }
+    }
+}
+
+// ============================================================================
+// Locale / Language / Region
+// ============================================================================
+
+pub fn device_locale<'a>(env: Env<'a>) -> Term<'a> {
+    unsafe {
+        let locale: *mut Object = msg_send![class!(NSLocale), currentLocale];
+        let identifier: *mut Object = msg_send![locale, localeIdentifier];
+        let c_str: *const i8 = msg_send![identifier, UTF8String];
+        if c_str.is_null() {
+            return atom(env, "unknown");
+        }
+        let rust_str = CStr::from_ptr(c_str).to_string_lossy().to_string();
+        rustler::types::binary::Binary::from_slice(env, rust_str.as_bytes())
+            .unwrap()
+            .to_term(env)
+    }
+}
+
+pub fn device_language<'a>(env: Env<'a>) -> Term<'a> {
+    unsafe {
+        let locale: *mut Object = msg_send![class!(NSLocale), currentLocale];
+        let lang_code: *mut Object = msg_send![locale, languageCode];
+        let c_str: *const i8 = msg_send![lang_code, UTF8String];
+        if c_str.is_null() {
+            return atom(env, "unknown");
+        }
+        let rust_str = CStr::from_ptr(c_str).to_string_lossy().to_string();
+        rustler::types::binary::Binary::from_slice(env, rust_str.as_bytes())
+            .unwrap()
+            .to_term(env)
+    }
+}
+
+pub fn device_region<'a>(env: Env<'a>) -> Term<'a> {
+    unsafe {
+        let locale: *mut Object = msg_send![class!(NSLocale), currentLocale];
+        let region_code: *mut Object = msg_send![locale, countryCode];
+        let c_str: *const i8 = msg_send![region_code, UTF8String];
+        if c_str.is_null() {
+            return atom(env, "unknown");
+        }
+        let rust_str = CStr::from_ptr(c_str).to_string_lossy().to_string();
+        rustler::types::binary::Binary::from_slice(env, rust_str.as_bytes())
+            .unwrap()
+            .to_term(env)
     }
 }

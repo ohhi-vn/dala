@@ -5,6 +5,8 @@ use jni::JNIEnv;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
+use crate::common::atom;
+
 // Global storage for BluetoothGatt objects (device_id -> BluetoothGatt reference)
 // This is needed because BLE operations require the BluetoothGatt object from the connection
 lazy_static::lazy_static! {
@@ -983,4 +985,83 @@ pub extern "C" fn Java_com_example_dala_DalaBridge_nativeBluetoothNotificationRe
         "[Dala] BLE notification: {}/{}/{} = {:?}",
         device_id_str, service_str, char_str, value_bytes
     );
+}
+
+// ============================================================================
+// Locale / Language / Region
+// ============================================================================
+
+pub fn device_locale<'a>(env: Env<'a>) -> Term<'a> {
+    unsafe {
+        if let Some(mut jni_env) = get_jni_env() {
+            if let Some(class) = get_bridge_class(&mut jni_env) {
+                if let Ok(val) =
+                    jni_env.call_static_method(class, "getLocale", "()Ljava/lang/String;", &[])
+                {
+                    if let Ok(jstring) = val.l() {
+                        if let Ok(s) = jni_env.get_string(&JString::from(jstring)) {
+                            let rust_str: String = s.into();
+                            return rustler::types::binary::Binary::from_slice(
+                                env,
+                                rust_str.as_bytes(),
+                            )
+                            .unwrap()
+                            .to_term(env);
+                        }
+                    }
+                }
+            }
+        }
+        atom(env, "unknown")
+    }
+}
+
+pub fn device_language<'a>(env: Env<'a>) -> Term<'a> {
+    unsafe {
+        if let Some(mut jni_env) = get_jni_env() {
+            if let Some(class) = get_bridge_class(&mut jni_env) {
+                if let Ok(val) =
+                    jni_env.call_static_method(class, "getLanguage", "()Ljava/lang/String;", &[])
+                {
+                    if let Ok(jstring) = val.l() {
+                        if let Ok(s) = jni_env.get_string(&JString::from(jstring)) {
+                            let rust_str: String = s.into();
+                            return rustler::types::binary::Binary::from_slice(
+                                env,
+                                rust_str.as_bytes(),
+                            )
+                            .unwrap()
+                            .to_term(env);
+                        }
+                    }
+                }
+            }
+        }
+        atom(env, "unknown")
+    }
+}
+
+pub fn device_region<'a>(env: Env<'a>) -> Term<'a> {
+    unsafe {
+        if let Some(mut jni_env) = get_jni_env() {
+            if let Some(class) = get_bridge_class(&mut jni_env) {
+                if let Ok(val) =
+                    jni_env.call_static_method(class, "getRegion", "()Ljava/lang/String;", &[])
+                {
+                    if let Ok(jstring) = val.l() {
+                        if let Ok(s) = jni_env.get_string(&JString::from(jstring)) {
+                            let rust_str: String = s.into();
+                            return rustler::types::binary::Binary::from_slice(
+                                env,
+                                rust_str.as_bytes(),
+                            )
+                            .unwrap()
+                            .to_term(env);
+                        }
+                    }
+                }
+            }
+        }
+        atom(env, "unknown")
+    }
 }

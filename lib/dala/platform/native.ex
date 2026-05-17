@@ -71,6 +71,15 @@ defmodule Dala.Platform.Native do
   @doc "Get device model string"
   def device_model, do: :erlang.nif_error(:nif_not_loaded)
 
+  @doc "Get current locale identifier (e.g. \"en_US\", \"fr_FR\")"
+  def device_locale, do: :erlang.nif_error(:nif_not_loaded)
+
+  @doc "Get current language code (e.g. \"en\", \"fr\")"
+  def device_language, do: :erlang.nif_error(:nif_not_loaded)
+
+  @doc "Get current region/country code (e.g. \"US\", \"FR\")"
+  def device_region, do: :erlang.nif_error(:nif_not_loaded)
+
   # Device APIs (to be implemented in Rust)
   def haptic(_type), do: :erlang.nif_error(:nif_not_loaded)
   def clipboard_put(_text), do: :erlang.nif_error(:nif_not_loaded)
