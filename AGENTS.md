@@ -269,10 +269,12 @@ These are the things we've burned ourselves on. Following them isn't optional.
     - **@ref syntax**: Use `@count` in strings to reference assigns (processed at compile time)
     - **Auto-generated mount/3**: Initializes attributes with defaults; always generated
     - **Compile-time verifiers**: Validates prop types and handler references (improved error messages)
-    - **Layout containers**: column, row, box, scroll, modal, pressable, safe_area (with nested children)
+    - **Layout containers**: column, row, box, scroll, modal, pressable, safe_area, card, badge, bottom_sheet, tooltip (with nested children)
     - **Leaf components**: text, button, icon, divider, spacer, text_field, toggle, slider,
       switch, image, video, activity_indicator, progress_bar, status_bar, refresh_control,
-      webview, camera_preview, native_view, tab_bar, list
+      webview, camera_preview, native_view, tab_bar, list, checkbox, radio, chip,
+      snackbar, fab, icon_button, segmented_button, app_bar, nav_bar, nav_drawer,
+      nav_rail, menu, date_picker, time_picker, search_bar, carousel
     - **Container props as function calls**: `column do padding(:space_md); gap(:space_sm); ... end`
     - **Leaf props as keyword args**: `text "Hello", text_size: :xl`
 
@@ -447,7 +449,9 @@ These are the things we've burned ourselves on. Following them isn't optional.
 | Bluetooth/WiFi setup and API | `docs/bluetooth_wifi_implementation.md`, `lib/dala/hardware/bluetooth.ex`, `lib/dala/connectivity/wifi.ex` |
 | Bluetooth/WiFi setup scripts | `scripts/ios_setup.sh`, `scripts/android_setup.sh` |
 | iOS Bluetooth native code | `ios/DalaBluetoothManager.{h,m}`, `ios/DalaBluetoothCInterface.m` |
-| Android Bluetooth/WiFi bridge | `android/src/main/java/com/example/dala/DalaBridge.java` |
+| iOS Motion native code | `ios/DalaMotionManager.{h,m}`, `ios/DalaMotionCInterface.m` |
+| iOS NFC native code | `ios/DalaNFCManager.{h,m}`, `ios/DalaNFCCInterface.m` |
+| Android Bluetooth/WiFi/Motion/NFC bridge | `android/src/main/java/com/example/dala/DalaBridge.java` |
 | Generator templates (dala_new) | `dala_new/priv/templates/dala.new/` |
 | Build / release tooling | `dala_dev/scripts/release/`, `dala_dev/build_release.md` |
 | Plugin lifecycle, capabilities, registry | `lib/dala/plugin.ex`, `lib/dala/plugin/lifecycle.ex`, `lib/dala/plugin/registry.ex` |
@@ -456,6 +460,8 @@ These are the things we've burned ourselves on. Following them isn't optional.
 | Background execution, Linking, Settings, State | `lib/dala/platform/background.ex`, `lib/dala/platform/linking.ex`, `lib/dala/platform/settings.ex`, `lib/dala/platform/state.ex` |
 | Storage (files, blobs, photos) | `lib/dala/storage/storage.ex`, `lib/dala/storage/blob.ex`, `lib/dala/storage/files.ex`, `lib/dala/media/photos.ex` |
 | Alerts, toasts, WebView bridge, Motion sensors | `lib/dala/ui/feedback/alert.ex`, `lib/dala/ui/embedded/webview.ex`, `lib/dala/ui/sensor/motion.ex` |
+| NFC tag reading | `lib/dala/hardware/nfc.ex` |
+| NFC / barcode format parser | `lib/dala/ui/scan.ex` |
 | Wakelock, List rendering, PubSub | `lib/dala/hardware/wakelock.ex`, `lib/dala/list.ex`, `lib/dala/pubsub.ex` |
 | Distribution, Permissions | `lib/dala/connectivity/dist.ex`, `lib/dala/permissions.ex` |
 | **Media Runtime** (video, scene graph, clock, filters, subtitles, adaptive bitrate, GPU surface) | `guides/media_runtime.md`, `lib/dala/media/`, `lib/dala/gpu.ex`, `lib/dala/gpu/command.ex`, `native/dala_gpu/` |

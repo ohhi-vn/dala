@@ -153,6 +153,38 @@ safe_area do
 end
 ```
 
+### Card
+
+```elixir
+card variant: :elevated, elevation: 2.0, corner_radius: 12 do
+  text "Card content"
+end
+```
+
+### Badge
+
+```elixir
+badge count: 5, color: :error do
+  icon "notifications"
+end
+```
+
+### BottomSheet
+
+```elixir
+bottom_sheet visible: true, on_dismiss: :dismissed, drag_indicator: true do
+  text "Sheet content"
+end
+```
+
+### Tooltip
+
+```elixir
+tooltip text: "Helpful info", position: :top do
+  icon "help"
+end
+```
+
 ## Leaf Components
 
 Leaf components have no children. They accept props as keyword arguments:
@@ -231,6 +263,22 @@ video "https://example.com/clip.mp4", autoplay: true, loop: true
 - `native_view MyComponent, id: :my_view` — platform-native component
 - `tab_bar tabs: [%{id: "home", label: "Home"}]` — tab navigation
 - `list :my_list, data: @items` — data-driven list
+- `checkbox value: true, on_change: :agree_toggled, label: "I agree"` — checkbox input
+- `radio selected: true, on_select: :option_a, label: "Option A", group: "choices"` — radio button
+- `chip label: "Filter", variant: :filter, selected: true, on_tap: :chip_tapped` — chip/tag
+- `snackbar message: "Item deleted", action_label: "Undo", on_action: :undo` — snackbar/toast
+- `fab icon: "edit", text: "Compose", on_tap: :compose` — floating action button
+- `icon_button icon: "favorite", on_tap: :favorite_tapped` — icon-only button
+- `segmented_button segments: [%{id: "day", label: "Day"}], selected: "day", on_select: :range_changed` — segmented control
+- `app_bar title: "My App", leading_icon: "back", on_leading: :back_pressed` — top app bar
+- `nav_bar items: [%{id: "home", label: "Home", icon: "home"}], active: "home", on_select: :tab_changed` — bottom nav bar
+- `nav_drawer visible: true, on_dismiss: :dismissed, items: [...], active: "home", on_select: :nav_changed` — nav drawer
+- `nav_rail items: [%{id: "home", label: "Home", icon: "home"}], active: "home", on_select: :rail_changed` — nav rail
+- `menu items: [%{label: "Edit", action: :edit}], visible: true, on_select: :menu_selected` — dropdown menu
+- `date_picker visible: true, on_select: :date_picked, selected_date: "2025-01-15"` — date picker
+- `time_picker visible: true, on_select: :time_picked, selected_time: "09:30"` — time picker
+- `search_bar placeholder: "Search...", on_change: :search_changed, on_submit: :search_submitted` — search bar
+- `carousel :my_carousel, items: @slides, on_page_change: :page_changed` — carousel/slideshow
 
 ## @ref Syntax
 

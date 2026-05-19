@@ -147,3 +147,78 @@ ip = Dala.WiFi.ip_address()
 3. **Testing**: Test on physical devices (simulators have limited BLE support)
 4. **Callbacks**: Complete callback delivery from Rust to Elixir if not already working
 5. **Runtime permissions**: Request Bluetooth and location permissions at runtime on Android 6+
+
+---
+
+## NFC (Near Field Communication)
+
+Added alongside Bluetooth/WiFi. Reads NDEF tags on both iOS and Android.
+
+### Files Created
+
+**iOS (NFC):**
+- `ios/DalaNFCManager.h` — Header for `NFCNDEFReaderSession` wrapper
+- `ios/DalaNFCManager.m` — Full CoreNFC implementation with NDEF record parsing
+- `ios/DalaNFCCInterface.m` — C interface for Rust NIF FFI
+
+**iOS (Motion):**
+- `ios/DalaMotionManager.h` — Header for `CMMotionManager` wrapper
+- `ios/DalaMotionManager.m` — Accelerometer + gyroscope implementation
+- `ios/DalaMotionCInterface.m` — C interface for Rust NIF FFI
+
+**Android (NFC + Motion):**
+- `android/src/main/java/com/example/dala/DalaBridge.java` — Added:
+  - Motion: `SensorManager`, `SensorEventListener`, `startMotionSensors()`, `stopMotionSensors()`, `isMotionAvailable()`
+  - NFC: `NfcAdapter` foreground dispatch, `startNFCScan()`, `stopNFCScan()`, `handleNFCIntent()`, `isNFCAvailable()`
+  - JNI callbacks: `nativeMotionData()`, `nativeNFCTagDiscovered()`, `nativeNFCError()`
+
+**Elixir:**
+- `lib/dala/hardware/nfc.ex` — NFC tag reading API (`available?/0`, `start_scan/2`, `stop_scan/1`)
+- `lib/dala/ui/sensor/motion.ex` — Motion sensor API (`available?/0`, `start/2`, `stop/1`)
+- `lib/dala/ui/scan.ex` — Unified parser for NFC/barcode payloads (`parse/1`)
+
+**Rust NIF:**
+- `native/dala_nif/src/lib.rs` — Added NIF functions: `motion_available`, `motion_start`, `motion_stop`, `nfc_available`, `nfc_start_scan`, `nfc_stop_scan`
+- `native/dala_nif/src/ios.rs` — iOS motion + NFC via C FFI
+- `native/dala_nif/src/android.rs` — Android motion + NFC via JNI, plus `nativeMotionData`, `nativeNFCTagDiscovered`, `nativeNFCError` JNI callbacks
+- `native/dala_nif/src/common.rs` — Platform dispatch stubs
+
+### Architecture
+
+```
+Elixir (Dala.Hardware.NFC / Dala.Ui.Sensor.Motion)
+    ↓
+Rust NIF (native/dala_nif/src/)
+    ↓
+Platform-specific bridge
+    ↓
+iOS: CoreNFC / CoreMotion → C FFI    Android: NfcAdapter / SensorManager → JNI
+```
+
+### Permissions Required
+
+**iOS (Info.plist):**
+- `NFCReaderUsageDescription` — "This app reads NFC tags"
+- Add "Near Field Communication Tag Reading" capability in Xcode
+
+**Android (AndroidManifest.xml):**
+- `android.permission.NFC`
+- Activity must forward `onNewIntent` to `DalaBridge.handleNFCIntent(intent)`
+
+### `Dala.Ui.Scan` — Common Format Parser
+
+`Dala.Ui.Scan.parse/1` auto-detects and parses 9 common NFC/barcode payload formats:
+
+| Type | Raw example | Parsed `:value` |
+|------|-------------|-----------------|
+| `:url` | `https://example.com` | `"https://example.com"` |
+| `:wifi` | `WIFI:T:WPA;S:MyNet;P:pass;;` | `%{ssid: "MyNet", password: "pass", security: :wpa, hidden: false}` |
+| `:email` | `mailto:u@e.com?s=Hi` | `%{email: "u@e.com", subject: "Hi", body: ""}` |
+| `:phone` | `tel:+1234567890` | `%{number: "+1234567890"}` |
+| `:sms` | `smsto:+1234567890:hi` | `%{number: "+1234567890", message: "hi"}` |
+| `:geo` | `geo:37.78,-122.40?q=GG` | `%{lat: 37.78, lon: -122.4, altitude: nil, query: "GG"}` |
+| `:vcard` | `BEGIN:VCARD..END:VCARD` | `%{name, phone, email, org, title, url, address}` |
+| `:vevent` | `BEGIN:VEVENT..END:VEVENT` | `%{summary, start, end, location, description}` |
+| `:text` | `Hello world` | `"Hello world"` (fallback) |
+
+Works with both NFC tag payloads and QR/barcode scan results.

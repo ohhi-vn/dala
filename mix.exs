@@ -4,7 +4,7 @@ defmodule Dala.MixProject do
   def project do
     [
       app: :dala,
-      version: "0.2.0",
+      version: "0.3.0",
       elixir: "~> 1.18",
       erlang: ">= 27.0",
       start_permanent: Mix.env() == :prod,
@@ -43,6 +43,7 @@ defmodule Dala.MixProject do
         "guides/styling.md": [title: "Styling & Native Rendering"],
         "guides/theming.md": [title: "Theming"],
         "guides/navigation.md": [title: "Navigation"],
+        "guides/screen_manager_pubsub.md": [title: "Screen Manager"],
         "guides/device_capabilities.md": [title: "Device Capabilities"],
         "guides/data.md": [title: "Data & Persistence"],
         "guides/render_engine.md": [title: "Render Engine"],
@@ -53,6 +54,7 @@ defmodule Dala.MixProject do
         "guides/event_model.md": [title: "Event Model"],
         "guides/event_audit.md": [title: "Event Audit"],
         "guides/spark_dsl.md": [title: "Spark DSL"],
+        "guides/media_runtime.md": [title: "GPU render"],
         "guides/testing.md": [title: "Testing"],
         "guides/liveview.md": [title: "LiveView Integration"],
         "guides/ios_ml_support.md": [title: "iOS ML Support"],
@@ -62,7 +64,8 @@ defmodule Dala.MixProject do
         "guides/publishing.md": [title: "Publishing to App Store / TestFlight"],
         "guides/troubleshooting.md": [title: "Troubleshooting"],
         "guides/agentic_coding.md": [title: "Agentic Coding"],
-        "guides/security.md": [title: "Security Guide"]
+        "guides/security.md": [title: "Security Guide"],
+        "guides/plugin_architecture.md": [title: "Plugin"]
       ],
       groups_for_extras: [
         "Getting Started": ~r/guides\/(getting_started|architecture|build_and_beam_loading)\.md/,

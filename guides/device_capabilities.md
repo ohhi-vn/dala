@@ -240,15 +240,37 @@ iOS uses `CLLocationManager`. Android uses `FusedLocationProviderClient`.
 
 ## Motion (accelerometer / gyroscope)
 
-```elixir
-socket = Dala.Motion.start(socket)
-socket = Dala.Motion.start(socket, interval_ms: 100)
-socket = Dala.Motion.stop(socket)
+`Dala.Ui.Sensor.Motion` provides accelerometer and gyroscope data.
+No permission required.
 
-def handle_info({:motion, %{ax: ax, ay: ay, az: az, gx: gx, gy: gy, gz: gz}}, socket) do
+```elixir
+# Check availability
+Dala.Ui.Sensor.Motion.available?()  # true | false
+
+# Start both sensors at 100ms interval (default)
+socket = Dala.Ui.Sensor.Motion.start(socket)
+
+# Start only accelerometer at 50ms
+socket = Dala.Ui.Sensor.Motion.start(socket, sensors: [:accelerometer], interval_ms: 50)
+
+# Start only gyroscope
+socket = Dala.Ui.Sensor.Motion.start(socket, sensors: [:gyro], interval_ms: 200)
+
+# Stop
+socket = Dala.Ui.Sensor.Motion.stop(socket)
+```
+
+Events arrive as:
+```elixir
+def handle_info({:motion, %{accel: %{x: ax, y: ay, z: az}, gyro: %{x: gx, y: gy, z: gz}, timestamp: ts}}, socket) do
+  # accel in m/s² (gravity included), gyro in rad/s, timestamp in unix ms
   {:noreply, Dala.Socket.assign(socket, :motion, %{ax: ax, ay: ay, az: az})}
 end
 ```
+
+If you only request one sensor, the other map will have all-zero values.
+
+iOS uses `CMMotionManager`. Android uses `SensorManager`.
 
 ## Biometric authentication
 
@@ -268,18 +290,149 @@ iOS uses Face ID / Touch ID. Android uses `BiometricPrompt`.
 
 ## QR / barcode scanner
 
-```elixir
-socket = Dala.Scanner.scan(socket)
+`Dala.Hardware.Scanner` opens the camera to scan QR codes and barcodes.
+Requires `:camera` permission.
 
-def handle_info({:scan, :result, %{type: type, value: value}}, socket) do
-  # type: :qr | :ean | :upc | etc.
-  {:noreply, Dala.Socket.assign(socket, :scanned, value)}
+```elixir
+# Scan QR codes only (default)
+socket = Dala.Hardware.Scanner.scan(socket)
+
+# Scan multiple formats
+socket = Dala.Hardware.Scanner.scan(socket, formats: [:qr, :ean13, :code128, :pdf417])
+```
+
+Events arrive as:
+```elixir
+def handle_info({:scan, :result, %{type: scan_type, value: raw}}, socket) do
+  # scan_type: :qr | :ean13 | :code128 | etc.
+  # raw: the raw string from the barcode
+
+  # Parse common formats (URL, WiFi, contact, etc.)
+  case Dala.Ui.Scan.parse(raw) do
+    %{type: :url, value: url} ->
+      # Open URL
+    %{type: :wifi, value: %{ssid: ssid, password: pw, security: sec}} ->
+      # Connect to WiFi network
+    %{type: :vcard, value: %{name: name, phone: phone, email: email}} ->
+      # Save contact
+    %{type: :email, value: %{email: email, subject: subj}} ->
+      # Compose email
+    %{type: :phone, value: %{number: number}} ->
+      # Dial number
+    %{type: :sms, value: %{number: number, message: msg}} ->
+      # Send SMS
+    %{type: :geo, value: %{lat: lat, lon: lon}} ->
+      # Show on map
+    %{type: :vevent, value: %{summary: summary, start: dtstart}} ->
+      # Add calendar event
+    %{type: :text, value: text} ->
+      # Plain text fallback
+  end
+  {:noreply, socket}
 end
 
 def handle_info({:scan, :cancelled}, socket) do
   {:noreply, socket}
 end
 ```
+
+Supported barcode formats: `:qr`, `:ean13`, `:ean8`, `:code128`, `:code39`, `:upca`, `:upce`, `:pdf417`, `:aztec`, `:data_matrix`.
+
+## NFC tag reading
+
+`Dala.Hardware.NFC` reads NDEF tags via the device's NFC reader.
+Requires NFC entitlement (iOS) or `android.permission.NFC` (Android).
+
+```elixir
+# Check availability
+Dala.Hardware.NFC.available?()  # true | false
+
+# Start scanning (shows OS scanner UI on iOS)
+socket = Dala.Hardware.NFC.start_scan(socket, message: "Hold near a tag")
+
+# Stop scanning
+socket = Dala.Hardware.NFC.stop_scan(socket)
+```
+
+Events arrive as:
+```elixir
+def handle_info({:nfc, :tag, %{tech: tech, raw: raw}}, socket) do
+  # tech: "Ndef", "NdefFormatable", "IsoDep", etc.
+  # raw: the raw payload string from the tag
+
+  # Parse common NDEF payload formats
+  case Dala.Ui.Scan.parse(raw) do
+    %{type: :url, value: url} ->
+      # Open URL: "https://example.com"
+    %{type: :wifi, value: %{ssid: ssid, password: pw, security: sec, hidden: hidden}} ->
+      # WiFi: %{ssid: "MyNet", password: "pass", security: :wpa, hidden: false}
+    %{type: :vcard, value: %{name: name, phone: phone, email: email, org: org, title: title, url: url, address: addr}} ->
+      # Contact from vCard
+    %{type: :email, value: %{email: email, subject: subj, body: body}} ->
+      # mailto:user@example.com?subject=Hi
+    %{type: :phone, value: %{number: number}} ->
+      # tel:+1234567890
+    %{type: :sms, value: %{number: number, message: msg}} ->
+      # smsto:+1234567890:hello
+    %{type: :geo, value: %{lat: lat, lon: lon, altitude: alt, query: q}} ->
+      # geo:37.78,-122.40?q=Golden+Gate
+    %{type: :vevent, value: %{summary: summary, start: dtstart, end: dtend, location: loc, description: desc}} ->
+      # Calendar event from iCalendar
+    %{type: :text, value: text} ->
+      # Plain text fallback
+  end
+  {:noreply, socket}
+end
+
+def handle_info({:nfc, :error, %{reason: reason}}, socket) do
+  # reason: "NFC is disabled", "NFC not available on this device", etc.
+  {:noreply, socket}
+end
+```
+
+**Platform notes:**
+- **iOS**: Uses `NFCNDEFReaderSession`. The system UI is shown automatically.
+  Requires `NFCReaderUsageDescription` in Info.plist and the Near Field
+  Communication Tag Reading capability.
+- **Android**: Uses `NfcAdapter` foreground dispatch. The hosting Activity
+  must forward `onNewIntent` to `DalaBridge.handleNFCIntent(intent)`.
+  Requires `android.permission.NFC` in AndroidManifest.xml.
+
+## `Dala.Ui.Scan` — common format parser
+
+`Dala.Ui.Scan.parse/1` is a unified parser for NFC tag payloads and QR/barcode
+content. It auto-detects the format and returns a structured map:
+
+```elixir
+Dala.Ui.Scan.parse("WIFI:T:WPA;S:MyNet;P:secret;H:true;;")
+# => %{type: :wifi, value: %{ssid: "MyNet", password: "secret", security: :wpa, hidden: true}}
+
+Dala.Ui.Scan.parse("https://example.com")
+# => %{type: :url, value: "https://example.com"}
+
+Dala.Ui.Scan.parse("BEGIN:VCARD\nVERSION:3.0\nFN:John Doe\nTEL:+1234567890\nEMAIL:john@example.com\nEND:VCARD")
+# => %{type: :vcard, value: %{name: "John Doe", phone: "+1234567890", email: "john@example.com", ...}}
+
+Dala.Ui.Scan.parse("mailto:user@example.com?subject=Hello&body=World")
+# => %{type: :email, value: %{email: "user@example.com", subject: "Hello", body: "World"}}
+
+Dala.Ui.Scan.parse("tel:+1234567890")
+# => %{type: :phone, value: %{number: "+1234567890"}}
+
+Dala.Ui.Scan.parse("smsto:+1234567890:Hello there")
+# => %{type: :sms, value: %{number: "+1234567890", message: "Hello there"}}
+
+Dala.Ui.Scan.parse("geo:37.786971,-122.399677?q=Golden+Gate")
+# => %{type: :geo, value: %{lat: 37.786971, lon: -122.399677, altitude: nil, query: "Golden Gate"}}
+
+Dala.Ui.Scan.parse("BEGIN:VEVENT\nSUMMARY:Team Standup\nDTSTART:20250115T100000Z\nDTEND:20250115T103000Z\nLOCATION:Zoom\nEND:VEVENT")
+# => %{type: :vevent, value: %{summary: "Team Standup", start: "20250115T100000Z", end: "20250115T103000Z", location: "Zoom", description: ""}}
+
+Dala.Ui.Scan.parse("Hello world")
+# => %{type: :text, value: "Hello world"}
+```
+
+Supported types: `:url`, `:wifi`, `:email`, `:phone`, `:sms`, `:geo`, `:vcard`, `:vevent`, `:text`.
 
 ## Notifications
 

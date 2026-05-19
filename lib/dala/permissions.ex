@@ -16,6 +16,7 @@ defmodule Dala.Permissions do
   - `:photos` — Photo library access
   - `:contacts` — Contacts access
   - `:notifications` — Push notifications
+  - `:nfc` — NFC tag reading
 
   ## Usage
 
@@ -39,6 +40,7 @@ defmodule Dala.Permissions do
           | :photos
           | :contacts
           | :notifications
+          | :nfc
 
   @doc "Returns all supported permissions."
   @spec supported_permissions() :: [permission()]
@@ -51,7 +53,8 @@ defmodule Dala.Permissions do
       :storage,
       :photos,
       :contacts,
-      :notifications
+      :notifications,
+      :nfc
     ]
 
   @doc "Checks if a permission is supported."
@@ -101,6 +104,7 @@ defmodule Dala.Permissions do
   def permission_string(:photos), do: "photos"
   def permission_string(:contacts), do: "contacts"
   def permission_string(:notifications), do: "notifications"
+  def permission_string(:nfc), do: "nfc"
 
   @doc "Returns the iOS plist key for a permission."
   @spec ios_plist_key(permission()) :: String.t() | nil
@@ -110,6 +114,7 @@ defmodule Dala.Permissions do
   def ios_plist_key(:location), do: "NSLocationWhenInUseUsageDescription"
   def ios_plist_key(:photos), do: "NSPhotoLibraryUsageDescription"
   def ios_plist_key(:contacts), do: "NSContactsUsageDescription"
+  def ios_plist_key(:nfc), do: "NFCReaderUsageDescription"
   def ios_plist_key(_), do: nil
 
   @doc "Returns the Android permission string."
@@ -122,6 +127,7 @@ defmodule Dala.Permissions do
   def android_permission(:photos), do: "READ_MEDIA_IMAGES"
   def android_permission(:contacts), do: "READ_CONTACTS"
   def android_permission(:notifications), do: "POST_NOTIFICATIONS"
+  def android_permission(:nfc), do: "NFC"
   def android_permission(_), do: nil
 
   @doc "Validates permissions, returning `:ok` or `{:error, {:unsupported, [permissions]}}`."

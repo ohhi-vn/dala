@@ -21,7 +21,12 @@ defmodule Dala.Preview.Codegen do
     :on_end_reached,
     :on_scroll,
     :on_focus,
-    :on_blur
+    :on_blur,
+    :on_select,
+    :on_action,
+    :on_remove,
+    :on_leading,
+    :on_page_change
   ]
 
   # Components where the primary string content is a positional arg in DSL style

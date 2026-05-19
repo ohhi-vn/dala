@@ -384,6 +384,83 @@ pub fn wakelock_enabled() -> bool {
 }
 
 // ============================================================================
+// Motion Sensors (Accelerometer / Gyroscope)
+// ============================================================================
+
+extern "C" {
+    fn DalaMotionSetCallback(callback: unsafe extern "C" fn(f64, f64, f64, f64, f64, f64, i64));
+    fn DalaMotionIsAvailable() -> libc::c_int;
+    fn DalaMotionStart(
+        sensors: *const *const libc::c_char,
+        sensorCount: libc::c_int,
+        intervalMs: libc::c_int,
+    );
+    fn DalaMotionStop();
+}
+
+pub fn motion_available() -> bool {
+    unsafe { DalaMotionIsAvailable() != 0 }
+}
+
+pub fn motion_start(sensors: &[String], interval_ms: u64) {
+    unsafe {
+        let c_strings: Vec<CString> = sensors
+            .iter()
+            .filter_map(|s| CString::new(s.as_str()).ok())
+            .collect();
+        let c_ptrs: Vec<*const libc::c_char> = c_strings.iter().map(|s| s.as_ptr()).collect();
+        let count = c_ptrs.len() as libc::c_int;
+        let ptr = if count > 0 {
+            c_ptrs.as_ptr()
+        } else {
+            std::ptr::null()
+        };
+        DalaMotionStart(ptr, count, interval_ms as libc::c_int);
+    }
+}
+
+pub fn motion_stop() {
+    unsafe {
+        DalaMotionStop();
+    }
+}
+
+// ============================================================================
+// NFC
+// ============================================================================
+
+extern "C" {
+    fn DalaNFCSetCallback(
+        callback: unsafe extern "C" fn(
+            *const libc::c_char,
+            *const libc::c_char,
+            *const libc::c_char,
+        ),
+    );
+    fn DalaNFCAvailable() -> libc::c_int;
+    fn DalaNFCBeginScan(message: *const libc::c_char);
+    fn DalaNFCCancelScan();
+}
+
+pub fn nfc_available() -> bool {
+    unsafe { DalaNFCAvailable() != 0 }
+}
+
+pub fn nfc_start_scan(message: &str) {
+    unsafe {
+        if let Ok(c_msg) = CString::new(message) {
+            DalaNFCBeginScan(c_msg.as_ptr());
+        }
+    }
+}
+
+pub fn nfc_stop_scan() {
+    unsafe {
+        DalaNFCCancelScan();
+    }
+}
+
+// ============================================================================
 // UI / Rendering
 // ============================================================================
 

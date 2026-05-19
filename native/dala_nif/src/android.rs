@@ -799,6 +799,104 @@ pub fn linking_initial_url<'a>(env: rustler::Env<'a>) -> rustler::Term<'a> {
 }
 
 // ============================================================================
+// Motion Sensors (Accelerometer / Gyroscope)
+// ============================================================================
+
+pub fn motion_available() -> bool {
+    unsafe {
+        if let Some(mut jni_env) = get_jni_env() {
+            if let Some(class) = get_bridge_class(&mut jni_env) {
+                if let Ok(val) = jni_env.call_static_method(class, "isMotionAvailable", "()Z", &[])
+                {
+                    if let Ok(b) = val.z() {
+                        return b != 0;
+                    }
+                }
+            }
+        }
+        false
+    }
+}
+
+pub fn motion_start(sensors: &[String], interval_ms: u64) {
+    unsafe {
+        if let Some(mut jni_env) = get_jni_env() {
+            if let Some(class) = get_bridge_class(&mut jni_env) {
+                // Create ArrayList of sensor names
+                let array_list = match jni_env.new_object("java/util/ArrayList", "()V", &[]) {
+                    Ok(list) => list,
+                    Err(e) => {
+                        eprintln!("[Dala] Failed to create ArrayList: {:?}", e);
+                        return;
+                    }
+                };
+                for sensor in sensors {
+                    if let Some(jstr) = to_jstring(&mut jni_env, sensor) {
+                        let _ = jni_env.call_method(
+                            &array_list,
+                            "add",
+                            "(Ljava/lang/Object;)Z",
+                            &[JValue::Object(jstr.into())],
+                        );
+                    }
+                }
+                let args = [JValue::Object(array_list), JValue::Int(interval_ms as i32)];
+                let _ = jni_env.call_static_method(
+                    class,
+                    "startMotionSensors",
+                    "(Ljava/util/List;I)V",
+                    &args,
+                );
+            }
+        }
+    }
+}
+
+pub fn motion_stop() {
+    unsafe {
+        if let Some(mut jni_env) = get_jni_env() {
+            if let Some(class) = get_bridge_class(&mut jni_env) {
+                let _ = jni_env.call_static_method(class, "stopMotionSensors", "()V", &[]);
+            }
+        }
+    }
+}
+
+// ============================================================================
+// NFC
+// ============================================================================
+
+pub fn nfc_available() -> bool {
+    unsafe {
+        if let Some(mut jni_env) = get_jni_env() {
+            if let Some(class) = get_bridge_class(&mut jni_env) {
+                if let Ok(val) = jni_env.call_static_method(class, "isNFCAvailable", "()Z", &[]) {
+                    if let Ok(b) = val.z() {
+                        return b != 0;
+                    }
+                }
+            }
+        }
+        false
+    }
+}
+
+pub fn nfc_start_scan(_message: &str) {
+    // Android NFC uses foreground dispatch from the Activity.
+    // The Activity must call DalaBridge.startNFCScan(activity).
+    // For now, log that this needs to be triggered from the Activity layer.
+    eprintln!(
+        "[Dala] nfc_start_scan: must be called from Activity via DalaBridge.startNFCScan(activity)"
+    );
+}
+
+pub fn nfc_stop_scan() {
+    eprintln!(
+        "[Dala] nfc_stop_scan: must be called from Activity via DalaBridge.stopNFCScan(activity)"
+    );
+}
+
+// ============================================================================
 // JNI Native Methods - Callbacks from Java DalaBridge
 // ============================================================================
 // These functions are called from Java via JNI when BLE events occur.
@@ -985,6 +1083,68 @@ pub extern "C" fn Java_com_example_dala_DalaBridge_nativeBluetoothNotificationRe
         "[Dala] BLE notification: {}/{}/{} = {:?}",
         device_id_str, service_str, char_str, value_bytes
     );
+}
+
+// ============================================================================
+// JNI Native Methods — Motion & NFC callbacks from Java DalaBridge
+// ============================================================================
+
+#[no_mangle]
+#[allow(non_snake_case)]
+pub extern "C" fn Java_com_example_dala_DalaBridge_nativeMotionData(
+    _env: jni::JNIEnv,
+    _class: jni::objects::JClass,
+    ax: jni::sys::jfloat,
+    ay: jni::sys::jfloat,
+    az: jni::sys::jfloat,
+    gx: jni::sys::jfloat,
+    gy: jni::sys::jfloat,
+    gz: jni::sys::jfloat,
+    timestamp: jni::sys::jlong,
+) {
+    eprintln!(
+        "[Dala] motion data: accel=({:.2},{:.2},{:.2}) gyro=({:.2},{:.2},{:.2}) ts={}",
+        ax, ay, az, gx, gy, gz, timestamp
+    );
+    // TODO: Send {:motion, %{accel: %{x, y, z}, gyro: %{x, y, z}, timestamp}} to Elixir
+}
+
+#[no_mangle]
+#[allow(non_snake_case)]
+pub extern "C" fn Java_com_example_dala_DalaBridge_nativeNFCTagDiscovered(
+    mut env: jni::JNIEnv,
+    _class: jni::objects::JClass,
+    tech: jni::objects::JString,
+    payload: jni::objects::JString,
+) {
+    let tech_str = match env.get_string(&tech) {
+        Ok(s) => s.to_string_lossy().to_string(),
+        Err(_) => return,
+    };
+    let payload_str = match env.get_string(&payload) {
+        Ok(s) => s.to_string_lossy().to_string(),
+        Err(_) => return,
+    };
+    eprintln!(
+        "[Dala] NFC tag discovered: tech={}, payload={}",
+        tech_str, payload_str
+    );
+    // TODO: Send {:nfc, :tag, %{tech, payload}} to Elixir
+}
+
+#[no_mangle]
+#[allow(non_snake_case)]
+pub extern "C" fn Java_com_example_dala_DalaBridge_nativeNFCError(
+    mut env: jni::JNIEnv,
+    _class: jni::objects::JClass,
+    error: jni::objects::JString,
+) {
+    let error_str = match env.get_string(&error) {
+        Ok(s) => s.to_string_lossy().to_string(),
+        Err(_) => return,
+    };
+    eprintln!("[Dala] NFC error: {}", error_str);
+    // TODO: Send {:nfc, :error, %{reason}} to Elixir
 }
 
 // ============================================================================

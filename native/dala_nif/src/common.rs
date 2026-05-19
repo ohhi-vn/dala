@@ -455,12 +455,32 @@ pub fn platform_audio_set_volume(_volume: f64) {
 // Platform dispatch — motion
 // ============================================================================
 
+pub fn platform_motion_available() -> bool {
+    false
+}
+
 pub fn platform_motion_start(_sensors: &str, _interval: u64) {
     println!("[Dala] motion_start stub");
 }
 
 pub fn platform_motion_stop() {
     println!("[Dala] motion_stop stub");
+}
+
+// ============================================================================
+// Platform dispatch — NFC
+// ============================================================================
+
+pub fn platform_nfc_available() -> bool {
+    false
+}
+
+pub fn platform_nfc_start_scan(_message: &str) {
+    println!("[Dala] nfc_start_scan stub");
+}
+
+pub fn platform_nfc_stop_scan() {
+    println!("[Dala] nfc_stop_scan stub");
 }
 
 // ============================================================================

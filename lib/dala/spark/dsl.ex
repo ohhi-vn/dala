@@ -669,7 +669,434 @@ defmodule Dala.Spark.Dsl do
     ]
   }
 
-  # ── Container entities (support children) ───────────────────────────────
+
+  # -- Checkbox -----------------------------------------------------------
+
+  defmodule Checkbox do
+    @moduledoc false
+    defstruct value: nil,
+              on_change: nil,
+              label: nil,
+              disabled: nil,
+              text_color: nil,
+              text_size: nil,
+              accessibility_id: nil,
+              __spark_metadata__: nil
+  end
+
+  @checkbox %Spark.Dsl.Entity{
+    name: :checkbox,
+    target: Checkbox,
+    describe: "Checkbox input",
+    examples: ["checkbox value: true, on_change: :agree_toggled, label: \"I agree\""],
+    schema: [
+      value: [type: :boolean, doc: "Checked state"],
+      on_change: [type: :atom, doc: "Event handler for value changes"],
+      label: [type: :string, doc: "Label text beside the checkbox"],
+      disabled: [type: :boolean, doc: "Disable the checkbox"],
+      text_color: [type: :any, doc: "Text color token"],
+      text_size: [type: :any, doc: "Font size"],
+      accessibility_id: [type: :atom, doc: "Test identifier"]
+    ]
+  }
+
+  # -- Radio --------------------------------------------------------------
+
+  defmodule Radio do
+    @moduledoc false
+    defstruct selected: nil,
+              on_select: nil,
+              label: nil,
+              group: nil,
+              disabled: nil,
+              text_color: nil,
+              text_size: nil,
+              accessibility_id: nil,
+              __spark_metadata__: nil
+  end
+
+  @radio %Spark.Dsl.Entity{
+    name: :radio,
+    target: Radio,
+    describe: "Radio button",
+    examples: ["radio selected: true, on_select: :option_a, label: \"Option A\", group: \"choices\""],
+    schema: [
+      selected: [type: :boolean, doc: "Whether this radio is selected"],
+      on_select: [type: :atom, doc: "Event handler when selected"],
+      label: [type: :string, doc: "Label text beside the radio"],
+      group: [type: :string, doc: "Radio group name (mutually exclusive within group)"],
+      disabled: [type: :boolean, doc: "Disable the radio"],
+      text_color: [type: :any, doc: "Text color token"],
+      text_size: [type: :any, doc: "Font size"],
+      accessibility_id: [type: :atom, doc: "Test identifier"]
+    ]
+  }
+
+  # -- Chip ---------------------------------------------------------------
+
+  defmodule Chip do
+    @moduledoc false
+    defstruct label: nil, variant: nil, selected: nil, on_tap: nil, icon: nil,
+              on_remove: nil, disabled: nil, enabled: nil, text_color: nil,
+              text_size: nil, background: nil, corner_radius: nil,
+              accessibility_id: nil, __spark_metadata__: nil
+  end
+
+  @chip %Spark.Dsl.Entity{
+    name: :chip,
+    target: Chip,
+    describe: "Chip/tag component",
+    examples: ["chip label: \"Filter\", variant: :filter, selected: true, on_tap: :chip_tapped"],
+    schema: [
+      label: [type: :string, doc: "Chip text"],
+      variant: [type: {:one_of, [:assist, :filter, :input, :suggestion]}, doc: "Chip variant"],
+      selected: [type: :boolean, doc: "Selected state (for filter chips)"],
+      on_tap: [type: :atom, doc: "Event handler for tap"],
+      icon: [type: :string, doc: "Icon name displayed before the label"],
+      on_remove: [type: :atom, doc: "Event handler when remove icon is tapped"],
+      disabled: [type: :boolean, doc: "Disable the chip"],
+      enabled: [type: :boolean, doc: "Whether the chip is interactive"],
+      text_color: [type: :any, doc: "Text color token"],
+      text_size: [type: :any, doc: "Font size"],
+      background: [type: :any, doc: "Background color token"],
+      corner_radius: [type: :integer, doc: "Rounded corner radius"],
+      accessibility_id: [type: :atom, doc: "Test identifier"]
+    ]
+  }
+
+  # -- Snackbar -----------------------------------------------------------
+
+  defmodule Snackbar do
+    @moduledoc false
+    defstruct message: nil, action_label: nil, on_action: nil, duration: nil,
+              visible: nil, text_color: nil, background: nil,
+              accessibility_id: nil, __spark_metadata__: nil
+  end
+
+  @snackbar %Spark.Dsl.Entity{
+    name: :snackbar,
+    target: Snackbar,
+    describe: "Snackbar/toast notification",
+    examples: ["snackbar message: \"Item deleted\", action_label: \"Undo\", on_action: :undo"],
+    schema: [
+      message: [type: :string, doc: "The message text"],
+      action_label: [type: :string, doc: "Label for the optional action button"],
+      on_action: [type: :atom, doc: "Event handler when action button is tapped"],
+      duration: [type: {:one_of, [:short, :long]}, doc: "Display duration"],
+      visible: [type: :boolean, doc: "Whether the snackbar is shown"],
+      text_color: [type: :any, doc: "Text color token"],
+      background: [type: :any, doc: "Background color token"],
+      accessibility_id: [type: :atom, doc: "Test identifier"]
+    ]
+  }
+
+  # -- Fab ----------------------------------------------------------------
+
+  defmodule Fab do
+    @moduledoc false
+    defstruct icon: nil, text: nil, on_tap: nil, background: nil, color: nil,
+              text_color: nil, elevation: nil, corner_radius: nil,
+              accessibility_id: nil, __spark_metadata__: nil
+  end
+
+  @fab %Spark.Dsl.Entity{
+    name: :fab,
+    target: Fab,
+    describe: "Floating action button",
+    examples: ["fab icon: \"edit\", text: \"Compose\", on_tap: :compose"],
+    schema: [
+      icon: [type: :string, doc: "Icon name"],
+      text: [type: :string, doc: "Optional label for extended FAB"],
+      on_tap: [type: :atom, doc: "Event handler for tap"],
+      background: [type: :any, doc: "Background color token"],
+      color: [type: :any, doc: "Icon color token"],
+      text_color: [type: :any, doc: "Text color token"],
+      elevation: [type: :float, doc: "Shadow depth"],
+      corner_radius: [type: :integer, doc: "Rounded corner radius"],
+      accessibility_id: [type: :atom, doc: "Test identifier"]
+    ]
+  }
+
+  # -- IconButton ---------------------------------------------------------
+
+  defmodule IconButton do
+    @moduledoc false
+    defstruct icon: nil, on_tap: nil, selected: nil, enabled: nil, color: nil,
+              text_color: nil, background: nil, size: nil, disabled: nil,
+              accessibility_id: nil, __spark_metadata__: nil
+  end
+
+  @icon_button %Spark.Dsl.Entity{
+    name: :icon_button,
+    target: IconButton,
+    describe: "Icon-only button",
+    examples: ["icon_button icon: \"favorite\", on_tap: :favorite_tapped"],
+    schema: [
+      icon: [type: :string, doc: "Icon name"],
+      on_tap: [type: :atom, doc: "Event handler for tap"],
+      selected: [type: :boolean, doc: "Toggle state for toggle icon buttons"],
+      enabled: [type: :boolean, doc: "Whether the button is interactive"],
+      color: [type: :any, doc: "Icon color token"],
+      text_color: [type: :any, doc: "Text color token"],
+      background: [type: :any, doc: "Background color token"],
+      size: [type: :any, doc: "Button size"],
+      disabled: [type: :boolean, doc: "Disable the button"],
+      accessibility_id: [type: :atom, doc: "Test identifier"]
+    ]
+  }
+
+  # -- SegmentedButton ---------------------------------------------------
+
+  defmodule SegmentedButton do
+    @moduledoc false
+    defstruct segments: nil, selected: nil, on_select: nil, text_color: nil,
+              background: nil, accessibility_id: nil, __spark_metadata__: nil
+  end
+
+  @segmented_button %Spark.Dsl.Entity{
+    name: :segmented_button,
+    target: SegmentedButton,
+    describe: "Segmented button control",
+    examples: ["segmented_button segments: [%{id: \"day\", label: \"Day\"}, %{id: \"week\", label: \"Week\"}], selected: \"week\", on_select: :range_changed"],
+    schema: [
+      segments: [type: :any, doc: "List of segment definitions (%{id, label, icon?})"],
+      selected: [type: :string, doc: "Id of the currently selected segment"],
+      on_select: [type: :atom, doc: "Event handler for segment selection"],
+      text_color: [type: :any, doc: "Text color token"],
+      background: [type: :any, doc: "Background color token"],
+      accessibility_id: [type: :atom, doc: "Test identifier"]
+    ]
+  }
+
+  # -- AppBar -------------------------------------------------------------
+
+  defmodule AppBar do
+    @moduledoc false
+    defstruct title: nil, leading_icon: nil, on_leading: nil, trailing_actions: nil,
+              text_color: nil, background: nil, elevation: nil,
+              accessibility_id: nil, __spark_metadata__: nil
+  end
+
+  @app_bar %Spark.Dsl.Entity{
+    name: :app_bar,
+    target: AppBar,
+    describe: "Top app bar",
+    examples: ["app_bar title: \"My App\", leading_icon: \"back\", on_leading: :back_pressed, trailing_actions: [%{icon: \"search\", on_tap: :search}]"],
+    schema: [
+      title: [type: :string, doc: "App bar title"],
+      leading_icon: [type: :string, doc: "Icon name for the leading navigation icon"],
+      on_leading: [type: :atom, doc: "Event handler when leading icon is tapped"],
+      trailing_actions: [type: :any, doc: "List of maps with :icon and :on_tap"],
+      text_color: [type: :any, doc: "Title and icon color token"],
+      background: [type: :any, doc: "Background color token"],
+      elevation: [type: :float, doc: "Shadow depth"],
+      accessibility_id: [type: :atom, doc: "Test identifier"]
+    ]
+  }
+
+  # -- NavBar -------------------------------------------------------------
+
+  defmodule NavBar do
+    @moduledoc false
+    defstruct items: nil, active: nil, on_select: nil, text_color: nil,
+              background: nil, accessibility_id: nil, __spark_metadata__: nil
+  end
+
+  @nav_bar %Spark.Dsl.Entity{
+    name: :nav_bar,
+    target: NavBar,
+    describe: "Bottom navigation bar",
+    examples: ["nav_bar items: [%{id: \"home\", label: \"Home\", icon: \"home\"}], active: \"home\", on_select: :tab_changed"],
+    schema: [
+      items: [type: :any, doc: "List of nav item definitions (%{id, label, icon})"],
+      active: [type: :string, doc: "Id of the currently active item"],
+      on_select: [type: :atom, doc: "Event handler for item selection"],
+      text_color: [type: :any, doc: "Text color token"],
+      background: [type: :any, doc: "Background color token"],
+      accessibility_id: [type: :atom, doc: "Test identifier"]
+    ]
+  }
+
+  # -- NavDrawer ----------------------------------------------------------
+
+  defmodule NavDrawer do
+    @moduledoc false
+    defstruct visible: nil, on_dismiss: nil, items: nil, active: nil, on_select: nil,
+              header: nil, background: nil, accessibility_id: nil, __spark_metadata__: nil
+  end
+
+  @nav_drawer %Spark.Dsl.Entity{
+    name: :nav_drawer,
+    target: NavDrawer,
+    describe: "Navigation drawer",
+    examples: ["nav_drawer visible: true, on_dismiss: :drawer_dismissed, items: [%{id: \"home\", label: \"Home\", icon: \"home\"}], active: \"home\", on_select: :nav_changed"],
+    schema: [
+      visible: [type: :boolean, doc: "Whether the drawer is shown"],
+      on_dismiss: [type: :atom, doc: "Event handler when drawer is dismissed"],
+      items: [type: :any, doc: "List of nav item definitions (%{id, label, icon})"],
+      active: [type: :string, doc: "Id of the currently active item"],
+      on_select: [type: :atom, doc: "Event handler for item selection"],
+      header: [type: :string, doc: "Optional header text"],
+      background: [type: :any, doc: "Background color token"],
+      accessibility_id: [type: :atom, doc: "Test identifier"]
+    ]
+  }
+
+  # -- NavRail ------------------------------------------------------------
+
+  defmodule NavRail do
+    @moduledoc false
+    defstruct items: nil, active: nil, on_select: nil, text_color: nil,
+              background: nil, accessibility_id: nil, __spark_metadata__: nil
+  end
+
+  @nav_rail %Spark.Dsl.Entity{
+    name: :nav_rail,
+    target: NavRail,
+    describe: "Navigation rail (side navigation)",
+    examples: ["nav_rail items: [%{id: \"home\", label: \"Home\", icon: \"home\"}], active: \"home\", on_select: :rail_changed"],
+    schema: [
+      items: [type: :any, doc: "List of nav item definitions (%{id, label, icon})"],
+      active: [type: :string, doc: "Id of the currently active item"],
+      on_select: [type: :atom, doc: "Event handler for item selection"],
+      text_color: [type: :any, doc: "Text color token"],
+      background: [type: :any, doc: "Background color token"],
+      accessibility_id: [type: :atom, doc: "Test identifier"]
+    ]
+  }
+
+  # -- Menu ---------------------------------------------------------------
+
+  defmodule Menu do
+    @moduledoc false
+    defstruct items: nil, visible: nil, on_select: nil, text_color: nil,
+              background: nil, accessibility_id: nil, __spark_metadata__: nil
+  end
+
+  @menu %Spark.Dsl.Entity{
+    name: :menu,
+    target: Menu,
+    describe: "Dropdown menu",
+    examples: ["menu items: [%{label: \"Edit\", action: :edit}, %{label: \"Delete\", action: :delete}], visible: true, on_select: :menu_selected"],
+    schema: [
+      items: [type: :any, doc: "List of menu items (%{label, action, icon?})"],
+      visible: [type: :boolean, doc: "Whether the menu is shown"],
+      on_select: [type: :atom, doc: "Event handler for item selection"],
+      text_color: [type: :any, doc: "Text color token"],
+      background: [type: :any, doc: "Background color token"],
+      accessibility_id: [type: :atom, doc: "Test identifier"]
+    ]
+  }
+
+  # -- DatePicker ---------------------------------------------------------
+
+  defmodule DatePicker do
+    @moduledoc false
+    defstruct visible: nil, on_select: nil, on_dismiss: nil, selected_date: nil,
+              min_date: nil, max_date: nil, title: nil,
+              accessibility_id: nil, __spark_metadata__: nil
+  end
+
+  @date_picker %Spark.Dsl.Entity{
+    name: :date_picker,
+    target: DatePicker,
+    describe: "Date picker",
+    examples: ["date_picker visible: true, on_select: :date_picked, selected_date: \"2025-01-15\""],
+    schema: [
+      visible: [type: :boolean, doc: "Whether the picker is shown"],
+      on_select: [type: :atom, doc: "Event handler with selected date string (ISO 8601)"],
+      on_dismiss: [type: :atom, doc: "Event handler when picker is dismissed"],
+      selected_date: [type: :string, doc: "Initial date in ISO 8601 format"],
+      min_date: [type: :string, doc: "Earliest selectable date"],
+      max_date: [type: :string, doc: "Latest selectable date"],
+      title: [type: :string, doc: "Optional title text"],
+      accessibility_id: [type: :atom, doc: "Test identifier"]
+    ]
+  }
+
+  # -- TimePicker ---------------------------------------------------------
+
+  defmodule TimePicker do
+    @moduledoc false
+    defstruct visible: nil, on_select: nil, on_dismiss: nil, selected_time: nil,
+              title: nil, accessibility_id: nil, __spark_metadata__: nil
+  end
+
+  @time_picker %Spark.Dsl.Entity{
+    name: :time_picker,
+    target: TimePicker,
+    describe: "Time picker",
+    examples: ["time_picker visible: true, on_select: :time_picked, selected_time: \"09:30\""],
+    schema: [
+      visible: [type: :boolean, doc: "Whether the picker is shown"],
+      on_select: [type: :atom, doc: "Event handler with selected time string (HH:MM)"],
+      on_dismiss: [type: :atom, doc: "Event handler when picker is dismissed"],
+      selected_time: [type: :string, doc: "Initial time in HH:MM format"],
+      title: [type: :string, doc: "Optional title text"],
+      accessibility_id: [type: :atom, doc: "Test identifier"]
+    ]
+  }
+
+  # -- SearchBar ----------------------------------------------------------
+
+  defmodule SearchBar do
+    @moduledoc false
+    defstruct placeholder: nil, text: nil, on_change: nil, on_submit: nil,
+              on_focus: nil, active: nil, on_tap: nil, value: nil,
+              text_color: nil, background: nil, corner_radius: nil,
+              accessibility_id: nil, __spark_metadata__: nil
+  end
+
+  @search_bar %Spark.Dsl.Entity{
+    name: :search_bar,
+    target: SearchBar,
+    describe: "Search bar",
+    examples: ["search_bar placeholder: \"Search...\", on_change: :search_changed, on_submit: :search_submitted"],
+    schema: [
+      placeholder: [type: :string, doc: "Placeholder text when empty"],
+      text: [type: :string, doc: "Current search text"],
+      on_change: [type: :atom, doc: "Event handler for text changes"],
+      on_submit: [type: :atom, doc: "Event handler when search is submitted"],
+      on_focus: [type: :atom, doc: "Event handler when bar gains focus"],
+      active: [type: :boolean, doc: "Whether the search bar is in active/expanded state"],
+      on_tap: [type: :atom, doc: "Event handler when the search bar is tapped"],
+      value: [type: :string, doc: "Current search value"],
+      text_color: [type: :any, doc: "Text color token"],
+      background: [type: :any, doc: "Background color token"],
+      corner_radius: [type: :integer, doc: "Rounded corner radius"],
+      accessibility_id: [type: :atom, doc: "Test identifier"]
+    ]
+  }
+
+  # -- Carousel -----------------------------------------------------------
+
+  defmodule Carousel do
+    @moduledoc false
+    defstruct id: nil, items: nil, data: nil, on_page_change: nil, loop: nil,
+              autoplay: nil, autoplay_interval: nil, peek: nil,
+              accessibility_id: nil, __spark_metadata__: nil
+  end
+
+  @carousel %Spark.Dsl.Entity{
+    name: :carousel,
+    target: Carousel,
+    describe: "Carousel/slideshow component",
+    args: [:id],
+    examples: ["carousel :my_carousel, items: @slides, on_page_change: :page_changed"],
+    schema: [
+      id: [type: :atom, required: true, doc: "Carousel identifier"],
+      items: [type: :any, doc: "List of items to render"],
+      data: [type: :any, doc: "Enumerable of items (supports @ref syntax)"],
+      on_page_change: [type: :atom, doc: "Event handler with new page index on swipe"],
+      loop: [type: :boolean, doc: "Enable infinite looping"],
+      autoplay: [type: :boolean, doc: "Enable autoplay"],
+      autoplay_interval: [type: :integer, doc: "Autoplay interval in ms"],
+      peek: [type: :float, doc: "Peek width for adjacent items"],
+      accessibility_id: [type: :atom, doc: "Test identifier"]
+    ]
+  }
+
+
   # These use `entities` + `recursive_as: :children` so they can nest
   # inside each other. The `children` field on the target struct holds
   # the list of nested entities.
@@ -695,8 +1122,133 @@ defmodule Dala.Spark.Dsl do
     @camera_preview,
     @native_view,
     @tab_bar,
-    @list
+    @list,
+    @checkbox,
+    @radio,
+    @chip,
+    @snackbar,
+    @fab,
+    @icon_button,
+    @segmented_button,
+    @app_bar,
+    @nav_bar,
+    @nav_drawer,
+    @nav_rail,
+    @menu,
+    @date_picker,
+    @time_picker,
+    @search_bar,
+    @carousel,
   ]
+
+  # ── Container entities (support children) ───────────────────────────────
+
+  # -- Card ---------------------------------------------------------------
+
+  defmodule Card do
+    @moduledoc false
+    defstruct variant: nil, elevation: nil, corner_radius: nil, padding: nil,
+              background: nil, on_tap: nil, on_long_press: nil, fill_width: nil,
+              accessibility_id: nil, children: [], __spark_metadata__: nil
+  end
+
+  @card %Spark.Dsl.Entity{
+    name: :card,
+    target: Card,
+    describe: "Card container with elevation/shadow",
+    examples: ["card variant: :elevated, elevation: 2.0, corner_radius: 12 do\n  text \"Card content\"\nend"],
+    entities: [children: @leaf_entities],
+    recursive_as: :children,
+    schema: [
+      variant: [type: {:one_of, [:filled, :outlined, :elevated]}, doc: "Card variant"],
+      elevation: [type: :float, doc: "Shadow depth"],
+      corner_radius: [type: :integer, doc: "Rounded corner radius"],
+      padding: [type: :any, doc: "Padding (token or integer)"],
+      background: [type: :any, doc: "Background color token"],
+      on_tap: [type: :atom, doc: "Event handler for tap"],
+      on_long_press: [type: :atom, doc: "Event handler for long press"],
+      fill_width: [type: :boolean, doc: "Stretch to fill parent width"],
+      accessibility_id: [type: :atom, doc: "Test identifier"]
+    ]
+  }
+
+  # -- Badge --------------------------------------------------------------
+
+  defmodule Badge do
+    @moduledoc false
+    defstruct count: nil, color: nil, text_color: nil, text_size: nil,
+              position: nil, visible: nil, accessibility_id: nil,
+              children: [], __spark_metadata__: nil
+  end
+
+  @badge %Spark.Dsl.Entity{
+    name: :badge,
+    target: Badge,
+    describe: "Badge/notification dot container",
+    examples: ["badge count: 5, color: :error do\n  icon \"notifications\"\nend"],
+    entities: [children: @leaf_entities],
+    recursive_as: :children,
+    schema: [
+      count: [type: :integer, doc: "Numeric badge value"],
+      color: [type: :any, doc: "Badge background color"],
+      text_color: [type: :any, doc: "Badge text color"],
+      text_size: [type: :any, doc: "Badge text size"],
+      position: [type: {:one_of, [:top_start, :top_end, :bottom_start, :bottom_end]}, doc: "Badge position"],
+      visible: [type: :boolean, doc: "Whether the badge is shown"],
+      accessibility_id: [type: :atom, doc: "Test identifier"]
+    ]
+  }
+
+  # -- BottomSheet --------------------------------------------------------
+
+  defmodule BottomSheet do
+    @moduledoc false
+    defstruct visible: nil, on_dismiss: nil, drag_indicator: nil, height: nil,
+              corner_radius: nil, background: nil, accessibility_id: nil,
+              children: [], __spark_metadata__: nil
+  end
+
+  @bottom_sheet %Spark.Dsl.Entity{
+    name: :bottom_sheet,
+    target: BottomSheet,
+    describe: "Bottom sheet container",
+    examples: ["bottom_sheet visible: true, on_dismiss: :dismissed, drag_indicator: true do\n  text \"Sheet content\"\nend"],
+    entities: [children: @leaf_entities],
+    recursive_as: :children,
+    schema: [
+      visible: [type: :boolean, doc: "Whether the sheet is shown"],
+      on_dismiss: [type: :atom, doc: "Event handler when sheet is dismissed"],
+      drag_indicator: [type: :boolean, doc: "Show drag handle at top"],
+      height: [type: :integer, doc: "Sheet height in dp/pts"],
+      corner_radius: [type: :integer, doc: "Rounded corners at the top"],
+      background: [type: :any, doc: "Background color token"],
+      accessibility_id: [type: :atom, doc: "Test identifier"]
+    ]
+  }
+
+  # -- Tooltip -----------------------------------------------------------
+
+  defmodule Tooltip do
+    @moduledoc false
+    defstruct text: nil, position: nil, visible: nil, delay: nil,
+              accessibility_id: nil, children: [], __spark_metadata__: nil
+  end
+
+  @tooltip %Spark.Dsl.Entity{
+    name: :tooltip,
+    target: Tooltip,
+    describe: "Tooltip container",
+    examples: ["tooltip text: \"Helpful info\", position: :top do\n  icon \"help\"\nend"],
+    entities: [children: @leaf_entities],
+    recursive_as: :children,
+    schema: [
+      text: [type: :string, doc: "Tooltip text"],
+      position: [type: {:one_of, [:top, :bottom, :left, :right]}, doc: "Tooltip position"],
+      visible: [type: :boolean, doc: "Whether the tooltip is shown"],
+      delay: [type: :integer, doc: "Show delay in ms"],
+      accessibility_id: [type: :atom, doc: "Test identifier"]
+    ]
+  }
 
   # -- Column -------------------------------------------------------------
 
@@ -1014,6 +1566,10 @@ defmodule Dala.Spark.Dsl do
   # inside each other.
 
   @all_entities [
+    @card,
+    @badge,
+    @bottom_sheet,
+    @tooltip,
     @column,
     @row,
     @box,

@@ -28,8 +28,14 @@ defmodule Dala.Media.Filter do
   @type params :: map()
 
   @doc "Apply a single filter to a GPU surface."
-  @spec apply_filter(surface(), filter_type(), params()) :: :ok | {:error, term()}
-  def apply_filter(surface, filter_type, params \\ %{}) do
+  @spec apply_filter(surface() | nil, filter_type(), params()) :: binary() | :ok | {:error, term()}
+  def apply_filter(surface_or_nil, filter_type, params \\ %{})
+
+  def apply_filter(nil, filter_type, params) do
+    encode_params(filter_type, params)
+  end
+
+  def apply_filter(surface, filter_type, params) do
     shader = shader_source(filter_type)
     binary_params = encode_params(filter_type, params)
     Dala.Gpu.dispatch_compute(surface, shader, binary_params)
