@@ -4,7 +4,7 @@ defmodule Dala.MixProject do
   def project do
     [
       app: :dala,
-      version: "0.3.0",
+      version: "0.3.1",
       elixir: "~> 1.18",
       erlang: ">= 27.0",
       start_permanent: Mix.env() == :prod,
@@ -30,7 +30,7 @@ defmodule Dala.MixProject do
   defp docs do
     [
       main: "readme",
-      logo: "assets/logo/logo_full_color.png",
+      logo: "assets/logo/Dala_logo_512.png",
       source_url: "https://github.com/manhvu/dala",
       source_url_pattern: "https://github.com/manhvu/dala/blob/main/%{path}#L%{line}",
       extras: [
