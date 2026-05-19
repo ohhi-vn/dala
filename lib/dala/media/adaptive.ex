@@ -68,7 +68,7 @@ defmodule Dala.Media.Adaptive do
   @doc "Report network statistics from the stream decoder."
   @spec report_stats(adapter_ref(), map()) :: :ok
   def report_stats(pid, stats) do
-    GenServer.cast(pid, {:report_stats, stats})
+    GenServer.call(pid, {:report_stats, stats})
   end
 
   @doc "Get the current recommended bitrate."
@@ -101,6 +101,7 @@ defmodule Dala.Media.Adaptive do
   def init(opts) do
     min_bitrate = Keyword.get(opts, :min_bitrate, @default_min_bitrate)
     max_bitrate = Keyword.get(opts, :max_bitrate, @default_max_bitrate)
+    now = System.monotonic_time(:millisecond)
 
     {:ok, %__MODULE__{
       state: :stable,
@@ -111,24 +112,23 @@ defmodule Dala.Media.Adaptive do
       min_buffer_ms: Keyword.get(opts, :min_buffer_ms, @default_min_buffer_ms),
       current_buffer_ms: 0,
       stats_history: [],
-      last_adjustment_ms: 0,
+      last_adjustment_ms: now,
       adjustment_interval_ms: Keyword.get(opts, :adjustment_interval_ms, 1000),
     }}
   end
 
   @impl GenServer
-  def handle_cast({:report_stats, stats}, state) do
+  def handle_call({:report_stats, stats}, _from, state) do
     history = Enum.take([stats | state.stats_history], 10)
     now = System.monotonic_time(:millisecond)
-
     state =
       if now - state.last_adjustment_ms >= state.adjustment_interval_ms do
-        evaluate(%{state | history: history, last_adjustment_ms: now})
+        evaluate(%{state | stats_history: history, last_adjustment_ms: now})
       else
-        %{state | history: history}
+        %{state | stats_history: history}
       end
 
-    {:noreply, state}
+    {:reply, :ok, state}
   end
 
   @impl GenServer
@@ -159,16 +159,16 @@ defmodule Dala.Media.Adaptive do
 
   # Private — adaptive algorithm
 
-  defp evaluate(%{history: []} = state), do: state
+  defp evaluate(%{stats_history: []} = state), do: state
 
   defp evaluate(state) do
     avg_jitter = average(state.stats_history, :jitter_ms)
     avg_rtt = average(state.stats_history, :rtt_ms)
-    loss_rate = loss_rate(state.stats_history)
+    lr = loss_rate(state.stats_history)
 
     cond do
       # High packet loss or high jitter → degrade
-      loss_rate > 0.05 or avg_jitter > 50 ->
+      lr > 0.05 or avg_jitter > 50 ->
         degrade(state)
 
       # Buffer running low → increase buffer, reduce quality
@@ -177,7 +177,7 @@ defmodule Dala.Media.Adaptive do
         |> reduce_bitrate()
 
       # Network is good and buffer is healthy → try to improve
-      loss_rate < 0.01 and avg_rtt < 100 and state.current_buffer_ms > state.target_buffer_ms ->
+      lr < 0.01 and avg_rtt < 100 and state.current_buffer_ms > state.target_buffer_ms ->
         recover(state)
 
       # Stable

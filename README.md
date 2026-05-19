@@ -212,7 +212,8 @@ def handle_info({:push_token, :ios, token}, socket), do: ...
 
 Also: `Dala.Platform.Clipboard`, `Dala.Platform.Share`, `Dala.Media.Photos`,
 `Dala.Storage.Files`, `Dala.Media.Audio`, `Dala.Ui.Sensor.Motion`,
-`Dala.Hardware.Biometric`, `Dala.Hardware.Scanner`, `Dala.Permissions`.
+`Dala.Hardware.Biometric`, `Dala.Hardware.Scanner`, `Dala.Hardware.NFC`,
+`Dala.Ui.Scan`, `Dala.Permissions`.
 
 Additional APIs: `Dala.Hardware.Bluetooth` (BLE), `Dala.Connectivity.Wifi`, `Dala.Wakelock`,
 `Dala.Storage.Storage`, `Dala.Storage.Blob`, `Dala.Platform.Settings`, `Dala.Platform.State`,

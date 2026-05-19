@@ -309,10 +309,12 @@ defmodule Dala.Test do
       Dala.Test.send_message(node, {:photos, :picked, [%{path: "/tmp/photo.jpg", width: 800, height: 600}]})
       Dala.Test.send_message(node, {:files, :picked, [%{path: "/tmp/doc.pdf", name: "doc.pdf", size: 4096}]})
 
-      # Audio / Motion / Scanner
+      # Audio / Motion / Scanner / NFC
       Dala.Test.send_message(node, {:audio, :recorded, %{path: "/tmp/audio.aac", duration: 12}})
       Dala.Test.send_message(node, {:motion, %{ax: 0.1, ay: 9.8, az: 0.0, gx: 0.0, gy: 0.0, gz: 0.0}})
       Dala.Test.send_message(node, {:scan, :result, %{type: :qr, value: "https://example.com"}})
+      Dala.Test.send_message(node, {:nfc, :tag, %{tech: "Ndef", payload: "https://example.com"}})
+      Dala.Test.send_message(node, {:nfc, :error, %{reason: "NFC is disabled"}})
 
       # Notifications
       Dala.Test.send_message(node, {:notification, %{id: "n1", title: "Hi", body: "Hello", data: %{}, source: :push}})

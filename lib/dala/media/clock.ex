@@ -143,7 +143,8 @@ defmodule Dala.Media.Clock do
   end
 
   def handle_cast({:video_frame, pts_us}, state) do
-    {:noreply, %{state | video_clock_us: pts_us}}
+    drift = state.audio_clock_us - pts_us
+    {:noreply, %{state | video_clock_us: pts_us, drift_us: drift}}
   end
 
   @impl GenServer

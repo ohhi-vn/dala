@@ -340,6 +340,94 @@ fn wakelock_enabled<'a>(env: Env<'a>) -> NifResult<Term<'a>> {
 }
 
 // ============================================================================
+// Motion Sensors (Accelerometer / Gyroscope)
+// ============================================================================
+
+#[rustler::nif]
+fn motion_available<'a>(env: Env<'a>) -> NifResult<Term<'a>> {
+    #[cfg(target_os = "ios")]
+    let available = ios::motion_available();
+    #[cfg(target_os = "android")]
+    let available = android::motion_available();
+    #[cfg(not(any(target_os = "ios", target_os = "android")))]
+    let available = crate::common::platform_motion_available();
+    if available {
+        Ok(atom(env, "true"))
+    } else {
+        Ok(atom(env, "false"))
+    }
+}
+
+#[rustler::nif]
+fn motion_start<'a>(env: Env<'a>, sensors: Term<'a>, interval: Term<'a>) -> NifResult<Term<'a>> {
+    let sensors_list: Vec<String> = sensors.decode()?;
+    let interval_ms: u64 = interval.decode()?;
+    #[cfg(target_os = "ios")]
+    ios::motion_start(&sensors_list, interval_ms);
+    #[cfg(target_os = "android")]
+    android::motion_start(&sensors_list, interval_ms);
+    #[cfg(not(any(target_os = "ios", target_os = "android")))]
+    {
+        let s = sensors_list.join(",");
+        crate::common::platform_motion_start(&s, interval_ms);
+    }
+    ok(env)
+}
+
+#[rustler::nif]
+fn motion_stop<'a>(env: Env<'a>) -> NifResult<Term<'a>> {
+    #[cfg(target_os = "ios")]
+    ios::motion_stop();
+    #[cfg(target_os = "android")]
+    android::motion_stop();
+    #[cfg(not(any(target_os = "ios", target_os = "android")))]
+    crate::common::platform_motion_stop();
+    ok(env)
+}
+
+// ============================================================================
+// NFC
+// ============================================================================
+
+#[rustler::nif]
+fn nfc_available<'a>(env: Env<'a>) -> NifResult<Term<'a>> {
+    #[cfg(target_os = "ios")]
+    let available = ios::nfc_available();
+    #[cfg(target_os = "android")]
+    let available = android::nfc_available();
+    #[cfg(not(any(target_os = "ios", target_os = "android")))]
+    let available = crate::common::platform_nfc_available();
+    if available {
+        Ok(atom(env, "true"))
+    } else {
+        Ok(atom(env, "false"))
+    }
+}
+
+#[rustler::nif]
+fn nfc_start_scan<'a>(env: Env<'a>, message: Term<'a>) -> NifResult<Term<'a>> {
+    let msg: String = message.decode()?;
+    #[cfg(target_os = "ios")]
+    ios::nfc_start_scan(&msg);
+    #[cfg(target_os = "android")]
+    android::nfc_start_scan(&msg);
+    #[cfg(not(any(target_os = "ios", target_os = "android")))]
+    crate::common::platform_nfc_start_scan(&msg);
+    ok(env)
+}
+
+#[rustler::nif]
+fn nfc_stop_scan<'a>(env: Env<'a>) -> NifResult<Term<'a>> {
+    #[cfg(target_os = "ios")]
+    ios::nfc_stop_scan();
+    #[cfg(target_os = "android")]
+    android::nfc_stop_scan();
+    #[cfg(not(any(target_os = "ios", target_os = "android")))]
+    crate::common::platform_nfc_stop_scan();
+    ok(env)
+}
+
+// ============================================================================
 // CoreML (iOS only)
 // ============================================================================
 

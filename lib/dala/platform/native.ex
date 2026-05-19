@@ -118,8 +118,14 @@ defmodule Dala.Platform.Native do
   def audio_set_volume(_volume), do: :erlang.nif_error(:nif_not_loaded)
 
   # Motion sensors
+  def motion_available, do: :erlang.nif_error(:nif_not_loaded)
   def motion_start(_sensors, _interval), do: :erlang.nif_error(:nif_not_loaded)
   def motion_stop, do: :erlang.nif_error(:nif_not_loaded)
+
+  # NFC
+  def nfc_available, do: :erlang.nif_error(:nif_not_loaded)
+  def nfc_start_scan(_message), do: :erlang.nif_error(:nif_not_loaded)
+  def nfc_stop_scan, do: :erlang.nif_error(:nif_not_loaded)
 
   # Bluetooth (BLE)
   @spec bluetooth_state() :: atom()

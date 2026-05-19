@@ -22,6 +22,17 @@ import android.content.BroadcastReceiver;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Build;
+import android.app.Activity;
+import android.app.PendingIntent;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
+import android.nfc.NdefMessage;
+import android.nfc.NdefRecord;
+import android.nfc.NfcAdapter;
+import android.nfc.Tag;
+import android.nfc.tech.Ndef;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
@@ -52,6 +63,24 @@ public class DalaBridge {
     private static ScanCallback scanCallback;
     private static boolean isScanning = false;
 
+    // Motion sensors
+    private static SensorManager sensorManager;
+    private static Sensor accelerometer;
+    private static Sensor gyroscope;
+    private static boolean motionRunning = false;
+    private static Handler motionHandler;
+    private static final Object motionLock = new Object();
+    private static float lastAx, lastAy, lastAz;
+    private static float lastGx, lastGy, lastGz;
+    private static long lastMotionTimestamp;
+    private static int motionIntervalMs = 100;
+    private static boolean wantAccel = false;
+    private static boolean wantGyro = false;
+
+    // NFC
+    private static NfcAdapter nfcAdapter;
+    private static boolean nfcScanning = false;
+
     // Native function declarations (implemented in Rust NIF)
     private static native void nativeBluetoothDeviceFound(String deviceId, String name, int rssi);
     private static native void nativeBluetoothStateChanged(String state);
@@ -61,6 +90,13 @@ public class DalaBridge {
     private static native void nativeBluetoothCharacteristicRead(String deviceId, String service, String characteristic, byte[] value);
     private static native void nativeBluetoothCharacteristicWritten(String deviceId, String service, String characteristic);
     private static native void nativeBluetoothNotificationReceived(String deviceId, String service, String characteristic, byte[] value);
+
+    // Motion sensor native methods
+    private static native void nativeMotionData(float ax, float ay, float az, float gx, float gy, float gz, long timestamp);
+
+    // NFC native methods
+    private static native void nativeNFCTagDiscovered(String tech, String payload);
+    private static native void nativeNFCError(String error);
 
     /**
      * Initialize the bridge with application context.
@@ -73,6 +109,10 @@ public class DalaBridge {
             bluetoothAdapter = bluetoothManager.getAdapter();
         }
         mainHandler = new Handler(Looper.getMainLooper());
+
+        // Initialize sensor manager
+        sensorManager = (SensorManager) appContext.getSystemService(Context.SENSOR_SERVICE);
+
         Log.i(TAG, "DalaBridge initialized");
     }
 
@@ -722,5 +762,179 @@ public class DalaBridge {
      */
     public static boolean wakelockIsEnabled() {
         return wakeLock != null && wakeLock.isHeld();
+    }
+
+    // ========================================================================
+    // Motion Sensors (Accelerometer / Gyroscope)
+    // ========================================================================
+
+    public static boolean isMotionAvailable() {
+        if (sensorManager == null) {
+            sensorManager = (SensorManager) appContext.getSystemService(Context.SENSOR_SERVICE);
+        }
+        if (sensorManager == null) return false;
+        return sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER) != null ||
+               sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE) != null;
+    }
+
+    public static void startMotionSensors(List<String> sensors, int intervalMs) {
+        if (sensorManager == null) {
+            sensorManager = (SensorManager) appContext.getSystemService(Context.SENSOR_SERVICE);
+        }
+        if (sensorManager == null) {
+            Log.e(TAG, "SensorManager not available");
+            return;
+        }
+
+        synchronized (motionLock) {
+            motionIntervalMs = intervalMs;
+            wantAccel = sensors.contains("accelerometer");
+            wantGyro = sensors.contains("gyro");
+
+            if (motionRunning) {
+                stopMotionSensors();
+            }
+
+            final int delayUs = intervalMs * 1000; // convert ms to microseconds
+
+            if (wantAccel) {
+                accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+                if (accelerometer != null) {
+                    sensorManager.registerListener(motionEventListener, accelerometer, delayUs);
+                }
+            }
+
+            if (wantGyro) {
+                gyroscope = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
+                if (gyroscope != null) {
+                    sensorManager.registerListener(motionEventListener, gyroscope, delayUs);
+                }
+            }
+
+            motionRunning = true;
+            Log.i(TAG, "Motion sensors started (interval=" + intervalMs + "ms)");
+        }
+    }
+
+    public static void stopMotionSensors() {
+        synchronized (motionLock) {
+            sensorManager.unregisterListener(motionEventListener);
+            motionRunning = false;
+            Log.i(TAG, "Motion sensors stopped");
+        }
+    }
+
+    private static final SensorEventListener motionEventListener = new SensorEventListener() {
+        @Override
+        public void onSensorChanged(SensorEvent event) {
+            synchronized (motionLock) {
+                long now = System.currentTimeMillis();
+                if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+                    lastAx = event.values[0];
+                    lastAy = event.values[1];
+                    lastAz = event.values[2];
+                    lastMotionTimestamp = now;
+                } else if (event.sensor.getType() == Sensor.TYPE_GYROSCOPE) {
+                    lastGx = event.values[0];
+                    lastGy = event.values[1];
+                    lastGz = event.values[2];
+                    lastMotionTimestamp = now;
+                }
+                // Deliver combined data at interval
+                nativeMotionData(lastAx, lastAy, lastAz, lastGx, lastGy, lastGz, lastMotionTimestamp);
+            }
+        }
+
+        @Override
+        public void onAccuracyChanged(Sensor sensor, int accuracy) {
+            // Not needed
+        }
+    };
+
+    // ========================================================================
+    // NFC
+    // ========================================================================
+
+    public static boolean isNFCAvailable() {
+        if (nfcAdapter == null) {
+            nfcAdapter = NfcAdapter.getDefaultAdapter(appContext);
+        }
+        return nfcAdapter != null && nfcAdapter.isEnabled();
+    }
+
+    public static void startNFCScan(Activity activity) {
+        if (nfcAdapter == null) {
+            nfcAdapter = NfcAdapter.getDefaultAdapter(appContext);
+        }
+        if (nfcAdapter == null) {
+            Log.e(TAG, "NFC not available");
+            nativeNFCError("NFC not available on this device");
+            return;
+        }
+        if (!nfcAdapter.isEnabled()) {
+            Log.e(TAG, "NFC is disabled");
+            nativeNFCError("NFC is disabled");
+            return;
+        }
+
+        try {
+            IntentFilter ndefFilter = new IntentFilter(NfcAdapter.ACTION_NDEF_DISCOVERED);
+            try {
+                ndefFilter.addDataType("*/*");
+            } catch (IntentFilter.MalformedMimeTypeException e) {
+                Log.e(TAG, "Failed to add MIME type", e);
+            }
+            nfcAdapter.enableForegroundDispatch(activity,
+                PendingIntent.getActivity(activity, 0, new Intent(activity, activity.getClass()).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
+                    PendingIntent.FLAG_MUTABLE),
+                new IntentFilter[]{ndefFilter},
+                null);
+            nfcScanning = true;
+            Log.i(TAG, "NFC scan started");
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to start NFC scan", e);
+            nativeNFCError(e.getMessage());
+        }
+    }
+
+    public static void stopNFCScan(Activity activity) {
+        if (nfcAdapter != null && nfcScanning) {
+            nfcAdapter.disableForegroundDispatch(activity);
+            nfcScanning = false;
+            Log.i(TAG, "NFC scan stopped");
+        }
+    }
+
+    public static void handleNFCIntent(Intent intent) {
+        if (intent == null) return;
+        String action = intent.getAction();
+        if (NfcAdapter.ACTION_NDEF_DISCOVERED.equals(action) ||
+            NfcAdapter.ACTION_TAG_DISCOVERED.equals(action) ||
+            NfcAdapter.ACTION_TECH_DISCOVERED.equals(action)) {
+            Tag tag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
+            if (tag != null) {
+                String[] techList = tag.getTechList();
+                String tech = techList.length > 0 ? techList[0] : "unknown";
+                tech = tech.substring(tech.lastIndexOf('.') + 1);
+
+                // Try to read NDEF data
+                Ndef ndef = Ndef.get(tag);
+                String payload = "";
+                if (ndef != null) {
+                    try {
+                        ndef.connect();
+                        NdefMessage msg = ndef.getNdefMessage();
+                        if (msg != null && msg.getRecords().length > 0) {
+                            byte[] payloadBytes = msg.getRecords()[0].getPayload();
+                            payload = new String(payloadBytes, "UTF-8");
+                        }
+                        ndef.close();
+                    } catch (Exception e) {
+                        Log.e(TAG, "Failed to read NDEF", e);
+                    }
+                }
+                nativeNFCTagDiscovered(tech, payload);
+            }
+        }
     }
 }
