@@ -149,7 +149,7 @@ defmodule MyApp.CameraScreen do
   dala do
     screen name: :camera do
       column do
-        camera_preview facing: :back, weight: 1
+        camera_preview facing: :back
         button "Flip", on_tap: :flip
       end
     end
@@ -564,42 +564,42 @@ end
 
 ### Programmatic WebView control with `interact/2`
 
-`Dala.WebView.interact/2` provides a high-level API for driving WebView content from Elixir, similar to `Dala.Test` but for production use.
+`Dala.Ui.Embedded.Webview.interact/2` provides a high-level API for driving WebView content from Elixir, similar to `Dala.Test` but for production use.
 
 ```elixir
 def handle_event("submit", _, socket) do
   # Tap an element by CSS selector
-  socket = Dala.WebView.interact(socket, {:tap, ".submit-button"})
+  socket = Dala.Ui.Embedded.Webview.interact(socket, {:tap, ".submit-button"})
   {:noreply, socket}
 end
 
 def handle_event("fill_form", _, socket) do
   # Type text into an input field
-  socket = Dala.WebView.interact(socket, {:type, "#name", "John Doe"})
+  socket = Dala.Ui.Embedded.Webview.interact(socket, {:type, "#name", "John Doe"})
   {:noreply, socket}
 end
 
 def handle_event("clear_input", _, socket) do
   # Clear an input field
-  socket = Dala.WebView.interact(socket, {:clear, "#name"})
+  socket = Dala.Ui.Embedded.Webview.interact(socket, {:clear, "#name"})
   {:noreply, socket}
 end
 
 def handle_event("eval_js", _, socket) do
   # Evaluate JS and get result via handle_info
-  socket = Dala.WebView.interact(socket, {:eval, "document.title"})
+  socket = Dala.Ui.Embedded.Webview.interact(socket, {:eval, "document.title"})
   {:noreply, socket}
 end
 
 def handle_event("scroll_content", _, socket) do
   # Scroll an element programmatically
-  socket = Dala.WebView.interact(socket, {:scroll, ".content", 0, 100})
+  socket = Dala.Ui.Embedded.Webview.interact(socket, {:scroll, ".content", 0, 100})
   {:noreply, socket}
 end
 
 def handle_event("wait_for_element", _, socket) do
   # Wait for an element to appear (with timeout in ms)
-  socket = Dala.WebView.interact(socket, {:wait, ".loaded", 5000})
+  socket = Dala.Ui.Embedded.Webview.interact(socket, {:wait, ".loaded", 5000})
   {:noreply, socket}
 end
 
@@ -620,18 +620,18 @@ Available actions:
 | Scroll | `{:scroll, selector, dx, dy}` | Scroll elements programmatically |
 | Wait | `{:wait, selector, timeout_ms}` | Wait for elements to appear |
 
-Also available: `Dala.WebView.navigate/2`, `Dala.WebView.reload/1`, `Dala.WebView.stop_loading/1`, `Dala.WebView.go_forward/1` for complete WebView navigation control.
+Also available: `Dala.Ui.Embedded.Webview.navigate/2`, `Dala.Ui.Embedded.Webview.reload/1`, `Dala.Ui.Embedded.Webview.stop_loading/1`, `Dala.Ui.Embedded.Webview.go_forward/1` for complete WebView navigation control.
 
 Push a message from Elixir into the page (calls `window.dala.onMessage` handlers):
 
 ```elixir
-socket = Dala.WebView.post_message(socket, %{type: "update", value: 42})
+socket = Dala.Ui.Embedded.Webview.post_message(socket, %{type: "update", value: 42})
 ```
 
 Evaluate arbitrary JavaScript and receive the result:
 
 ```elixir
-socket = Dala.WebView.eval_js(socket, "document.title")
+socket = Dala.Ui.Embedded.Webview.eval_js(socket, "document.title")
 # Result arrives as:
 def handle_info({:webview, :eval_result, result}, socket) do
   {:noreply, socket}
@@ -801,8 +801,8 @@ Dala.Platform.State.delete(:theme)
 
 ```elixir
 Dala.Platform.Settings.get("theme")
-Dala.Platform.Settings.set(socket, "theme", "dark")
-Dala.Platform.Settings.watch(socket, "theme")
+socket = Dala.Platform.Settings.set(socket, "theme", "dark")
+socket = Dala.Platform.Settings.watch(socket, "theme")
 
 def handle_info({:settings, :changed, {"theme", value}}, socket), do: ...
 ```

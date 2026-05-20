@@ -119,8 +119,8 @@ end
 
 ```elixir
 scroll do
-  direction :vertical
-  shows_indicator true
+  horizontal false
+  show_indicator true
   padding :space_md
   text "Long content..."
 end
@@ -260,7 +260,7 @@ video "https://example.com/clip.mp4", autoplay: true, loop: true
 - `refresh_control on_refresh: :reload, refreshing: false` — pull-to-refresh
 - `webview "https://elixir-lang.org"` — native web view
 - `camera_preview facing: :front` — live camera feed
-- `native_view MyComponent, id: :my_view` — platform-native component
+- `native_view MyApp.ChartComponent, id: :revenue_chart` — platform-native component
 - `tab_bar tabs: [%{id: "home", label: "Home"}]` — tab navigation
 - `list :my_list, data: @items` — data-driven list
 - `checkbox value: true, on_change: :agree_toggled, label: "I agree"` — checkbox input
@@ -269,7 +269,7 @@ video "https://example.com/clip.mp4", autoplay: true, loop: true
 - `snackbar message: "Item deleted", action_label: "Undo", on_action: :undo` — snackbar/toast
 - `fab icon: "edit", text: "Compose", on_tap: :compose` — floating action button
 - `icon_button icon: "favorite", on_tap: :favorite_tapped` — icon-only button
-- `segmented_button segments: [%{id: "day", label: "Day"}], selected: "day", on_select: :range_changed` — segmented control
+- `segmented_button segments: [%{id: "day", label: "Day"}, %{id: "week", label: "Week"}], selected: "week", on_select: :range_changed` — segmented control
 - `app_bar title: "My App", leading_icon: "back", on_leading: :back_pressed` — top app bar
 - `nav_bar items: [%{id: "home", label: "Home", icon: "home"}], active: "home", on_select: :tab_changed` — bottom nav bar
 - `nav_drawer visible: true, on_dismiss: :dismissed, items: [...], active: "home", on_select: :nav_changed` — nav drawer

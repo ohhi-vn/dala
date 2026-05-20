@@ -83,9 +83,9 @@ Stacks children vertically (VStack equivalent).
 | `fill_width` | boolean | Stretch to fill available width (default `true`) |
 | `width`, `height` | number | Explicit dimensions |
 | `alignment` | `:start` / `:center` / `:end` | Cross-axis alignment of children |
-| `justify` | `:start` / `:center` / `:end` / `:space_between` / `:space_around` / `:space_evenly` | Main-axis distribution |
+| `justify` | `:start` / `:center` / `:end` / `:space_between` | Main-axis distribution |
 | `on_tap`, `on_long_press`, `on_double_tap`, `on_swipe*` | `{pid, tag}` | Gesture handlers |
-| `accessibility_id` | string | Test identifier |
+| `accessibility_id` | atom | Test identifier |
 
 ```elixir
 column padding: :space_md, gap: :space_sm, alignment: :center do
@@ -109,9 +109,9 @@ Lays out children horizontally (HStack equivalent).
 | `fill_width` | boolean | Stretch to fill available width |
 | `width`, `height` | number | Explicit dimensions |
 | `alignment` | `:start` / `:center` / `:end` | Cross-axis alignment of children |
-| `justify` | `:start` / `:center` / `:end` / `:space_between` / `:space_around` / `:space_evenly` | Main-axis distribution |
+| `justify` | `:start` / `:center` / `:end` / `:space_between` | Main-axis distribution |
 | `on_tap`, `on_long_press`, `on_double_tap`, `on_swipe*` | `{pid, tag}` | Gesture handlers |
-| `accessibility_id` | string | Test identifier |
+| `accessibility_id` | atom | Test identifier |
 
 To distribute children evenly across a row, give each child a `weight` prop (analogous to `flex: 1` in CSS):
 
@@ -137,7 +137,7 @@ A stacking container (ZStack equivalent). Children are layered on top of each ot
 | `fill_width` | boolean | Stretch to fill available width |
 | `width`, `height` | number | Explicit dimensions |
 | `on_tap`, `on_long_press`, `on_double_tap`, `on_swipe*` | `{pid, tag}` | Gesture handlers |
-| `accessibility_id` | string | Test identifier |
+| `accessibility_id` | atom | Test identifier |
 
 ```elixir
 box background: :surface, padding: :space_md, corner_radius: :radius_md do
@@ -151,11 +151,10 @@ A scrolling container (ScrollView equivalent).
 
 | Prop | Type | Description |
 |------|------|-------------|
-| `direction` | `:vertical` / `:horizontal` | Scroll direction (default `:vertical`) |
-| `shows_indicator` | boolean | Show scroll indicator (default `true`) |
+| `horizontal` | boolean | Enable horizontal scrolling (default `false`) |
+| `show_indicator` | boolean | Show scroll indicator (default `true`) |
 | `on_end_reached` | `{pid, tag}` | Fired when scroll reaches bottom/end |
 | `on_scroll` | `{pid, tag}` | Fired during scrolling with scroll position |
-| `paging` | boolean | Enable snap-to-page scrolling (default `false`) |
 | `padding` | number / token | Padding inside the scroll area |
 | `background` | color | Background color |
 
@@ -221,23 +220,13 @@ A platform-native scrolling list optimised for rendering many rows efficiently. 
 | Prop | Type | Description |
 |------|------|-------------|
 | `id` | atom | List identifier for selection events (required) |
-| `data` | list | Data items. Each renders as a child. |
+| `data` | list | Data items (supports @ref syntax) |
 | `on_end_reached` | `{pid, tag}` | Event handler when list reaches end |
 | `scroll` | boolean | Enable scrolling (default `true`) |
 
 ```elixir
-list :my_list, data: @items, on_end_reached: :load_more do
-  text "Item"
-end
+list :my_list, data: @items, on_end_reached: :load_more
 ```
-
-### `:lazy_list`
-
-A virtualized list that renders rows on demand. Supports `on_end_reached` for pagination.
-
-| Prop | Type | Description |
-|------|------|-------------|
-| `on_end_reached` | atom | Event handler when the user scrolls near the end |
 
 ## Content components
 
@@ -261,7 +250,7 @@ Displays a string.
 | `corner_radius` | number / token | Rounded corners |
 | `fill_width` | boolean | Stretch to fill parent width |
 | `on_tap`, `on_long_press`, `on_double_tap` | `{pid, tag}` | Gesture handlers |
-| `accessibility_id` | string | Test identifier |
+| `accessibility_id` | atom | Test identifier |
 
 ```elixir
 text "Hello, world!"
@@ -287,7 +276,7 @@ A tappable button. Has sensible defaults injected by the renderer (primary backg
 | `padding`, `padding_top`, `padding_right`, `padding_bottom`, `padding_left` | number / token | Padding |
 | `corner_radius` | number / token | Corner radius (default `:radius_md`) |
 | `fill_width` | boolean | Fill available width (default `true`) |
-| `accessibility_id` | string | Test identifier |
+| `accessibility_id` | atom | Test identifier |
 
 ```elixir
 button "Save", on_tap: :save
@@ -322,7 +311,7 @@ An editable text input. Has defaults injected by the renderer (surface_raised ba
 | `background` | color | Background (default `:surface_raised`) |
 | `padding` | number / token | Padding |
 | `corner_radius` | number / token | Corner radius |
-| `accessibility_id` | string | Test identifier |
+| `accessibility_id` | atom | Test identifier |
 
 ```elixir
 text_field placeholder: "Enter name", on_change: :name_changed
@@ -342,7 +331,7 @@ Displays a platform-native icon. Logical icon names are resolved to SF Symbols o
 | `padding` | number / token | Padding around icon |
 | `background` | color | Background color |
 | `on_tap`, `on_long_press` | `{pid, tag}` | Gesture handlers |
-| `accessibility_id` | string | Test identifier (also used as accessibility label) |
+| `accessibility_id` | atom | Test identifier (also used as accessibility label) |
 
 **Logical icon names:** `settings`, `back`, `forward`, `close`, `add`, `remove`, `edit`, `check`, `chevron_right`, `chevron_left`, `chevron_up`, `chevron_down`, `info`, `warning`, `error`, `search`, `trash`, `share`, `more`, `menu`, `refresh`, `favorite`, `favorite_filled`, `star`, `star_filled`, `user`, `home`
 
@@ -379,7 +368,7 @@ Displays an image from a URL or local asset.
 | `placeholder_color` | color | Color shown while loading |
 | `on_error` | `{pid, tag}` | Fired when image fails to load |
 | `on_load` | `{pid, tag}` | Fired when image finishes loading |
-| `accessibility_id` | string | Test identifier |
+| `accessibility_id` | atom | Test identifier |
 
 ```elixir
 image src: "https://example.com/photo.jpg", resize_mode: :cover, corner_radius: 12
@@ -441,7 +430,7 @@ A boolean switch. Delivers `{:change, tag, value}` to `handle_event/3` where `va
 | `text` | string | Label text displayed beside the toggle |
 | `track_color` | color | Color when switch is on |
 | `thumb_color` | color | Color of the draggable thumb |
-| `accessibility_id` | string | Test identifier |
+| `accessibility_id` | atom | Test identifier |
 
 ```elixir
 toggle value: true, on_change: {self(), :notifications_toggled}, text: "Enable notifications"
@@ -462,7 +451,7 @@ A continuous value input. Delivers `{:change, tag, value}` to `handle_event/3` w
 | `max_value` | float | Maximum value (default `1.0`) |
 | `on_change` | `{pid, tag}` | Fires as the user drags. Delivers `{:change, tag, float}`. |
 | `color` | color | Track and thumb color |
-| `accessibility_id` | string | Test identifier |
+| `accessibility_id` | atom | Test identifier |
 
 ```elixir
 slider value: 0.5, min_value: 0.0, max_value: 1.0, on_change: :volume_changed
@@ -481,7 +470,7 @@ A tab navigation bar.
 | `tabs` | list of maps | Each map has `:id`, `:label`, and optional `:icon` |
 | `active_tab` | string | The id of the currently selected tab |
 | `on_tab_select` | `{pid, tag}` | Fired with selected tab id string |
-| `accessibility_id` | string | Test identifier |
+| `accessibility_id` | atom | Test identifier |
 
 ```elixir
 tab_bar(
@@ -524,7 +513,10 @@ A checkbox for selecting one or more items from a list. Maps to `Checkbox` on Co
 | `label` | string | Label text displayed beside the checkbox |
 | `color` | color | Checkbox tint color |
 | `enabled` | boolean | Whether the checkbox is interactive (default `true`) |
-| `accessibility_id` | string | Test identifier |
+| `disabled` | boolean | Disable the checkbox |
+| `text_color` | color | Text color token |
+| `text_size` | any | Font size |
+| `accessibility_id` | atom | Test identifier |
 
 ```elixir
 checkbox value: true, on_change: {self(), :agree_toggled}, label: "I agree"
@@ -544,7 +536,10 @@ A radio button within a group. Only one radio in a group can be selected. Maps t
 | `group` | string | Radio group name (radios in the same group are mutually exclusive) |
 | `enabled` | boolean | Whether the radio is interactive (default `true`) |
 | `color` | color | Radio tint color |
-| `accessibility_id` | string | Test identifier |
+| `disabled` | boolean | Disable the radio |
+| `text_color` | color | Text color token |
+| `text_size` | any | Font size |
+| `accessibility_id` | atom | Test identifier |
 
 ```elixir
 radio selected: true, on_select: {self(), :option_a}, label: "Option A", group: "choices"
@@ -563,7 +558,12 @@ A compact Material Design chip. Maps to `FilterChip`, `InputChip`, etc. on Compo
 | `icon` | string | Icon name displayed before the label |
 | `on_remove` | `{pid, tag}` | Fired when remove icon is tapped (input chips) |
 | `enabled` | boolean | Whether the chip is interactive (default `true`) |
-| `accessibility_id` | string | Test identifier |
+| `disabled` | boolean | Disable the chip |
+| `text_color` | color | Text color token |
+| `text_size` | any | Font size |
+| `background` | color | Background color token |
+| `corner_radius` | integer | Rounded corner radius |
+| `accessibility_id` | atom | Test identifier |
 
 ```elixir
 chip label: "Filter", variant: :filter, selected: true, on_tap: {self(), :chip_tapped}
@@ -580,7 +580,10 @@ A horizontally scrolling carousel of items. Maps to `HorizontalPager` on Compose
 | `id` | atom | Carousel identifier |
 | `on_page_change` | `{pid, tag}` | Fired with new page index on swipe |
 | `loop` | boolean | Enable infinite looping (default `false`) |
+| `autoplay` | boolean | Enable autoplay (default `false`) |
+| `autoplay_interval` | integer | Autoplay interval in ms |
 | `peek` | float | Peek width for adjacent items |
+| `accessibility_id` | atom | Test identifier |
 
 ```elixir
 carousel id: :photo_carousel, data: @photos, on_page_change: {self(), :page_changed}
@@ -599,6 +602,9 @@ A transient message bar with an optional action. Maps to `Snackbar` on Compose.
 | `on_action` | `{pid, tag}` | Fired when the action button is tapped |
 | `duration` | `:short` / `:long` | Display duration |
 | `visible` | boolean | Whether the snackbar is shown (default `true`) |
+| `text_color` | color | Text color token |
+| `background` | color | Background color token |
+| `accessibility_id` | atom | Test identifier |
 
 ```elixir
 snackbar message: "Item deleted", action_label: "Undo", on_action: {self(), :undo}
@@ -612,6 +618,9 @@ Shows a tooltip over its children. Maps to `Tooltip` on Compose and `help` modif
 |------|------|-------------|
 | `text` | string | Tooltip text (required) |
 | `position` | `:top` / `:bottom` / `:left` / `:right` | Tooltip position |
+| `visible` | boolean | Whether the tooltip is shown |
+| `delay` | integer | Show delay in ms |
+| `accessibility_id` | atom | Test identifier |
 
 ```elixir
 tooltip text: "Save changes", position: :top do
@@ -634,7 +643,7 @@ A Floating Action Button. Maps to `FloatingActionButton` on Compose.
 | `color` | color | Icon color (default `:on_primary`) |
 | `corner_radius` | number / token | Corner radius |
 | `elevation` | float | Shadow depth |
-| `accessibility_id` | string | Test identifier |
+| `accessibility_id` | atom | Test identifier |
 
 ```elixir
 fab icon: "add", on_tap: {self(), :add_item}
@@ -653,7 +662,9 @@ A clickable icon button. Maps to `IconButton` on Compose.
 | `enabled` | boolean | Whether the button is interactive (default `true`) |
 | `color` | color | Icon color |
 | `background` | color | Background color |
-| `accessibility_id` | string | Test identifier |
+| `size` | any | Button size |
+| `disabled` | boolean | Disable the button |
+| `accessibility_id` | atom | Test identifier |
 
 ```elixir
 icon_button icon: "favorite", on_tap: {self(), :favorite_tapped}
@@ -669,7 +680,9 @@ A segmented control with multiple segments. Maps to `SegmentedButton` on Compose
 | `segments` | list of maps | Each map has `:id`, `:label`, and optional `:icon` |
 | `selected` | string | The id of the currently selected segment |
 | `on_select` | `{pid, tag}` | Fired with selected segment id |
-| `accessibility_id` | string | Test identifier |
+| `text_color` | color | Text color token |
+| `background` | color | Background color token |
+| `accessibility_id` | atom | Test identifier |
 
 ```elixir
 segmented_button(
@@ -697,7 +710,8 @@ A top app bar with title and action icons. Maps to `TopAppBar` on Compose.
 | `trailing_actions` | list of maps | Each map has `:icon` and `:on_tap` |
 | `background` | color | Background color |
 | `text_color` | color | Title and icon color |
-| `accessibility_id` | string | Test identifier |
+| `elevation` | float | Shadow depth |
+| `accessibility_id` | atom | Test identifier |
 
 ```elixir
 app_bar(
@@ -717,7 +731,7 @@ A bottom navigation bar. Maps to `NavigationBar` on Compose.
 | `items` | list of maps | Each map has `:id`, `:label`, and `:icon` |
 | `active` | string | Id of the currently active item |
 | `on_select` | `{pid, tag}` | Fired with selected item id |
-| `accessibility_id` | string | Test identifier |
+| `accessibility_id` | atom | Test identifier |
 
 ```elixir
 nav_bar(
@@ -742,6 +756,8 @@ A side navigation drawer. Maps to `ModalNavigationDrawer` on Compose.
 | `active` | string | Id of the currently active item |
 | `on_select` | `{pid, tag}` | Fired with selected item id |
 | `header` | string | Optional header text at the top |
+| `background` | color | Background color token |
+| `accessibility_id` | atom | Test identifier |
 
 ```elixir
 nav_drawer(
@@ -762,7 +778,9 @@ A side navigation rail (for tablets/desktop). Maps to `NavigationRail` on Compos
 | `items` | list of maps | Each map has `:id`, `:label`, and `:icon` |
 | `active` | string | Id of the currently active item |
 | `on_select` | `{pid, tag}` | Fired with selected item id |
-| `accessibility_id` | string | Test identifier |
+| `text_color` | color | Text color token |
+| `background` | color | Background color token |
+| `accessibility_id` | atom | Test identifier |
 
 ```elixir
 nav_rail(
@@ -785,7 +803,9 @@ A popup menu with selectable items. Maps to `DropdownMenu` on Compose.
 | `visible` | boolean | Whether the menu is shown |
 | `on_dismiss` | `{pid, tag}` | Fired when the menu is dismissed |
 | `on_select` | `{pid, tag}` | Fired with selected item's action atom |
-| `accessibility_id` | string | Test identifier |
+| `text_color` | color | Text color token |
+| `background` | color | Background color token |
+| `accessibility_id` | atom | Test identifier |
 
 ```elixir
 menu(
@@ -808,6 +828,7 @@ A date selection dialog. Maps to `DatePicker` on Compose and `UIDatePicker` on S
 | `min_date` | string | Earliest selectable date |
 | `max_date` | string | Latest selectable date |
 | `title` | string | Optional title text |
+| `accessibility_id` | atom | Test identifier |
 
 ```elixir
 date_picker(
@@ -828,6 +849,7 @@ A time selection dialog. Maps to `TimePicker` on Compose and `UIDatePicker` on S
 | `on_dismiss` | `{pid, tag}` | Fired when the picker is dismissed |
 | `selected_time` | string | Initial time in HH:MM format |
 | `title` | string | Optional title text |
+| `accessibility_id` | atom | Test identifier |
 
 ```elixir
 time_picker(
@@ -850,7 +872,7 @@ A search input bar with placeholder and callbacks. Maps to `SearchBar` on Compos
 | `on_focus` | `{pid, tag}` | Fired when the bar gains focus |
 | `active` | boolean | Whether the search bar is in active/expanded state |
 | `on_tap` | `{pid, tag}` | Fired when the search bar is tapped |
-| `accessibility_id` | string | Test identifier |
+| `accessibility_id` | atom | Test identifier |
 
 ```elixir
 search_bar(placeholder: "Search...", on_change: {self(), :search_changed}, on_submit: {self(), :search_submitted})

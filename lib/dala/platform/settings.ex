@@ -5,13 +5,13 @@ defmodule Dala.Platform.Settings do
   ## Examples
 
       # Get a setting value
-      Dala.Settings.get("theme")
+      Dala.Platform.Settings.get("theme")
 
       # Set a setting value
-      socket = Dala.Settings.set(socket, "theme", "dark")
+      socket = Dala.Platform.Settings.set(socket, "theme", "dark")
 
       # Watch a key for changes (messages arrive via handle_info)
-      socket = Dala.Settings.watch(socket, "theme")
+      socket = Dala.Platform.Settings.watch(socket, "theme")
 
   Incoming change messages are delivered to screens via `handle_info/2`:
 

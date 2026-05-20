@@ -57,12 +57,13 @@ Dala.Screen.list()
 
 ```elixir
 defmodule MyApp.HomeScreen do
-  use Dala.Screen
+  use Dala.Spark.Dsl
 
-  screen do
-    name :home
-    column do
-      text "Home Screen"
+  dala do
+    screen name: :home do
+      column do
+        text "Home Screen"
+      end
     end
   end
 
@@ -74,7 +75,16 @@ end
 
 # From another module or screen
 defmodule MyApp.OtherScreen do
-  use Dala.Screen
+  use Dala.Spark.Dsl
+
+  dala do
+    screen name: :other do
+      column do
+        text "Other Screen"
+        button "Send Update", on_tap: :send_update
+      end
+    end
+  end
 
   def handle_event(:send_update, _params, socket) do
     # Send message to home screen by name
@@ -132,13 +142,18 @@ defmodule MyApp do
   end
 end
 
+```elixir
 defmodule MyApp.ChatScreen do
-  use Dala.Screen
+  use Dala.Spark.Dsl
 
-  screen do
-    name :chat
-    column do
-      text "Chat Room"
+  dala do
+    attribute :messages, :list, default: []
+
+    screen name: :chat do
+      column do
+        text "Chat Room"
+        button "Send", on_tap: :send_message
+      end
     end
   end
 
@@ -154,9 +169,9 @@ defmodule MyApp.ChatScreen do
     {:noreply, Dala.Socket.assign(socket, :messages, messages)}
   end
 
-  def handle_event(:send_message, %{"text" => text}, socket) do
+  def handle_event(:send_message, _params, socket) do
     # Broadcast message to all subscribers
-    Dala.PubSub.broadcast(MyApp.PubSub, "chat:room:123", {:message, text})
+    Dala.PubSub.broadcast(MyApp.PubSub, "chat:room:123", {:message, "Hello"})
     {:noreply, socket}
   end
 end
