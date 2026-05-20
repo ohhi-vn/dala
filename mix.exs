@@ -4,7 +4,7 @@ defmodule Dala.MixProject do
   def project do
     [
       app: :dala,
-      version: "0.3.1",
+      version: "0.3.2",
       elixir: "~> 1.18",
       erlang: ">= 27.0",
       start_permanent: Mix.env() == :prod,
@@ -54,7 +54,8 @@ defmodule Dala.MixProject do
         "guides/event_model.md": [title: "Event Model"],
         "guides/event_audit.md": [title: "Event Audit"],
         "guides/spark_dsl.md": [title: "Spark DSL"],
-        "guides/media_runtime.md": [title: "GPU render"],
+        "guides/media_runtime.md": [title: "Media Runtime"],
+        "guides/gpu_render_pipeline.md": [title: "GPU Render Pipeline"],
         "guides/testing.md": [title: "Testing"],
         "guides/liveview.md": [title: "LiveView Integration"],
         "guides/ios_ml_support.md": [title: "iOS ML Support"],
@@ -70,12 +71,13 @@ defmodule Dala.MixProject do
       groups_for_extras: [
         "Getting Started": ~r/guides\/(getting_started|architecture|build_and_beam_loading)\.md/,
         "UI & Components":
-          ~r/guides\/(components|styling|theming|ui_|render_engine|binary_protocol|spark_dsl|screen_lifecycle|navigation)\.md/,
+          ~r/guides\/(components|styling|theming|ui_|render_engine|binary_protocol|spark_dsl|screen_lifecycle|navigation|screen_manager_pubsub)\.md/,
         "Events & Interaction": ~r/guides\/(events|event_)\.md/,
         "Data & Device APIs": ~r/guides\/(data|device_capabilities)\.md/,
+        "Media & GPU": ~r/guides\/(media_runtime|gpu_render_pipeline)\.md/,
         "Testing & Development": ~r/guides\/(testing|agentic_coding)\.md/,
-        Plugins: ~r/guides\/plugin_\.md/,
         "iOS & Rust": ~r/guides\/(ios_|rustler_|emlx_)\.md/,
+        Plugins: ~r/guides\/plugin_\.md/,
         "Advanced Topics": ~r/guides\/(liveview|publishing|security|troubleshooting)\.md/
       ],
       groups_for_modules: [

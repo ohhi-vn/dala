@@ -5,13 +5,13 @@ defmodule Dala.Platform.Linking do
   ## Examples
 
       # Open an external URL
-      socket = Dala.Linking.open_url(socket, "https://example.com")
+      socket = Dala.Platform.Linking.open_url(socket, "https://example.com")
 
       # Check if a URL can be opened
-      Dala.Linking.can_open?("https://example.com") #=> true | false
+      Dala.Platform.Linking.can_open?("https://example.com") #=> true | false
 
       # Get the initial URL that launched the app
-      Dala.Linking.initial_url() #=> nil | "https://..."
+      Dala.Platform.Linking.initial_url() #=> nil | "https://..."
 
   Incoming deep link messages are delivered to screens via `handle_info/2`:
 
