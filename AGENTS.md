@@ -465,6 +465,7 @@ These are the things we've burned ourselves on. Following them isn't optional.
 | Wakelock, List rendering, PubSub | `lib/dala/hardware/wakelock.ex`, `lib/dala/list.ex`, `lib/dala/pubsub.ex` |
 | Distribution, Permissions | `lib/dala/connectivity/dist.ex`, `lib/dala/permissions.ex` |
 | **Media Runtime** (video, scene graph, clock, filters, subtitles, adaptive bitrate, GPU surface) | `guides/media_runtime.md`, `lib/dala/media/`, `lib/dala/gpu.ex`, `lib/dala/gpu/command.ex`, `native/dala_gpu/` |
+| **GPU Compute** (EXCubeCL, CubeCL kernels, buffer management, pipelines, ML inference, media processing) | `guides/gpu_compute.md`, `lib/dala/gpu/compute/`, `lib/dala/ml/gpu/`, `lib/dala/media/gpu/` |
 
 ## iOS ML Support (Nx ecosystem + CoreML + ONNX)
 
@@ -571,6 +572,32 @@ Summary: `dala/ML_INTEGRATION_SUMMARY.md`
     - `Dala.Preview.Codegen.generate_dsl/3` — Spark DSL style with snake_case entities
     - `Dala.Preview.Codegen.extract_handlers/1` — Extract event handler atoms from UI tree
     - Auto-generates `handle_event/3` stubs for all event handlers found in the tree
+
+## 24. **GPU compute via EXCubeCL.**
+    Dala integrates EXCubeCL for GPU compute workloads (image processing, AI inference, realtime effects).
+    
+    **Key modules:**
+    - `Dala.Gpu.Compute` — High-level API: buffers, kernels, pipelines, Nx bridge
+    - `Dala.Gpu.Compute.Buffer` — Typed buffer struct wrapper
+    - `Dala.Gpu.Compute.Kernel` — Kernel execution + custom kernel registry
+    - `Dala.Gpu.Compute.Pipeline` — Multi-stage GPU pipelines
+    - `Dala.ML.Gpu.Inference` — GPU-accelerated ML inference
+    - `Dala.Media.Gpu.Processor` — GPU-accelerated video/image processing
+    
+    **Key patterns:**
+    - GPU compute is dirty-CPU scheduled (won't block BEAM)
+    - On iOS → Metal shaders, Android → OpenGL ES compute, Desktop → CPU fallback
+    - Use `Dala.Gpu.Compute.device_info()` to check GPU availability
+    - Always free buffers when done (or use `Dala.Gpu.Compute.free_many/1`)
+    - For rendering results to screen, use `run_to_surface/5` to avoid CPU read-back
+    - Pipelines batch multiple kernels into a single submission
+    
+    **Integration points:**
+    - `Dala.Gpu` delegates to `Dala.Gpu.Compute` via `compute_buffer/3`, `compute_run/4`, etc.
+    - `Dala.ML` includes `:gpu_compute` in `available_backends/0`
+    - `Dala.ML.setup/0` does NOT auto-configure GPU compute (opt-in)
+    
+    **Full guide:** `guides/gpu_compute.md`
 
 ## 23. **Event system and additional platform APIs.**
     Dala provides a unified event system and several additional platform APIs:

@@ -6,8 +6,6 @@ defmodule Dala.Nav.ScreenNavTest do
   # Use module attributes with fully qualified names for cross-screen references.
 
   defmodule HomeScreen do
-    use Dala.Screen
-
     @profile Dala.Nav.ScreenNavTest.ProfileScreen
 
     def mount(_params, _session, socket), do: {:ok, Dala.Socket.assign(socket, :page, :home)}
@@ -21,11 +19,12 @@ defmodule Dala.Nav.ScreenNavTest do
 
     def handle_event("reset_to_profile", _, socket),
       do: {:noreply, Dala.Socket.reset_to(socket, @profile)}
+
+    def handle_info(_, socket), do: {:noreply, socket}
+    def terminate(_, _), do: :ok
   end
 
   defmodule ProfileScreen do
-    use Dala.Screen
-
     @home Dala.Nav.ScreenNavTest.HomeScreen
     @settings Dala.Nav.ScreenNavTest.SettingsScreen
 
@@ -44,11 +43,12 @@ defmodule Dala.Nav.ScreenNavTest do
 
     def handle_event("reset_to_home", _, socket),
       do: {:noreply, Dala.Socket.reset_to(socket, @home)}
+
+    def handle_info(_, socket), do: {:noreply, socket}
+    def terminate(_, _), do: :ok
   end
 
   defmodule SettingsScreen do
-    use Dala.Screen
-
     @home Dala.Nav.ScreenNavTest.HomeScreen
 
     def mount(params, _session, socket) do
@@ -61,6 +61,9 @@ defmodule Dala.Nav.ScreenNavTest do
     def handle_event("back", _, socket), do: {:noreply, Dala.Socket.pop_screen(socket)}
     def handle_event("back_to_root", _, socket), do: {:noreply, Dala.Socket.pop_to_root(socket)}
     def handle_event("pop_to_home", _, socket), do: {:noreply, Dala.Socket.pop_to(socket, @home)}
+
+    def handle_info(_, socket), do: {:noreply, socket}
+    def terminate(_, _), do: :ok
   end
 
   defmodule DemoApp do
@@ -251,13 +254,15 @@ defmodule Dala.Nav.ScreenNavTest do
 
   describe "resolve_module/1 error handling" do
     defmodule UnknownNavScreen do
-      use Dala.Screen
       def mount(_, _, socket), do: {:ok, socket}
       def render(_), do: %{type: :text, props: %{text: "x"}, children: []}
 
       def handle_event("bad_nav", _, socket) do
         {:noreply, Dala.Socket.push_screen(socket, :no_such_screen)}
       end
+
+      def handle_info(_, socket), do: {:noreply, socket}
+      def terminate(_, _), do: :ok
     end
 
     test "raises ArgumentError for unregistered atom" do

@@ -6,21 +6,21 @@ defmodule Dala.Spark.DslIntegrationTest do
       defmodule TestAllComponentsScreen do
         use Dala.Screen
 
-        screen do
-          name(:test_screen)
 
-          column do
-            padding(:space_md)
-            gap(:space_sm)
-            text("Hello World")
-
-            row do
+          screen name: :test_screen do
+            column do
+              padding(:space_md)
               gap(:space_sm)
-              button("Button 1", on_tap: :increment)
-              button("Button 2", on_tap: :decrement)
+              text("Hello World")
+
+              row do
+                gap(:space_sm)
+                button("Button 1", on_tap: :increment)
+                button("Button 2", on_tap: :decrement)
+              end
             end
           end
-        end
+
 
         def handle_event(:increment, _params, socket), do: {:noreply, socket}
         def handle_event(:decrement, _params, socket), do: {:noreply, socket}
@@ -50,9 +50,10 @@ defmodule Dala.Spark.DslIntegrationTest do
       defmodule TestSimpleDslScreen do
         use Dala.Screen
 
-        screen do
-          name(:simple)
-          text("Hello")
+        dala do
+          screen name: :simple do
+            text("Hello")
+          end
         end
       end
 
@@ -72,19 +73,18 @@ defmodule Dala.Spark.DslIntegrationTest do
       defmodule TestRefScreen do
         use Dala.Screen
 
-        attributes do
-          attribute(:count, :integer, default: 0)
-        end
 
-        screen do
-          name(:ref_test)
-
-          column do
-            gap(:space_sm)
-            text("Count: @count")
-            button("Increment", on_tap: :increment)
+          attributes do
+            attribute(:count, :integer, default: 0)
           end
-        end
+
+          screen name: :ref_test do
+            column do
+              gap(:space_sm)
+              text("Count: @count")
+              button("Increment", on_tap: :increment)
+            end
+          end
 
         def handle_event(:increment, _params, socket) do
           {:noreply, Dala.Socket.assign(socket, :count, socket.assigns.count + 1)}
@@ -110,14 +110,15 @@ defmodule Dala.Spark.DslIntegrationTest do
       defmodule TestAttrScreen do
         use Dala.Spark.Dsl
 
-        attributes do
-          attribute(:count, :integer, default: 0)
-          attribute(:label, :string, default: "Hello")
-        end
+        dala do
+          attributes do
+            attribute(:count, :integer, default: 0)
+            attribute(:label, :string, default: "Hello")
+          end
 
-        screen do
-          name(:attr_test)
-          text("@label")
+          screen name: :attr_test do
+            text("@label")
+          end
         end
       end
 
@@ -132,31 +133,31 @@ defmodule Dala.Spark.DslIntegrationTest do
       defmodule TestLeafComponentsScreen do
         use Dala.Screen
 
-        screen do
-          name(:leaves)
-
-          column do
-            gap(:space_sm)
-            text("Hello")
-            button("Press", on_tap: :pressed)
-            icon("settings")
-            divider()
-            spacer()
-            text_field(placeholder: "Type here", on_change: :changed)
-            toggle(value: true, on_change: :toggled)
-            slider(value: 0.5, on_change: :slid)
-            switch(value: false, on_toggle: :switched)
-            image("https://example.com/photo.jpg")
-            video("https://example.com/clip.mp4")
-            activity_indicator(size: :large)
-            progress_bar(progress: 0.5)
-            status_bar(bar_style: :light_content)
-            refresh_control(on_refresh: :refreshed)
-            webview("https://elixir-lang.org")
-            camera_preview(facing: :front)
-            native_view(SomeModule, id: :my_view)
-            tab_bar(tabs: [])
-            list(:my_list)
+        dala do
+          screen name: :leaves do
+            column do
+              gap(:space_sm)
+              text("Hello")
+              button("Press", on_tap: :pressed)
+              icon("settings")
+              divider()
+              spacer()
+              text_field(placeholder: "Type here", on_change: :changed)
+              toggle(value: true, on_change: :toggled)
+              slider(value: 0.5, on_change: :slid)
+              switch(value: false, on_toggle: :switched)
+              image("https://example.com/photo.jpg")
+              video("https://example.com/clip.mp4")
+              activity_indicator(size: :large)
+              progress_bar(progress: 0.5)
+              status_bar(bar_style: :light_content)
+              refresh_control(on_refresh: :refreshed)
+              webview("https://elixir-lang.org")
+              camera_preview(facing: :front)
+              native_view(SomeModule, id: :my_view)
+              tab_bar(tabs: [])
+              list(:my_list)
+            end
           end
         end
 
@@ -170,38 +171,38 @@ defmodule Dala.Spark.DslIntegrationTest do
       defmodule TestNestedScreen do
         use Dala.Screen
 
-        screen do
-          name(:nested)
+        dala do
+          screen name: :nested do
+            column do
+              padding(:space_md)
 
-          column do
-            padding(:space_md)
+              row do
+                gap(:space_sm)
 
-            row do
-              gap(:space_sm)
-
-              box do
-                text("Overlapping")
+                box do
+                  text("Overlapping")
+                end
               end
-            end
 
-            scroll do
-              padding(:space_sm)
-              text("Scrollable")
-            end
+              scroll do
+                padding(:space_sm)
+                text("Scrollable")
+              end
 
-            pressable do
-              on_press(:pressed)
-              text("Pressable")
-            end
+              pressable do
+                on_press(:pressed)
+                text("Pressable")
+              end
 
-            safe_area do
-              text("Safe")
-            end
+              safe_area do
+                text("Safe")
+              end
 
-            modal do
-              visible(true)
-              on_dismiss(:dismissed)
-              text("Modal")
+              modal do
+                visible(true)
+                on_dismiss(:dismissed)
+                text("Modal")
+              end
             end
           end
         end

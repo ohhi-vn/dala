@@ -284,6 +284,62 @@ defmodule Dala.Gpu do
     Surface.supports_compute(pid)
   end
 
+  # ── GPU Compute (EXCubeCL delegation) ────────────────────────────────────
+
+  @doc """
+  Create a GPU compute buffer.
+
+  Delegates to `Dala.Gpu.Compute.buffer/3`.
+  """
+  @spec compute_buffer(list(), tuple(), atom()) :: Dala.Gpu.Compute.Buffer.t()
+  def compute_buffer(data, shape, dtype \\ :f32) do
+    Dala.Gpu.Compute.buffer(data, shape, dtype)
+  end
+
+  @doc """
+  Run a GPU compute kernel synchronously.
+
+  Delegates to `Dala.Gpu.Compute.run_kernel/4`.
+  """
+  @spec compute_run(atom(), [Dala.Gpu.Compute.Buffer.t()], Dala.Gpu.Compute.Buffer.t(), map()) ::
+          :ok | {:error, term()}
+  def compute_run(kernel, inputs, output, params \\ %{}) do
+    Dala.Gpu.Compute.run_kernel(kernel, inputs, output, params)
+  end
+
+  @doc """
+  Run a GPU compute pipeline.
+
+  Delegates to `Dala.Gpu.Compute.pipeline/0`, `Dala.Gpu.Compute.pipeline_add/2`,
+  and `Dala.Gpu.Compute.pipeline_run/1`.
+  """
+  @spec compute_pipeline([map()]) :: :ok | {:error, term()}
+  def compute_pipeline(stages) when is_list(stages) do
+    pipeline = Dala.Gpu.Compute.pipeline()
+    pipeline = Enum.reduce(stages, pipeline, &Dala.Gpu.Compute.pipeline_add(&2, &1))
+    Dala.Gpu.Compute.pipeline_run(pipeline)
+  end
+
+  @doc """
+  Free a GPU compute buffer.
+
+  Delegates to `Dala.Gpu.Compute.free/1`.
+  """
+  @spec compute_free(Dala.Gpu.Compute.Buffer.t()) :: :ok
+  def compute_free(buffer) do
+    Dala.Gpu.Compute.free(buffer)
+  end
+
+  @doc """
+  Free multiple GPU compute buffers.
+
+  Delegates to `Dala.Gpu.Compute.free_many/1`.
+  """
+  @spec compute_free_many([Dala.Gpu.Compute.Buffer.t()]) :: :ok
+  def compute_free_many(buffers) do
+    Dala.Gpu.Compute.free_many(buffers)
+  end
+
   # ── Complex drawing commands ──────────────────────────────────────────────
 
   @doc "Draw a circle outline."

@@ -7,18 +7,20 @@ defmodule Dala.Screen.ManagerTest do
   end
 
   defmodule TestScreen do
-    use Dala.Screen
-
-    screen do
-      name(:test_screen)
-
-      column do
-        text("Test")
-      end
+    def mount(_params, _session, socket) do
+      {:ok, socket}
     end
 
-    def handle_event(:test, _params, socket) do
+    def handle_event(_event, _params, socket) do
       {:noreply, socket}
+    end
+
+    def handle_info(_message, socket) do
+      {:noreply, socket}
+    end
+
+    def terminate(_reason, _socket) do
+      :ok
     end
   end
 

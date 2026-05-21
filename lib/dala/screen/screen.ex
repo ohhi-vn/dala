@@ -38,6 +38,8 @@ defmodule Dala.Screen.Screen do
   defmacro __using__(_opts) do
     quote do
       use Dala.Spark.Dsl
+      require Dala.Spark.Dsl
+      import Dala.Spark.Dsl
       @behaviour Dala.Screen
 
       # Default handle_info implementation

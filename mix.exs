@@ -56,6 +56,7 @@ defmodule Dala.MixProject do
         "guides/spark_dsl.md": [title: "Spark DSL"],
         "guides/media_runtime.md": [title: "Media Runtime"],
         "guides/gpu_render_pipeline.md": [title: "GPU Render Pipeline"],
+        "guides/gpu_compute.md": [title: "GPU Compute"],
         "guides/testing.md": [title: "Testing"],
         "guides/liveview.md": [title: "LiveView Integration"],
         "guides/ios_ml_support.md": [title: "iOS ML Support"],
@@ -74,7 +75,7 @@ defmodule Dala.MixProject do
           ~r/guides\/(components|styling|theming|ui_|render_engine|binary_protocol|spark_dsl|screen_lifecycle|navigation|screen_manager_pubsub)\.md/,
         "Events & Interaction": ~r/guides\/(events|event_)\.md/,
         "Data & Device APIs": ~r/guides\/(data|device_capabilities)\.md/,
-        "Media & GPU": ~r/guides\/(media_runtime|gpu_render_pipeline)\.md/,
+        "Media & GPU": ~r/guides\/(media_runtime|gpu_render_pipeline|gpu_compute)\.md/,
         "Testing & Development": ~r/guides\/(testing|agentic_coding)\.md/,
         "iOS & Rust": ~r/guides\/(ios_|rustler_|emlx_)\.md/,
         Plugins: ~r/guides\/plugin_\.md/,
@@ -127,6 +128,14 @@ defmodule Dala.MixProject do
           Dala.Plugin.Registry,
           Dala.Plugin.Protocol,
           Dala.Plugin.Manifest
+        ],
+        "GPU Compute": [
+          Dala.Gpu.Compute,
+          Dala.Gpu.Compute.Buffer,
+          Dala.Gpu.Compute.Kernel,
+          Dala.Gpu.Compute.Pipeline,
+          Dala.ML.Gpu.Inference,
+          Dala.Media.Gpu.Processor
         ],
         Internals: [Dala.Dist, Dala.NativeLogger, Dala.List]
       ],
@@ -194,7 +203,10 @@ defmodule Dala.MixProject do
       {:polaris, "~> 0.1"},
       {:scholar, "~> 0.4"},
       {:nx_signal, "~> 0.3"},
-      {:axon, "~> 0.8"}
+      {:axon, "~> 0.8"},
+
+      # GPU compute runtime (CubeCL via Rust NIFs)
+      {:ex_cubecl, "~> 0.2"}
     ]
   end
 end

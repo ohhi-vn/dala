@@ -55,305 +55,37 @@ defmodule Dala.Preview.Canvas do
 
   defp palette_groups, do: @palette_groups
 
-  @component_specs %{
-    column: [
-      {:padding, :atom, nil},
-      {:gap, :atom, nil},
-      {:background, :atom, nil},
-      {:border_color, :atom, nil},
-      {:border_width, :integer, nil},
-      {:corner_radius, :integer, nil},
-      {:fill_width, :boolean, false},
-      {:fill_height, :boolean, false},
-      {:width, :integer, nil},
-      {:height, :integer, nil},
-      {:scrollable, :boolean, false},
-      {:on_tap, :event, nil},
-      {:on_long_press, :event, nil}
-    ],
-    row: [
-      {:padding, :atom, nil},
-      {:gap, :atom, nil},
-      {:background, :atom, nil},
-      {:border_color, :atom, nil},
-      {:border_width, :integer, nil},
-      {:corner_radius, :integer, nil},
-      {:fill_width, :boolean, false},
-      {:fill_height, :boolean, false},
-      {:width, :integer, nil},
-      {:height, :integer, nil},
-      {:scrollable, :boolean, false},
-      {:on_tap, :event, nil},
-      {:on_long_press, :event, nil}
-    ],
-    box: [
-      {:padding, :atom, nil},
-      {:background, :atom, nil},
-      {:border_color, :atom, nil},
-      {:border_width, :integer, nil},
-      {:corner_radius, :integer, nil},
-      {:fill_width, :boolean, false},
-      {:width, :integer, nil},
-      {:height, :integer, nil},
-      {:on_tap, :event, nil},
-      {:on_long_press, :event, nil},
-      {:draggable, :boolean, false},
-      {:droppable, :boolean, false}
-    ],
-    scroll: [
-      {:padding, :atom, nil},
-      {:gap, :atom, nil},
-      {:background, :atom, nil},
-      {:fill_width, :boolean, false},
-      {:width, :integer, nil},
-      {:height, :integer, nil}
-    ],
-    modal: [
-      {:padding, :atom, nil},
-      {:background, :atom, nil},
-      {:corner_radius, :integer, nil},
-      {:on_dismiss, :event, nil}
-    ],
-    pressable: [
-      {:padding, :atom, nil},
-      {:background, :atom, nil},
-      {:corner_radius, :integer, nil},
-      {:on_tap, :event, nil},
-      {:on_long_press, :event, nil}
-    ],
-    safe_area: [
-      {:padding, :atom, nil},
-      {:background, :atom, nil}
-    ],
-    text: [
-      {:text, :string, "Text"},
-      {:text_color, :atom, nil},
-      {:text_size, :atom, nil},
-      {:font_weight, :atom, nil},
-      {:text_align, :atom, nil},
-      {:italic, :boolean, false},
-      {:padding, :atom, nil},
-      {:background, :atom, nil},
-      {:corner_radius, :integer, nil},
-      {:fill_width, :boolean, false},
-      {:on_tap, :event, nil}
-    ],
-    button: [
-      {:text, :string, "Button"},
-      {:on_tap, :event, nil},
-      {:disabled, :boolean, false},
-      {:text_color, :atom, nil},
-      {:text_size, :atom, nil},
-      {:font_weight, :atom, nil},
-      {:background, :atom, nil},
-      {:padding, :atom, nil},
-      {:corner_radius, :integer, nil},
-      {:fill_width, :boolean, false}
-    ],
-    icon: [
-      {:name, :atom, :star},
-      {:text_color, :atom, nil},
-      {:text_size, :atom, nil},
-      {:on_tap, :event, nil}
-    ],
-    divider: [
-      {:border_color, :atom, nil},
-      {:padding, :atom, nil}
-    ],
-    spacer: [],
-    text_field: [
-      {:placeholder, :string, ""},
-      {:value, :string, nil},
-      {:on_change, :event, nil},
-      {:on_focus, :event, nil},
-      {:on_blur, :event, nil},
-      {:text_color, :atom, nil},
-      {:text_size, :atom, nil},
-      {:background, :atom, nil},
-      {:corner_radius, :integer, nil},
-      {:fill_width, :boolean, false}
-    ],
-    toggle: [
-      {:on_tap, :event, nil},
-      {:text_color, :atom, nil},
-      {:text_size, :atom, nil}
-    ],
-    slider: [
-      {:value, :integer, 50},
-      {:on_change, :event, nil},
-      {:fill_width, :boolean, false}
-    ],
-    switch: [
-      {:on_tap, :event, nil},
-      {:text_color, :atom, nil}
-    ],
-    image: [
-      {:src, :string, ""},
-      {:fill_width, :boolean, false},
-      {:width, :integer, nil},
-      {:height, :integer, nil},
-      {:corner_radius, :integer, nil},
-      {:on_tap, :event, nil}
-    ],
-    video: [
-      {:src, :string, ""},
-      {:fill_width, :boolean, false},
-      {:width, :integer, nil},
-      {:height, :integer, nil}
-    ],
-    activity_indicator: [],
-    progress_bar: [
-      {:value, :integer, 0},
-      {:fill_width, :boolean, false},
-      {:corner_radius, :integer, nil}
-    ],
-    status_bar: [
-      {:background, :atom, nil},
-      {:text_color, :atom, nil}
-    ],
-    refresh_control: [
-      {:on_refresh, :event, nil}
-    ],
-    webview: [
-      {:src, :string, ""},
-      {:fill_width, :boolean, false},
-      {:width, :integer, nil},
-      {:height, :integer, nil}
-    ],
-    camera_preview: [],
-    native_view: [
-      {:view_type, :string, ""},
-      {:fill_width, :boolean, false},
-      {:width, :integer, nil},
-      {:height, :integer, nil}
-    ],
-    tab_bar: [
-      {:on_tab_select, :event, nil},
-      {:background, :atom, nil},
-      {:text_color, :atom, nil}
-    ],
-    list: [
-      {:padding, :atom, nil},
-      {:gap, :atom, nil},
-      {:background, :atom, nil},
-      {:fill_width, :boolean, false},
-      {:on_end_reached, :event, nil}
-    ],
-    card: [
-      {:variant, :atom, :elevated},
-      {:elevation, :float, 1.0},
-      {:corner_radius, :integer, 12},
-      {:padding, :atom, nil},
-      {:background, :atom, nil},
-      {:fill_width, :boolean, false},
-      {:on_tap, :event, nil}
-    ],
-    badge: [
-      {:count, :integer, 0},
-      {:color, :atom, nil},
-      {:text_color, :atom, nil},
-      {:visible, :boolean, true}
-    ],
-    bottom_sheet: [
-      {:visible, :boolean, false},
-      {:height, :integer, nil},
-      {:corner_radius, :integer, 16},
-      {:background, :atom, nil},
-      {:on_dismiss, :event, nil}
-    ],
-    tooltip: [
-      {:text, :string, ""},
-      {:position, :atom, :top},
-      {:visible, :boolean, false}
-    ],
-    checkbox: [
-      {:value, :boolean, false},
-      {:label, :string, ""},
-      {:on_change, :event, nil},
-      {:disabled, :boolean, false}
-    ],
-    radio: [
-      {:selected, :boolean, false},
-      {:label, :string, ""},
-      {:group, :string, ""},
-      {:on_select, :event, nil}
-    ],
-    chip: [
-      {:label, :string, "Chip"},
-      {:variant, :atom, :filter},
-      {:selected, :boolean, false},
-      {:on_tap, :event, nil},
-      {:on_remove, :event, nil}
-    ],
-    snackbar: [
-      {:message, :string, ""},
-      {:action_label, :string, nil},
-      {:visible, :boolean, false},
-      {:on_action, :event, nil}
-    ],
-    fab: [
-      {:icon, :atom, :add},
-      {:text, :string, nil},
-      {:on_tap, :event, nil},
-      {:background, :atom, nil}
-    ],
-    icon_button: [
-      {:icon, :atom, :star},
-      {:on_tap, :event, nil},
-      {:selected, :boolean, false},
-      {:disabled, :boolean, false}
-    ],
-    segmented_button: [
-      {:selected, :string, ""},
-      {:on_select, :event, nil}
-    ],
-    app_bar: [
-      {:title, :string, "App"},
-      {:leading_icon, :atom, nil},
-      {:on_leading, :event, nil},
-      {:background, :atom, nil}
-    ],
-    nav_bar: [
-      {:active, :string, ""},
-      {:on_select, :event, nil},
-      {:background, :atom, nil}
-    ],
-    nav_drawer: [
-      {:visible, :boolean, false},
-      {:active, :string, ""},
-      {:on_select, :event, nil},
-      {:on_dismiss, :event, nil}
-    ],
-    nav_rail: [
-      {:active, :string, ""},
-      {:on_select, :event, nil}
-    ],
-    menu: [
-      {:visible, :boolean, false},
-      {:on_select, :event, nil}
-    ],
-    date_picker: [
-      {:visible, :boolean, false},
-      {:selected_date, :string, ""},
-      {:on_select, :event, nil}
-    ],
-    time_picker: [
-      {:visible, :boolean, false},
-      {:selected_time, :string, ""},
-      {:on_select, :event, nil}
-    ],
-    search_bar: [
-      {:placeholder, :string, "Search..."},
-      {:value, :string, ""},
-      {:on_change, :event, nil},
-      {:on_submit, :event, nil}
-    ],
-    carousel: [
-      {:loop, :boolean, false},
-      {:autoplay, :boolean, false},
-      {:on_page_change, :event, nil}
-    ]
-  }
+  @event_prop_names [
+    :on_tap, :on_long_press, :on_double_tap, :on_swipe, :on_swipe_left,
+    :on_swipe_right, :on_swipe_up, :on_swipe_down, :on_press, :on_change,
+    :on_toggle, :on_focus, :on_blur, :on_submit, :on_compose, :on_refresh,
+    :on_end_reached, :on_scroll, :on_dismiss, :on_tab_select, :on_select,
+    :on_action, :on_remove, :on_leading, :on_page_change, :on_error, :on_load
+  ]
+
+  @component_specs (
+    infer_spec_type = fn
+      nil, _prop -> :atom
+      v, _prop when is_boolean(v) -> :boolean
+      v, _prop when is_integer(v) -> :integer
+      v, _prop when is_float(v) -> :float
+      v, _prop when is_binary(v) -> :string
+      v, _prop when is_list(v) -> :atom
+      _, _prop -> :atom
+    end
+
+    for {_name, comp} <- Dala.Ui.Component.components(), into: %{} do
+      specs =
+        comp.props
+        |> Enum.map(fn prop ->
+          default = Map.get(comp.defaults, prop)
+          type = if prop in @event_prop_names, do: :event, else: infer_spec_type.(default, prop)
+          {prop, type, default}
+        end)
+
+      {comp.name, specs}
+    end
+  )
 
   # ── LiveView callbacks ──────────────────────────────────────────────────────
 

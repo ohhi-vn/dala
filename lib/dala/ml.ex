@@ -11,6 +11,7 @@ defmodule Dala.ML do
   - **EMLX** - Apple Silicon GPU acceleration (iOS only, auto-configured)
   - **CoreML** - iOS-native ML framework (Neural Engine, iOS only)
   - **ONNX Runtime** - Cross-platform inference engine (iOS/Android)
+  - **GPU Compute (EXCubeCL)** - GPU compute via CubeCL (iOS/Android/desktop)
 
   ## Quick Start
 
@@ -20,6 +21,21 @@ defmodule Dala.ML do
       # Now use any of the integrated libraries
       tensor = Nx.tensor([1.0, 2.0, 3.0])
       Nx.sum(tensor)
+
+  ## GPU Compute
+
+  For heavy workloads (image processing, custom kernels, realtime effects),
+  use the GPU compute backend via EXCubeCL:
+
+      # Check GPU availability
+      Dala.Gpu.Compute.device_info()
+
+      # Create buffers and run kernels
+      a = Dala.Gpu.Compute.buffer([1.0, 2.0, 3.0], {3}, :f32)
+      b = Dala.Gpu.Compute.buffer([4.0, 5.0, 6.0], {3}, :f32)
+      c = Dala.Gpu.Compute.buffer_zeros({3}, :f32)
+      Dala.Gpu.Compute.add(a, b, c)
+      Dala.Gpu.Compute.read(c)
 
   ## Platform Support
 
@@ -32,6 +48,7 @@ defmodule Dala.ML do
   | EMLX (GPU) | ✅ | ✅ | ❌ |
   | CoreML | ✅ | ✅ | ❌ |
   | ONNX Runtime | ✅ | ✅ | ✅ |
+  | GPU Compute (CubeCL) | ✅ | ✅ | ✅ |
   """
 
   @doc """
@@ -113,6 +130,8 @@ defmodule Dala.ML do
         ios?() and Code.ensure_loaded?(Dala.Native) and
           function_exported?(Dala.Native, :coreml_load_model, 2),
       onnx_available: Dala.ML.ONNX.available?(),
+      gpu_compute_available: Code.ensure_loaded?(ExCubecl),
+      gpu_device: (if Code.ensure_loaded?(ExCubecl), do: Dala.Gpu.Compute.device_info(), else: nil),
       libraries: %{
         nx: Code.ensure_loaded?(Nx),
         scholar: Code.ensure_loaded?(Scholar),
@@ -160,6 +179,13 @@ defmodule Dala.ML do
     backends =
       if Dala.ML.ONNX.available?() do
         [:onnx | backends]
+      else
+        backends
+      end
+
+    backends =
+      if Code.ensure_loaded?(ExCubecl) do
+        [:gpu_compute | backends]
       else
         backends
       end

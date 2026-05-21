@@ -7,9 +7,12 @@ defmodule Dala.Spark.Transformers.Render do
 
       %{type: :column, props: %{...}, children: [...]}
 
-  Container entities (`column`, `row`, `box`, `scroll`, `modal`, `pressable`,
-  `safe_area`) carry a `:children` field populated by Spark's `recursive_as`
-  mechanism. Leaf entities have no children.
+  Container entities carry a `:children` field populated by Spark's
+  `recursive_as` mechanism. Leaf entities have no children.
+
+  Type mapping is derived dynamically from `Dala.Ui.Component` registry at
+  compile time — when a component is added to the registry, the DSL render
+  transformer picks it up automatically.
   """
 
   use Spark.Dsl.Transformer
@@ -18,6 +21,14 @@ defmodule Dala.Spark.Transformers.Render do
   # (AGENTS.md rule #9).
   @at_ref_regex Regex.compile!("@([a-zA-Z_]\\w*)")
 
+  # Struct → type mapping derived from Component registry at compile time.
+  @struct_to_type (for {name, comp} <- Dala.Ui.Component.components(), into: %{} do
+                     struct_module =
+                       Module.concat(Dala.Spark.Dsl, Macro.camelize(Atom.to_string(name)))
+
+                     {struct_module, comp.type}
+                   end)
+
   @impl true
   def transform(dsl_state) do
     case Spark.Dsl.Transformer.get_entities(dsl_state, [:screen]) do
@@ -25,7 +36,6 @@ defmodule Dala.Spark.Transformers.Render do
         {:ok, dsl_state}
 
       screen_entities ->
-        # Build render tree from all top-level entities in the screen section
         render_ast = build_children_ast(screen_entities)
 
         render_fn =
@@ -41,8 +51,6 @@ defmodule Dala.Spark.Transformers.Render do
 
   # ── AST builders ──────────────────────────────────────────────────────────
 
-  # Build a list of child ASTs. When there's a single child, unwrap to avoid
-  # wrapping everything in an extra list.
   defp build_children_ast([]) do
     quote do: []
   end
@@ -56,7 +64,6 @@ defmodule Dala.Spark.Transformers.Render do
     quote do: unquote(nodes)
   end
 
-  # Build AST for a single entity → %{type: atom, props: map, children: list}
   defp build_node_ast(entity) do
     type = struct_to_type(entity.__struct__)
     props_ast = build_props_ast(entity)
@@ -68,62 +75,20 @@ defmodule Dala.Spark.Transformers.Render do
     end
   end
 
-  # ── Type mapping ──────────────────────────────────────────────────────────
+  # ── Type mapping (dynamic from Component registry) ─────────────────────────
 
-  # Maps DSL struct modules to the :type atom that Dala.Ui.Widgets uses.
-  # Must stay in sync with Dala.Ui.Widgets function → type mappings.
-  defp struct_to_type(Dala.Spark.Dsl.Text), do: :text
-  defp struct_to_type(Dala.Spark.Dsl.Button), do: :button
-  defp struct_to_type(Dala.Spark.Dsl.Icon), do: :icon
-  defp struct_to_type(Dala.Spark.Dsl.Divider), do: :divider
-  defp struct_to_type(Dala.Spark.Dsl.Spacer), do: :spacer
-  defp struct_to_type(Dala.Spark.Dsl.TextField), do: :text_field
-  defp struct_to_type(Dala.Spark.Dsl.Toggle), do: :toggle
-  defp struct_to_type(Dala.Spark.Dsl.Slider), do: :slider
-  defp struct_to_type(Dala.Spark.Dsl.Switch), do: :switch
-  defp struct_to_type(Dala.Spark.Dsl.Image), do: :image
-  defp struct_to_type(Dala.Spark.Dsl.Video), do: :video
-  defp struct_to_type(Dala.Spark.Dsl.ActivityIndicator), do: :activity_indicator
-  defp struct_to_type(Dala.Spark.Dsl.ProgressBar), do: :progress_bar
-  defp struct_to_type(Dala.Spark.Dsl.StatusBar), do: :status_bar
-  defp struct_to_type(Dala.Spark.Dsl.RefreshControl), do: :refresh_control
-  defp struct_to_type(Dala.Spark.Dsl.WebView), do: :web_view
-  defp struct_to_type(Dala.Spark.Dsl.CameraPreview), do: :camera_preview
-  defp struct_to_type(Dala.Spark.Dsl.NativeView), do: :native_view
-  defp struct_to_type(Dala.Spark.Dsl.TabBar), do: :tab_bar
-  defp struct_to_type(Dala.Spark.Dsl.DalaList), do: :list
-  defp struct_to_type(Dala.Spark.Dsl.Column), do: :column
-  defp struct_to_type(Dala.Spark.Dsl.Row), do: :row
-  defp struct_to_type(Dala.Spark.Dsl.Box), do: :box
-  defp struct_to_type(Dala.Spark.Dsl.Scroll), do: :scroll
-  defp struct_to_type(Dala.Spark.Dsl.Modal), do: :modal
-  defp struct_to_type(Dala.Spark.Dsl.Pressable), do: :pressable
-  defp struct_to_type(Dala.Spark.Dsl.SafeArea), do: :safe_area
-  defp struct_to_type(Dala.Spark.Dsl.Checkbox), do: :checkbox
-  defp struct_to_type(Dala.Spark.Dsl.Radio), do: :radio
-  defp struct_to_type(Dala.Spark.Dsl.Card), do: :card
-  defp struct_to_type(Dala.Spark.Dsl.Badge), do: :badge
-  defp struct_to_type(Dala.Spark.Dsl.Chip), do: :chip
-  defp struct_to_type(Dala.Spark.Dsl.Snackbar), do: :snackbar
-  defp struct_to_type(Dala.Spark.Dsl.Fab), do: :fab
-  defp struct_to_type(Dala.Spark.Dsl.IconButton), do: :icon_button
-  defp struct_to_type(Dala.Spark.Dsl.SegmentedButton), do: :segmented_button
-  defp struct_to_type(Dala.Spark.Dsl.AppBar), do: :app_bar
-  defp struct_to_type(Dala.Spark.Dsl.NavBar), do: :nav_bar
-  defp struct_to_type(Dala.Spark.Dsl.NavDrawer), do: :nav_drawer
-  defp struct_to_type(Dala.Spark.Dsl.NavRail), do: :nav_rail
-  defp struct_to_type(Dala.Spark.Dsl.Menu), do: :menu
-  defp struct_to_type(Dala.Spark.Dsl.DatePicker), do: :date_picker
-  defp struct_to_type(Dala.Spark.Dsl.TimePicker), do: :time_picker
-  defp struct_to_type(Dala.Spark.Dsl.SearchBar), do: :search_bar
-  defp struct_to_type(Dala.Spark.Dsl.Carousel), do: :carousel
-  defp struct_to_type(Dala.Spark.Dsl.BottomSheet), do: :bottom_sheet
-  defp struct_to_type(Dala.Spark.Dsl.Tooltip), do: :tooltip
+  defp struct_to_type(struct_module) do
+    Map.get_lazy(@struct_to_type, struct_module, fn ->
+      struct_module
+      |> Module.split()
+      |> List.last()
+      |> Macro.underscore()
+      |> String.to_atom()
+    end)
+  end
 
   # ── Props building ────────────────────────────────────────────────────────
 
-  # Build a map AST with only non-nil props. @ref strings are converted to
-  # interpolation expressions so they resolve at render time.
   defp build_props_ast(entity) do
     struct_module = entity.__struct__
 
@@ -143,12 +108,9 @@ defmodule Dala.Spark.Transformers.Render do
         {key, val_ast}
       end)
 
-    # Build the map AST manually so @ref interpolations are preserved as code
     {:%{}, [], pairs}
   end
 
-  # Build AST for a prop value. Strings with @ref patterns become
-  # interpolation expressions; everything else is escaped as a literal.
   defp build_value_ast(value, _key) when is_binary(value) do
     case process_at_refs_in_string(value) do
       {:literal, literal} -> literal
@@ -174,15 +136,8 @@ defmodule Dala.Spark.Transformers.Render do
   end
 
   # ── @ref processing ───────────────────────────────────────────────────────
-  #
-  # "Count: @count" → {:interpolated, quote do: "Count: " <> to_string(assigns.count)}
-  # "Hello"         → {:literal, "Hello"}
-  #
-  # We produce string-concatenation AST so the render function accesses
-  # `assigns.key` at runtime. `to_string/1` handles non-string assigns.
 
   defp process_at_refs_in_string(string) do
-    # Find all @ref positions
     matches =
       Regex.scan(@at_ref_regex, string, return: :index)
       |> Enum.map(fn [{start, len}, {key_start, key_len}] ->
@@ -197,21 +152,16 @@ defmodule Dala.Spark.Transformers.Render do
     if matches == [] do
       {:literal, Macro.escape(string)}
     else
-      # Build a concatenation of literal parts and assign accesses
       parts = build_interpolation_parts(string, matches)
       {:interpolated, parts}
     end
   end
 
   defp build_interpolation_parts(string, matches) do
-    # Collect all the segments: literal text between refs, and ref accesses
     segments =
       matches
       |> Enum.reduce({0, []}, fn match, {offset, acc} ->
-        # Literal text before this @ref
         literal_before = binary_part(string, offset, match.full_start - offset)
-
-        # The assign key name
         key = binary_part(string, match.key_start, match.key_len)
         key_atom = String.to_atom(key)
 
@@ -223,12 +173,10 @@ defmodule Dala.Spark.Transformers.Render do
         {match.full_end, acc}
       end)
       |> then(fn {offset, acc} ->
-        # Trailing literal text
         trailing = binary_part(string, offset, byte_size(string) - offset)
         maybe_add_literal(acc, trailing)
       end)
 
-    # Combine segments with <>
     case segments do
       [single] -> single
       multiple -> combine_with_concat(multiple)

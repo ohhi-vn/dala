@@ -126,7 +126,7 @@ defmodule Dala.Preview do
 
   defp generate_html(ui_tree, opts) do
     show_tree = Keyword.get(opts, :show_tree, true)
-    title = Keyword.get(opts, :title, "Dala UI Preview - Interactive Simulation Dev Tool")
+    title = Keyword.get(opts, :title, "Dala UI Preview")
 
     tree_html = render_ui_tree(ui_tree)
     tree_inspector = if show_tree, do: generate_tree_inspector(ui_tree), else: ""
@@ -144,17 +144,33 @@ defmodule Dala.Preview do
       </style>
     </head>
     <body>
-      <div class="dala-preview-container">
+      <div class="preview-layout">
         <div class="preview-header">
-          <h2>Dala Preview - Interactive Simulation</h2>
+          <h2>&#x1F4F1; Dala Preview</h2>
         </div>
-        <div class="preview-content">
-          #{tree_html}
-        </div>
-        #{tree_inspector}
-        <div class="event-log">
-          <h3>Event Log</h3>
-          <div id="log-entries">Interact with the preview to see events here.</div>
+        <div class="preview-main">
+          <div class="device-frame">
+            <div class="device-shell">
+              <div class="device-notch"></div>
+              <div class="device-screen">
+                <div class="device-status-bar">
+                  <span class="status-time">9:41</span>
+                  <span class="status-icons">&#x1F4F6; &#x1F50B;</span>
+                </div>
+                <div class="device-content">
+                  #{tree_html}
+                </div>
+                <div class="device-home-indicator"></div>
+              </div>
+            </div>
+          </div>
+          <div class="preview-sidebar">
+            #{tree_inspector}
+            <div class="event-log">
+              <h3>Event Log</h3>
+              <div id="log-entries">Interact with the preview to see events here.</div>
+            </div>
+          </div>
         </div>
       </div>
       <script>
@@ -185,6 +201,7 @@ defmodule Dala.Preview do
       nil ->
         # Unknown component - render as generic div
         style = build_style(props)
+
         ~s(<div class="dala-unknown dala-#{type}" style="#{style}">#{render_children(children)}<small>Unknown: #{type}</small></div>)
 
       comp ->
@@ -196,6 +213,7 @@ defmodule Dala.Preview do
             droppable = build_data_attr(props, :droppable, "data-droppable")
             on_long_press = build_data_attr(props, :on_long_press, "data-on-long-press")
             on_swipe = build_data_attr(props, :on_swipe, "data-on-swipe")
+
             ~s(<div class="dala-#{type}" style="#{style}" #{draggable} #{droppable} #{on_long_press} #{on_swipe}>#{render_children(children)}</div>)
 
           :leaf ->
@@ -211,6 +229,7 @@ defmodule Dala.Preview do
     data_attr = if on_tap, do: ~s(data-on-tap="#{on_tap}"), else: ""
     disabled_attr = if disabled, do: " disabled", else: ""
     cursor_style = if disabled, do: "cursor: not-allowed; opacity: 0.5;", else: "cursor: pointer;"
+
     ~s(<button class="dala-button" #{data_attr}#{disabled_attr} style="#{cursor_style}">#{text}</button>)
   end
 
@@ -223,12 +242,14 @@ defmodule Dala.Preview do
   defp render_leaf_component(:toggle, props, _comp, _children) do
     on_tap = props[:on_tap]
     data_attr = if on_tap, do: ~s(data-toggle="#{on_tap}"), else: ""
+
     ~s(<div class="dala-toggle" #{data_attr} data-state="off" style="cursor: pointer;">Toggle</div>)
   end
 
   defp render_leaf_component(:switch, props, _comp, _children) do
     on_tap = props[:on_tap]
     data_attr = if on_tap, do: ~s(data-toggle="#{on_tap}"), else: ""
+
     ~s(<div class="dala-switch" #{data_attr} data-state="off" style="cursor: pointer;">Switch</div>)
   end
 
@@ -236,6 +257,7 @@ defmodule Dala.Preview do
     value = props[:value] || 50
     on_change = props[:on_change]
     data_attr = if on_change, do: ~s(data-slider="#{on_change}"), else: ""
+
     ~s(<input type="range" class="dala-slider" min="0" max="100" value="#{value}" #{data_attr} /><span class="slider-value">#{value}%</span>)
   end
 
@@ -249,6 +271,7 @@ defmodule Dala.Preview do
     value = html_escape(props[:value] || "")
     on_change = props[:on_change]
     data_attr = if on_change, do: ~s(data-text-input="#{on_change}"), else: ""
+
     ~s(<input type="text" class="dala-text-field" placeholder="#{placeholder}" value="#{value}" #{data_attr} />)
   end
 
@@ -257,14 +280,227 @@ defmodule Dala.Preview do
     ~s(<span class="dala-icon" data-icon="#{name}">[#{name}]</span>)
   end
 
-
-
   defp render_leaf_component(:spacer, _props, _comp, _children) do
     ~s(<div class="dala-spacer" style="height: 16px;"></div>)
   end
 
   defp render_leaf_component(:divider, _props, _comp, _children) do
     ~s(<hr class="dala-divider" />)
+  end
+
+  defp render_leaf_component(:checkbox, props, _comp, _children) do
+    label = html_escape(props[:label] || "")
+    checked = props[:value] == true
+    mark = if checked, do: "&#x2611;", else: "&#x2610;"
+
+    ~s(<div class="dala-checkbox"><span class="check-mark">#{mark}</span><span>#{label}</span></div>)
+  end
+
+  defp render_leaf_component(:radio, props, _comp, _children) do
+    label = html_escape(props[:label] || "")
+    selected = props[:selected] == true
+    mark = if selected, do: "&#x25C9;", else: "&#x25CB;"
+    ~s(<div class="dala-radio"><span class="radio-mark">#{mark}</span><span>#{label}</span></div>)
+  end
+
+  defp render_leaf_component(:chip, props, _comp, _children) do
+    label = html_escape(props[:label] || "Chip")
+    selected = props[:selected] == true
+
+    ~s(<span class="dala-chip #{if selected, do: "chip-selected", else: "chip-default"}">#{label}</span>)
+  end
+
+  defp render_leaf_component(:fab, props, _comp, _children) do
+    icon = html_escape(props[:icon] || "+")
+    text = props[:text]
+    content = if text, do: "#{icon} #{html_escape(text)}", else: icon
+    ~s(<div class="dala-fab">#{content}</div>)
+  end
+
+  defp render_leaf_component(:icon_button, props, _comp, _children) do
+    icon = html_escape(props[:icon] || "&#x2605;")
+    selected = props[:selected] == true
+    class = if selected, do: "dala-icon-button selected", else: "dala-icon-button"
+    ~s(<div class="#{class}">#{icon}</div>)
+  end
+
+  defp render_leaf_component(:segmented_button, props, _comp, _children) do
+    selected = props[:selected] || ""
+
+    ~s(<div class="dala-segmented-button"><span class="seg-label">#{html_escape(selected)}</span></div>)
+  end
+
+  defp render_leaf_component(:app_bar, props, _comp, _children) do
+    title = html_escape(props[:title] || "App")
+
+    ~s(<div class="dala-app-bar"><span class="nav-icon">&#x2630;</span><span class="app-title">#{title}</span></div>)
+  end
+
+  defp render_leaf_component(:nav_bar, _props, _comp, _children) do
+    ~s(<div class="dala-nav-bar"><span class="nav-item">Home</span><span class="nav-item">Search</span><span class="nav-item">Profile</span></div>)
+  end
+
+  defp render_leaf_component(:nav_drawer, props, _comp, _children) do
+    visible = props[:visible] == true
+
+    if visible do
+      ~s(<div class="dala-nav-drawer-overlay"><div class="dala-nav-drawer"><span class="drawer-item">Home</span><span class="drawer-item">Settings</span></div></div>)
+    else
+      ""
+    end
+  end
+
+  defp render_leaf_component(:nav_rail, _props, _comp, _children) do
+    ~s(<div class="dala-nav-rail"><span class="rail-item">&#x1F3E0;</span><span class="rail-item">&#x1F50D;</span><span class="rail-item">&#x2699;</span></div>)
+  end
+
+  defp render_leaf_component(:menu, props, _comp, _children) do
+    visible = props[:visible] == true
+
+    if visible do
+      ~s(<div class="dala-menu"><span class="menu-item">Edit</span><span class="menu-item">Delete</span></div>)
+    else
+      ""
+    end
+  end
+
+  defp render_leaf_component(:date_picker, props, _comp, _children) do
+    visible = props[:visible] == true
+    date = html_escape(props[:selected_date] || "Select date")
+    if visible, do: ~s(<div class="dala-date-picker">&#x1F4C5; #{date}</div>), else: ""
+  end
+
+  defp render_leaf_component(:time_picker, props, _comp, _children) do
+    visible = props[:visible] == true
+    time = html_escape(props[:selected_time] || "Select time")
+    if visible, do: ~s(<div class="dala-time-picker">&#x1F550; #{time}</div>), else: ""
+  end
+
+  defp render_leaf_component(:search_bar, props, _comp, _children) do
+    placeholder = html_escape(props[:placeholder] || "Search...")
+
+    ~s(<div class="dala-search-bar"><span class="search-icon">&#x1F50D;</span><span class="search-placeholder">#{placeholder}</span></div>)
+  end
+
+  defp render_leaf_component(:carousel, _props, _comp, _children) do
+    ~s(<div class="dala-carousel"><span class="carousel-item">Slide 1</span><span class="carousel-dots">&#x25CF; &#x25CB; &#x25CB;</span></div>)
+  end
+
+  defp render_leaf_component(:snackbar, props, _comp, _children) do
+    visible = props[:visible] == true
+    message = html_escape(props[:message] || "")
+    action = html_escape(props[:action_label] || "")
+
+    if visible do
+      action_html =
+        if action != "", do: ~s(<span class="snackbar-action">#{action}</span>), else: ""
+
+      ~s(<div class="dala-snackbar">#{message}#{action_html}</div>)
+    else
+      ""
+    end
+  end
+
+  defp render_leaf_component(:badge, props, _comp, children) do
+    count = props[:count] || 0
+    visible = props[:visible] != false
+
+    badge_html =
+      if visible and count > 0, do: ~s(<span class="badge-count">#{count}</span>), else: ""
+
+    ~s(<div class="dala-badge-wrapper">#{render_children(children)}#{badge_html}</div>)
+  end
+
+  defp render_leaf_component(:tooltip, props, _comp, children) do
+    visible = props[:visible] == true
+    text = html_escape(props[:text] || "")
+    tooltip_html = if visible, do: ~s(<span class="tooltip-text">#{text}</span>), else: ""
+    ~s(<div class="dala-tooltip-wrapper">#{render_children(children)}#{tooltip_html}</div>)
+  end
+
+  defp render_leaf_component(:bottom_sheet, props, _comp, children) do
+    visible = props[:visible] == true
+
+    if visible do
+      ~s(<div class="dala-bottom-sheet-overlay"><div class="dala-bottom-sheet"><div class="sheet-handle"></div>#{render_children(children)}</div></div>)
+    else
+      ""
+    end
+  end
+
+  defp render_leaf_component(:card, props, _comp, children) do
+    style = build_style(props)
+    ~s(<div class="dala-card" style="#{style}">#{render_children(children)}</div>)
+  end
+
+  defp render_leaf_component(:modal, props, _comp, children) do
+    visible = props[:visible] == true
+
+    if visible do
+      ~s(<div class="dala-modal-overlay"><div class="dala-modal">#{render_children(children)}</div></div>)
+    else
+      ""
+    end
+  end
+
+  defp render_leaf_component(:scroll, props, _comp, children) do
+    style = build_style(props)
+    ~s(<div class="dala-scroll" style="#{style}">#{render_children(children)}</div>)
+  end
+
+  defp render_leaf_component(:pressable, _props, _comp, children) do
+    ~s(<div class="dala-pressable" style="cursor: pointer;">#{render_children(children)}</div>)
+  end
+
+  defp render_leaf_component(:safe_area, _props, _comp, children) do
+    ~s(<div class="dala-safe-area">#{render_children(children)}</div>)
+  end
+
+  defp render_leaf_component(:image, props, _comp, _children) do
+    src = html_escape(props[:source] || props[:src] || "")
+
+    ~s(<div class="dala-image"><div class="image-placeholder">&#x1F5BC;</div><span class="image-src">#{src}</span></div>)
+  end
+
+  defp render_leaf_component(:video, _props, _comp, _children) do
+    ~s(<div class="dala-video"><div class="video-placeholder">&#x1F3AC; Video</div></div>)
+  end
+
+  defp render_leaf_component(:activity_indicator, _props, _comp, _children) do
+    ~s(<div class="dala-activity"><div class="spinner"></div></div>)
+  end
+
+  defp render_leaf_component(:status_bar, _props, _comp, _children) do
+    ~s(<div class="dala-status-bar"><span>9:41</span><span>&#x1F4F6; &#x1F50B;</span></div>)
+  end
+
+  defp render_leaf_component(:refresh_control, props, _comp, _children) do
+    refreshing = props[:refreshing] == true
+    text = if refreshing, do: "Refreshing...", else: "Pull to refresh"
+    ~s(<div class="dala-refresh-control">#{text}</div>)
+  end
+
+  defp render_leaf_component(:webview, props, _comp, _children) do
+    url = html_escape(props[:url] || props[:source] || "")
+    ~s(<div class="dala-webview"><span class="webview-url">&#x1F310; #{url}</span></div>)
+  end
+
+  defp render_leaf_component(:camera_preview, _props, _comp, _children) do
+    ~s(<div class="dala-camera"><div class="camera-viewfinder">&#x1F4F7; Camera</div></div>)
+  end
+
+  defp render_leaf_component(:native_view, _props, _comp, _children) do
+    ~s(<div class="dala-native-view"><span class="native-label">Native View</span></div>)
+  end
+
+  defp render_leaf_component(:tab_bar, _props, _comp, _children) do
+    ~s(<div class="dala-tab-bar"><span class="tab-item active">Home</span><span class="tab-item">Search</span><span class="tab-item">Profile</span></div>)
+  end
+
+  defp render_leaf_component(:list, props, _comp, _children) do
+    style = build_style(props)
+
+    ~s(<div class="dala-list" style="#{style}"><div class="list-item">Item 1</div><div class="list-item">Item 2</div><div class="list-item">Item 3</div></div>)
   end
 
   defp render_leaf_component(type, props, _comp, children) do
@@ -276,6 +512,7 @@ defmodule Dala.Preview do
     on_tap = build_data_attr(props, :on_tap, "data-on-tap")
     on_long_press = build_data_attr(props, :on_long_press, "data-on-long-press")
     on_swipe = build_data_attr(props, :on_swipe, "data-on-swipe")
+
     ~s(<div class="dala-#{class}" style="#{style}" #{on_tap} #{on_long_press} #{on_swipe}>#{children_html}</div>)
   end
 
@@ -423,38 +660,114 @@ defmodule Dala.Preview do
     body {
       font-family: -apple-system, BlinkMacSystemFont, sans-serif;
       margin: 0;
-      padding: var(--space-md);
-      background: var(--background);
+      padding: 0;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: var(--on-surface);
+      min-height: 100vh;
     }
-    .dala-preview-container {
+
+    /* ── Layout ── */
+    .preview-layout {
       display: flex;
-      flex-wrap: wrap;
-      gap: var(--space-lg);
-      max-width: 1600px;
-      margin: 0 auto;
+      flex-direction: column;
+      min-height: 100vh;
     }
     .preview-header {
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(10px);
+      padding: 12px 24px;
+      border-bottom: 1px solid rgba(0,0,0,0.1);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .preview-header h2 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+    }
+    .preview-main {
+      display: flex;
+      flex: 1;
+      padding: 24px;
+      gap: 24px;
+      align-items: flex-start;
+      justify-content: center;
+    }
+
+    /* ── Device Frame ── */
+    .device-frame {
+      display: flex;
+      justify-content: center;
+    }
+    .device-shell {
+      width: 375px;
+      height: 812px;
+      background: #1a1a1a;
+      border-radius: 48px;
+      padding: 12px;
+      box-shadow:
+        0 0 0 2px #333,
+        0 25px 50px -12px rgba(0,0,0,0.5),
+        0 0 100px rgba(102,126,234,0.15);
+      position: relative;
+    }
+    .device-notch {
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 150px;
+      height: 32px;
+      background: #1a1a1a;
+      border-radius: 0 0 20px 20px;
+      z-index: 10;
+    }
+    .device-screen {
       width: 100%;
+      height: 100%;
+      background: var(--surface);
+      border-radius: 36px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .device-status-bar {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: var(--space-md);
-      padding-bottom: var(--space-md);
-      border-bottom: 1px solid var(--border);
+      padding: 14px 24px 8px;
+      font-size: 12px;
+      font-weight: 600;
+      flex-shrink: 0;
     }
-    .preview-content {
+    .device-content {
       flex: 1;
-      max-width: 800px;
+      overflow-y: auto;
+      padding: 8px 16px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .device-home-indicator {
+      width: 134px;
+      height: 5px;
+      background: #000;
+      border-radius: 3px;
+      margin: 8px auto;
+      flex-shrink: 0;
+    }
+
+    /* ── Sidebar ── */
+    .preview-sidebar {
+      width: 360px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
     }
     .event-log {
-      flex: 1;
-      max-width: 400px;
       padding: var(--space-md);
-      background: #F9F9F9;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      max-height: 600px;
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 12px;
+      border: 1px solid rgba(0,0,0,0.1);
+      max-height: 300px;
       overflow-y: auto;
     }
     .event-log h3 {
@@ -548,6 +861,72 @@ defmodule Dala.Preview do
     [data-droppable] {
       border: 2px dashed var(--primary);
     }
+
+    /* ── New component styles ── */
+    .dala-checkbox, .dala-radio { display: flex; align-items: center; gap: 6px; padding: 4px 0; font-size: 13px; }
+    .check-mark, .radio-mark { font-size: 16px; }
+    .dala-chip { display: inline-block; padding: 4px 12px; border-radius: 999px; font-size: 12px; margin: 2px; }
+    .chip-selected { background: var(--primary); color: white; }
+    .chip-default { background: #E0E0E0; color: #333; }
+    .dala-fab { width: 48px; height: 48px; border-radius: 16px; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 18px; box-shadow: 0 4px 12px rgba(33,150,243,0.4); margin: 8px 0; }
+    .dala-icon-button { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; background: #F0F0F0; margin: 2px; }
+    .dala-icon-button.selected { background: rgba(33,150,243,0.15); color: var(--primary); }
+    .dala-segmented-button { display: inline-flex; background: #F0F0F0; border-radius: 8px; padding: 2px; }
+    .seg-label { padding: 4px 12px; border-radius: 6px; background: white; font-size: 12px; }
+    .dala-app-bar { background: var(--primary); color: white; padding: 12px 16px; font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 12px; }
+    .nav-icon { font-size: 18px; }
+    .dala-nav-bar { display: flex; justify-content: space-around; background: white; border-top: 1px solid var(--border); padding: 8px 0; }
+    .nav-item { font-size: 11px; color: #666; }
+    .dala-nav-drawer-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.4); z-index: 20; }
+    .dala-nav-drawer { position: absolute; left: 0; top: 0; bottom: 0; width: 240px; background: white; padding: 16px; z-index: 21; }
+    .drawer-item { display: block; padding: 10px 0; font-size: 14px; border-bottom: 1px solid #f0f0f0; }
+    .dala-nav-rail { display: flex; flex-direction: column; gap: 8px; padding: 8px; background: white; border-right: 1px solid var(--border); }
+    .rail-item { font-size: 20px; padding: 8px; text-align: center; }
+    .dala-menu { background: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); padding: 4px 0; }
+    .menu-item { display: block; padding: 8px 16px; font-size: 13px; }
+    .dala-date-picker, .dala-time-picker { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-size: 13px; margin: 4px 0; }
+    .dala-search-bar { background: #F0F0F0; border-radius: 10px; padding: 8px 12px; color: #999; font-size: 13px; display: flex; align-items: center; gap: 8px; }
+    .search-icon { font-size: 14px; }
+    .dala-carousel { background: #F0F0F0; border-radius: 8px; padding: 16px; text-align: center; }
+    .carousel-item { font-size: 13px; }
+    .carousel-dots { font-size: 8px; color: #999; margin-top: 8px; }
+    .dala-snackbar { background: #323232; color: white; padding: 10px 14px; border-radius: 6px; font-size: 13px; display: flex; align-items: center; margin: 8px 0; }
+    .snackbar-action { color: #81D4FA; font-weight: 600; margin-left: 12px; }
+    .dala-badge-wrapper { position: relative; display: inline-flex; }
+    .badge-count { position: absolute; top: -4px; right: -8px; background: #F44336; color: white; font-size: 9px; min-width: 16px; height: 16px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+    .dala-tooltip-wrapper { position: relative; display: inline-flex; }
+    .tooltip-text { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px; white-space: nowrap; }
+    .dala-bottom-sheet-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.4); z-index: 20; }
+    .dala-bottom-sheet { position: absolute; bottom: 0; left: 0; right: 0; background: white; border-radius: 16px 16px 0 0; padding: 16px; z-index: 21; }
+    .sheet-handle { width: 36px; height: 4px; background: #DDD; border-radius: 2px; margin: 0 auto 12px; }
+    .dala-card { background: white; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.08); padding: 12px; margin: 4px 0; }
+    .dala-modal-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.4); z-index: 20; display: flex; align-items: center; justify-content: center; }
+    .dala-modal { background: white; border-radius: 16px; padding: 20px; max-width: 80%; box-shadow: 0 8px 32px rgba(0,0,0,0.2); }
+    .dala-scroll { overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    .dala-pressable { transition: opacity 0.15s; }
+    .dala-pressable:active { opacity: 0.7; }
+    .dala-safe-area { padding: 8px; }
+    .dala-image { background: #F0F0F0; border-radius: 8px; padding: 12px; text-align: center; margin: 4px 0; }
+    .image-placeholder { font-size: 24px; margin-bottom: 4px; }
+    .image-src { font-size: 10px; color: #999; }
+    .dala-video { background: #000; border-radius: 8px; padding: 20px; text-align: center; color: white; margin: 4px 0; }
+    .video-placeholder { font-size: 14px; }
+    .dala-activity { display: flex; justify-content: center; padding: 12px; }
+    .spinner { width: 24px; height: 24px; border: 3px solid #E0E0E0; border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .dala-status-bar { display: flex; justify-content: space-between; padding: 4px 8px; font-size: 11px; font-weight: 600; }
+    .dala-refresh-control { text-align: center; padding: 8px; font-size: 12px; color: #999; }
+    .dala-webview { background: #F0F0F0; border-radius: 8px; padding: 12px; font-size: 12px; margin: 4px 0; }
+    .webview-url { color: var(--primary); }
+    .dala-camera { background: #222; border-radius: 8px; padding: 20px; text-align: center; color: white; margin: 4px 0; }
+    .camera-viewfinder { font-size: 14px; }
+    .dala-native-view { background: #E8EAF6; border: 2px dashed #5C6BC0; border-radius: 8px; padding: 12px; text-align: center; margin: 4px 0; }
+    .native-label { font-size: 12px; color: #5C6BC0; }
+    .dala-tab-bar { display: flex; background: white; border-top: 1px solid var(--border); padding: 4px 0; }
+    .tab-item { flex: 1; text-align: center; font-size: 10px; padding: 4px; color: #999; }
+    .tab-item.active { color: var(--primary); }
+    .dala-list { background: white; border-radius: 8px; overflow: hidden; }
+    .list-item { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
     """
   end
 
