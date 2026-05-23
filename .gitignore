@@ -38,3 +38,4 @@ ios/*.o
 # Pre-compiled NIFs - built during mix compile
 priv/native/*.so
 priv/native/*.dylib
+#_build/

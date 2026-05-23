@@ -64,6 +64,7 @@ defmodule Dala.Spark.Dsl do
   # @component_name module attributes are injected here at compile time.
   use Dala.Spark.Dsl.Entities
 
+
   # ── Screen section ──────────────────────────────────────────────────────
   # Holds all entities — both leaf and container.
   # Container entities use `recursive_as: :children` so they nest.
@@ -78,10 +79,38 @@ defmodule Dala.Spark.Dsl do
     entities: @all_entities
   }
 
+  # ── PubSub section (from Dala.Spark.Pubsub) ────────────────────────────
+
+  defmodule PubSubSubscription do
+    @moduledoc false
+    defstruct topic: nil, on_message: nil, __spark_metadata__: nil
+  end
+
+  @pubsub_subscription %Spark.Dsl.Entity{
+    name: :subscribe,
+    target: PubSubSubscription,
+    describe: "Subscribe to a PubSub topic with a message handler",
+    args: [:topic],
+    schema: [
+      topic: [type: :string, required: true, doc: "Topic to subscribe to"],
+      on_message: [
+        type: :atom,
+        required: true,
+        doc: "Handler function name to call when message arrives"
+      ]
+    ]
+  }
+
+  @pubsub_section %Spark.Dsl.Section{
+    name: :pubsub,
+    describe: "Declare PubSub subscriptions for this screen",
+    entities: [@pubsub_subscription]
+  }
+
   # ── Extension registration ──────────────────────────────────────────────
 
   use Spark.Dsl.Extension,
-    sections: [@attributes, @screen],
+    sections: [@attributes, @screen, @pubsub_section],
     transformers: [
       Dala.Spark.Transformers.GenerateMount,
       Dala.Spark.Transformers.Render,
@@ -89,7 +118,63 @@ defmodule Dala.Spark.Dsl do
     ],
     verifiers: [__MODULE__.Verifier]
 
-  use Spark.Dsl, default_extensions: [extensions: __MODULE__]
+  use Spark.Dsl,
+    single_extension_kinds: [:dala],
+    default_extensions: [dala: __MODULE__]
+
+  # ── Custom screen/2 and attributes/2 macros ────────────────────────────
+  # Spark's build_section skips defining section macros for top-level
+  # sections (top_level?: true). We define them here manually to support
+  # the standard Elixir calling convention: `screen name: :foo do ... end`.
+
+  # Generate screen/2 that imports entity modules and executes the block
+  defmacro screen(opts, do: block) do
+    entity_imports = generate_entity_imports()
+    opts_module = Dala.Spark.Dsl.Screen.Options
+
+    quote do
+      # Import all entity modules so components are available inside the block
+      unquote_splicing(entity_imports)
+      # Import the opts module for schema fields (name, etc.)
+      import unquote(opts_module)
+      # Execute the block
+      unquote(block)
+    end
+  end
+
+  # Generate attributes/2 that imports attribute entity module
+  defmacro attributes(do: block) do
+    quote do
+      import Dala.Spark.Dsl.Attributes.Attribute
+      unquote(block)
+    end
+  end
+
+  # Helper to generate import statements for all entity modules
+  defp generate_entity_imports do
+    Dala.Ui.Component.components()
+    |> Enum.map(fn {_name, comp} ->
+      mod = Module.concat(Dala.Spark.Dsl.Screen, comp.name |> Atom.to_string() |> Macro.camelize())
+      quote do: import(unquote(mod))
+    end)
+  end
+
+  # ── __using__ macro for external consumers ──────────────────────────────
+
+  defmacro __using__(_opts) do
+    quote do
+      require Dala.Spark.Dsl
+      import Dala.Spark.Dsl
+      use Spark.Dsl, single_extension_kinds: [:dala], default_extensions: [dala: Dala.Spark.Dsl]
+    end
+  end
+
+  # ── Custom screen macro for top-level section ──────────────────────────
+  # Spark's build_section skips defining the section macro for top-level
+  # sections. We define it here manually to support the
+  # `screen name: :foo do ... end` calling convention.
+
+
 
   # ── Verifier ────────────────────────────────────────────────────────────
 
@@ -198,4 +283,5 @@ defmodule Dala.Spark.Dsl do
   defmacro dala(do: block) do
     block
   end
+
 end

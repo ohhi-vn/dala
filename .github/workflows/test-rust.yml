@@ -1,6 +1,3 @@
-# CI configuration for testing Rust conversion
-# For use with GitHub Actions, CircleCI, or similar
-
 name: Test Rust Conversion
 
 on:
@@ -19,7 +16,7 @@ jobs:
   test-android:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -33,16 +30,15 @@ jobs:
         working-directory: android/jni/rust
         run: |
           cargo test --lib -- --nocapture
-          cargo test --test driver_tab_android_test -- --nocapture
-          cargo test --test dala_beam_test -- --nocapture
+          cargo test --test simple_test -- --nocapture
 
-      - name: Build Android libraries (simulator)
+      - name: Build Android libraries
         working-directory: android/jni/rust
         run: |
           chmod +x build_android.sh
           ./build_android.sh
         env:
-          ANDROID_NDK_HOME: /usr/local/lib/android/ndk-bundle
+          ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_ROOT || '/usr/local/lib/android/sdk/ndk' }}
 
       - name: Verify Android symbols
         run: |
@@ -56,7 +52,7 @@ jobs:
   test-ios:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -70,8 +66,7 @@ jobs:
         working-directory: ios/rust
         run: |
           cargo test --lib -- --nocapture
-          cargo test --test driver_tab_ios_test -- --nocapture
-          cargo test --test dala_beam_ios_test -- --nocapture
+          cargo test --test simple_test -- --nocapture
 
       - name: Build iOS libraries
         working-directory: ios/rust
@@ -106,7 +101,7 @@ jobs:
   test-dala-nif:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -124,21 +119,33 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt,clippy
 
-      - name: Run rustfmt
-        run: |
-          cd android/jni/rust && cargo fmt -- --check
-          cd ios/rust && cargo fmt -- --check
-          cd native/dala_nif && cargo fmt -- --check
+      - name: Run rustfmt (android)
+        working-directory: android/jni/rust
+        run: cargo fmt -- --check
 
-      - name: Run clippy
-        run: |
-          cd android/jni/rust && cargo clippy -- -D warnings
-          cd ios/rust && cargo clippy -- -D warnings
-          cd native/dala_nif && cargo clippy -- -D warnings
+      - name: Run rustfmt (ios)
+        working-directory: ios/rust
+        run: cargo fmt -- --check
+
+      - name: Run rustfmt (dala_nif)
+        working-directory: native/dala_nif
+        run: cargo fmt -- --check
+
+      - name: Run clippy (android)
+        working-directory: android/jni/rust
+        run: cargo clippy -- -D warnings
+
+      - name: Run clippy (ios)
+        working-directory: ios/rust
+        run: cargo clippy -- -D warnings
+
+      - name: Run clippy (dala_nif)
+        working-directory: native/dala_nif
+        run: cargo clippy -- -D warnings

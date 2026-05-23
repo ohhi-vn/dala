@@ -158,10 +158,14 @@ jobs:
   with-devices:
     name: "With devices (${{ matrix.ios }} + ${{ matrix.android }})"
     needs: pre-device # Only run after the fast gate passes
+    # Run on: scheduled runs, manual dispatch with scope=all, or pushes to main.
+    # On PRs and normal pushes, skip — the fast pre-device gate is sufficient.
     if: |
-      github.event_name == 'schedule' ||
-      github.event_name == 'workflow_dispatch' && github.event.inputs.scope == 'all' ||
-      github.ref == 'refs/heads/main'
+      always() && !cancelled() &&
+      needs.pre-device.result == 'success' &&
+      (github.event_name == 'schedule' ||
+       (github.event_name == 'workflow_dispatch' && github.event.inputs.scope == 'all') ||
+       github.ref == 'refs/heads/main')
 
     strategy:
       fail-fast: false
@@ -237,8 +241,12 @@ jobs:
             echo "::error::Pre-device tests failed"
             exit 1
           fi
+          # with-devices may be skipped (not a failure) when not on main/schedule/dispatch-all
           if [[ "${{ needs.with-devices.result }}" == "failure" ]]; then
             echo "::error::Device tests failed"
             exit 1
+          fi
+          if [[ "${{ needs.with-devices.result }}" == "skipped" ]]; then
+            echo "ℹ Device tests skipped (not on main/schedule/dispatch-all) — pre-device gate passed"
           fi
           echo "All onboarding tests passed"

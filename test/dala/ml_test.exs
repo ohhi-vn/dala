@@ -112,7 +112,7 @@ defmodule Dala.ML.Test do
     end
 
     test "contains only known backend atoms" do
-      known = [:nx, :emlx, :coreml, :onnx]
+      known = [:nx, :emlx, :coreml, :onnx, :gpu_compute]
       backends = Dala.ML.available_backends()
       Enum.each(backends, fn b -> assert b in known end)
     end
