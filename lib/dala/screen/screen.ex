@@ -31,8 +31,7 @@ defmodule Dala.Screen.Screen do
     Dala.Screen.dispatch(pid, "increment", %{})
   """
 
-  # Set up Spark DSL - makes Dala.Screen a Spark extension module
-  use Spark.Dsl.Extension, extensions: [Dala.Spark.Dsl]
+  # Set up Spark DSL - use Dala.Spark.Dsl which registers itself as an extension
 
   # The __using__ macro now just needs to call `use Dala.Screen`
   defmacro __using__(_opts) do

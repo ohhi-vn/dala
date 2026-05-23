@@ -131,7 +131,7 @@ defmodule Dala.Media.Gpu.Processor do
     input_buf = Compute.buffer(input_list, {length(input_list)}, :u8)
 
     # Build and execute the filter pipeline
-    {output_buf, temp_buf} = execute_filters(input_buf, ctx.output_buf, ctx.temp_buf, filters)
+    {output_buf, _temp_buf} = execute_filters(input_buf, ctx.output_buf, ctx.temp_buf, filters)
 
     # Read back the result
     result = Compute.read(output_buf)
@@ -205,7 +205,7 @@ defmodule Dala.Media.Gpu.Processor do
   end
 
   # Private: execute a chain of filters
-  defp execute_filters(input_buf, output_buf, temp_buf, filters) do
+  defp execute_filters(input_buf, _output_buf, temp_buf, filters) do
     # Ping-pong between temp and output buffers
     {final_output, _final_temp} =
       Enum.reduce(filters, {input_buf, temp_buf}, fn {filter, params}, {current_input, current_temp} ->

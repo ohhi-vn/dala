@@ -206,7 +206,7 @@ defmodule Dala.MixProject do
       {:axon, "~> 0.8"},
 
       # GPU compute runtime (CubeCL via Rust NIFs)
-      {:ex_cubecl, "~> 0.2.2"}
+      {:ex_cubecl, "~> 0.3"}
       #{:ex_cubecl, path: "../ex_cubecl"}
     ]
   end

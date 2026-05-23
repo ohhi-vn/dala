@@ -73,7 +73,7 @@ defmodule Dala.Spark.DslIntegrationTest do
       defmodule TestRefScreen do
         use Dala.Screen
 
-
+        dala do
           attributes do
             attribute(:count, :integer, default: 0)
           end
@@ -86,8 +86,9 @@ defmodule Dala.Spark.DslIntegrationTest do
             end
           end
 
-        def handle_event(:increment, _params, socket) do
-          {:noreply, Dala.Socket.assign(socket, :count, socket.assigns.count + 1)}
+          def handle_event(:increment, _params, socket) do
+            {:noreply, Dala.Socket.assign(socket, :count, socket.assigns.count + 1)}
+          end
         end
       end
 

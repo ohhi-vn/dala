@@ -198,13 +198,13 @@ defmodule Dala.Gpu.Compute do
 
   @doc "Free a GPU buffer and release all associated GPU memory."
   @spec free(Buffer.t()) :: :ok
-  def free(%Buffer{ref: ref}), do: ExCubecl.free(ref)
+  # Buffers are automatically freed by GC (Rustler ResourceArc).
+  # This is a no-op for API compatibility.
+  def free(%Buffer{}), do: :ok
 
   @doc "Free multiple GPU buffers at once."
   @spec free_many([Buffer.t()]) :: :ok
-  def free_many(buffers) do
-    Enum.each(buffers, &free/1)
-  end
+  def free_many(_buffers), do: :ok
 
   # ── Kernel execution ──────────────────────────────────────────────────────
 
@@ -303,7 +303,7 @@ defmodule Dala.Gpu.Compute do
   @doc "Free a pipeline and its internal resources."
   @spec free_pipeline(Pipeline.t()) :: :ok
   def free_pipeline(%Pipeline{ref: ref}) do
-    ExCubecl.free_pipeline(ref)
+    ExCubecl.pipeline_free(ref)
   end
 
   # ── Built-in kernel helpers ───────────────────────────────────────────────

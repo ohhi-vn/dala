@@ -49,7 +49,6 @@ defmodule Dala.ML.Gpu.Inference do
   """
 
   alias Dala.Gpu.Compute
-  alias Dala.Gpu.Compute.Buffer
 
   @type model :: %__MODULE__{
           name: atom(),
@@ -85,7 +84,7 @@ defmodule Dala.ML.Gpu.Inference do
   @spec predict(model(), Nx.Tensor.t()) :: {:ok, Nx.Tensor.t()} | {:error, term()}
   def predict(%__MODULE__{} = model, input_tensor) do
     # Convert input tensor to GPU buffer
-    input_buf = Compute.from_nx(input_tensor)
+    _input_buf = Compute.from_nx(input_tensor)
 
     # Create output buffer
     output_buf = Compute.buffer_zeros(model.output_shape, :f32)

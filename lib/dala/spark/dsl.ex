@@ -119,8 +119,8 @@ defmodule Dala.Spark.Dsl do
     verifiers: [__MODULE__.Verifier]
 
   use Spark.Dsl,
-    single_extension_kinds: [:dala],
-    default_extensions: [dala: __MODULE__]
+    many_extension_kinds: [:dala],
+    default_extensions: [dala: [__MODULE__]]
 
   # ── Custom screen/2 and attributes/2 macros ────────────────────────────
   # Spark's build_section skips defining section macros for top-level
@@ -128,7 +128,7 @@ defmodule Dala.Spark.Dsl do
   # the standard Elixir calling convention: `screen name: :foo do ... end`.
 
   # Generate screen/2 that imports entity modules and executes the block
-  defmacro screen(opts, do: block) do
+  defmacro screen(_opts, do: block) do
     entity_imports = generate_entity_imports()
     opts_module = Dala.Spark.Dsl.Screen.Options
 
@@ -165,7 +165,15 @@ defmodule Dala.Spark.Dsl do
     quote do
       require Dala.Spark.Dsl
       import Dala.Spark.Dsl
-      use Spark.Dsl, single_extension_kinds: [:dala], default_extensions: [dala: Dala.Spark.Dsl]
+      use Spark.Dsl,
+        single_extension_kinds: [:dala],
+        default_extensions: [dala: Dala.Spark.Dsl]
+
+      # Ensure @extensions is set for the top-level module so that
+      # generated entity macros (e.g. attribute/3) can look it up via
+      # Spark.Dsl.Extension.get_attribute/2 at compile time.
+      Module.register_attribute(__MODULE__, :extensions, persist: true)
+      @extensions [Dala.Spark.Dsl]
     end
   end
 

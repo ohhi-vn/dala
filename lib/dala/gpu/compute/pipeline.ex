@@ -105,7 +105,7 @@ defmodule Dala.Gpu.Compute.Pipeline do
     Enum.reduce_while(stages, :ok, fn stage, :ok ->
       case execute_stage(stage) do
         :ok -> {:cont, :ok}
-        {:error, reason} = err -> {:halt, err}
+        {:error, _reason} = err -> {:halt, err}
       end
     end)
   end
