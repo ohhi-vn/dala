@@ -15,6 +15,7 @@ For iOS development, these ML backends are supported:
 | **EMLX** | ✅ Zero-config | MLX backend — **recommended for iOS** |
 | **CoreML** | ✅ Ready | Apple Neural Engine, iOS-native |
 | **ONNX Runtime** | ⚠️ Placeholder | Cross-platform, structure ready |
+| **ExBurn (Burn)** | ⚠️ Early alpha | Burn framework via Rust NIF, training + inference |
 
 **Not supported on iOS:** Emily (macOS-only), NxIREE, EXLA/XLA, Torchx.
 
@@ -340,6 +341,30 @@ Use `EMLX.clear_cache/0` and `EMLX.set_memory_limit/1` to manage GPU memory.
 - ONNX Runtime NIF must be compiled for the target platform
 - Verify ONNX Runtime libraries are in `native/onnxruntime-ios/`
 
+## ExBurn on iOS
+
+ExBurn provides the **only backend with on-device training** support on iOS. While EMLX and CoreML are recommended for pure inference, ExBurn enables:
+
+- **Fine-tuning** pre-trained models on-device
+- **Full training** of small models (< 10M parameters)
+- **GPU-accelerated** training via Metal (through CubeCL)
+- **No JIT required** — unlike EMLX, Burn's Rust NIF doesn't need JIT
+
+```elixir
+# Check ExBurn availability
+Dala.ML.Burn.available?()  # true
+Dala.ML.Burn.gpu?()        # true (Metal via CubeCL)
+
+# Configure
+Dala.ML.Burn.configure!(device: :gpu)
+
+# Train a small model on-device
+model = Dala.ML.Burn.compile(axon_model, optimizer: :adam)
+trained = Dala.ML.Burn.fit(model, data, epochs: 5, batch_size: 16)
+```
+
+See the [ExBurn Integration Guide](./ex_burn.md) for full documentation.
+
 ## See Also
 
 - [EMLX Documentation](https://hexdocs.pm/emlx)
@@ -348,3 +373,5 @@ Use `EMLX.clear_cache/0` and `EMLX.set_memory_limit/1` to manage GPU memory.
 - [MLX GitHub](https://github.com/ml-explore/mlx)
 - [ONNX Runtime Setup](../native/ONNX_RUNTIME_SETUP.md)
 - [ML Integration Summary](../dala/ML_INTEGRATION_SUMMARY.md)
+- [ExBurn Integration Guide](./ex_burn.md)
+- [ExBurn GitHub](https://github.com/ohhi-vn/ex_burn)

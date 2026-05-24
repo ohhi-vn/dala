@@ -12,6 +12,7 @@ defmodule Dala.ML do
   - **CoreML** - iOS-native ML framework (Neural Engine, iOS only)
   - **ONNX Runtime** - Cross-platform inference engine (iOS/Android)
   - **GPU Compute (EXCubeCL)** - GPU compute via CubeCL (iOS/Android/desktop)
+  - **ExBurn (Burn)** - Burn deep learning framework via Rust NIF (Metal/Vulkan/CUDA)
 
   ## Quick Start
 
@@ -49,6 +50,7 @@ defmodule Dala.ML do
   | CoreML | ✅ | ✅ | ❌ |
   | ONNX Runtime | ✅ | ✅ | ✅ |
   | GPU Compute (CubeCL) | ✅ | ✅ | ✅ |
+  | ExBurn (Burn) | ✅ | ✅ | ✅ |
   """
 
   @doc """
@@ -62,9 +64,17 @@ defmodule Dala.ML do
     cond do
       ios?() ->
         Dala.ML.EMLX.setup()
+        # Also configure ExBurn if available (Metal GPU via Burn)
+        if Dala.ML.Burn.available?() do
+          Dala.ML.Burn.configure!(device: :gpu)
+        end
 
       android?() ->
         Nx.default_backend(Nx.BinaryBackend)
+        # Configure ExBurn with Vulkan if available
+        if Dala.ML.Burn.available?() do
+          Dala.ML.Burn.configure!(device: :gpu)
+        end
         :ok
 
       true ->
@@ -132,12 +142,16 @@ defmodule Dala.ML do
       onnx_available: Dala.ML.ONNX.available?(),
       gpu_compute_available: Code.ensure_loaded?(ExCubecl),
       gpu_device: (if Code.ensure_loaded?(ExCubecl), do: Dala.Gpu.Compute.device_info(), else: nil),
+      burn_available: Dala.ML.Burn.available?(),
+      burn_gpu: Dala.ML.Burn.gpu?(),
+      burn_device: Dala.ML.Burn.default_device(),
       libraries: %{
         nx: Code.ensure_loaded?(Nx),
         scholar: Code.ensure_loaded?(Scholar),
         nx_signal: Code.ensure_loaded?(NxSignal),
         axon: Code.ensure_loaded?(Axon),
-        emlx: Code.ensure_loaded?(EMLX)
+        emlx: Code.ensure_loaded?(EMLX),
+        ex_burn: Dala.ML.Burn.available?()
       }
     }
   end
@@ -190,6 +204,13 @@ defmodule Dala.ML do
         backends
       end
 
+    backends =
+      if Dala.ML.Burn.available?() do
+        [:burn | backends]
+      else
+        backends
+      end
+
     Enum.reverse(backends)
   end
 
@@ -223,13 +244,51 @@ defmodule Dala.ML do
     ops = 2 * size * size * size
     gflops = ops / (avg_ms / 1000) / 1.0e9
 
-    %{
+    result = %{
       time_ms: Float.round(avg_ms, 3),
       backend: Nx.default_backend(),
       gflops: Float.round(gflops, 3),
       matrix_size: size,
       iterations: iterations
     }
+
+    # Include Burn benchmark if available
+    if Dala.ML.Burn.available?() do
+      burn_result = benchmark_backend(ExBurn.Backend, size, iterations)
+      Map.put(result, :burn, burn_result)
+    else
+      result
+    end
+  end
+
+  defp benchmark_backend(backend, size, iterations) do
+    Nx.default_backend(backend)
+
+    key = Nx.Random.key(42)
+    {a, _} = Nx.Random.uniform(key, shape: {size, size})
+    {b, _} = Nx.Random.uniform(key, shape: {size, size})
+
+    # Warmup
+    Nx.dot(a, b) |> Nx.to_binary()
+
+    {total_us, _} =
+      :timer.tc(fn ->
+        for _ <- 1..iterations do
+          Nx.dot(a, b) |> Nx.to_binary()
+        end
+      end)
+
+    avg_ms = total_us / iterations / 1000
+    ops = 2 * size * size * size
+    gflops = ops / (avg_ms / 1000) / 1.0e9
+
+    %{
+      time_ms: Float.round(avg_ms, 3),
+      gflops: Float.round(gflops, 3)
+    }
+  after
+    # Restore default backend
+    Nx.default_backend(Nx.BinaryBackend)
   end
 
   @doc """
@@ -251,6 +310,9 @@ defmodule Dala.ML do
 
       is_tuple(model) ->
         Dala.Ml.Nx.inference(elem(model, 0), elem(model, 1), input)
+
+      is_struct(model, ExBurn.Model) ->
+        Dala.ML.Burn.predict(model, input)
 
       true ->
         {:error, "Unsupported model type: #{inspect(model)}"}

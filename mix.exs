@@ -4,7 +4,7 @@ defmodule Dala.MixProject do
   def project do
     [
       app: :dala,
-      version: "0.5.0",
+      version: "0.6.0",
       elixir: "~> 1.18",
       erlang: ">= 27.0",
       start_permanent: Mix.env() == :prod,
@@ -60,6 +60,7 @@ defmodule Dala.MixProject do
         "guides/testing.md": [title: "Testing"],
         "guides/liveview.md": [title: "LiveView Integration"],
         "guides/ios_ml_support.md": [title: "iOS ML Support"],
+        "guides/ex_burn.md": [title: "ExBurn (Burn) Integration"],
         "guides/ios_physical_device.md": [title: "iOS Physical Device"],
         "guides/rustler_complete.md": [title: "Rustler in Mobile"],
         "guides/emlx_ios_summary.md": [title: "EMLX iOS Summary"],
@@ -77,7 +78,7 @@ defmodule Dala.MixProject do
         "Data & Device APIs": ~r/guides\/(data|device_capabilities)\.md/,
         "Media & GPU": ~r/guides\/(media_runtime|gpu_render_pipeline|gpu_compute)\.md/,
         "Testing & Development": ~r/guides\/(testing|agentic_coding)\.md/,
-        "iOS & Rust": ~r/guides\/(ios_|rustler_|emlx_)\.md/,
+        "iOS & Rust": ~r/guides\/(ios_|rustler_|emlx_|ex_burn)\.md/,
         Plugins: ~r/guides\/plugin_\.md/,
         "Advanced Topics": ~r/guides\/(liveview|publishing|security|troubleshooting)\.md/
       ],
@@ -136,6 +137,12 @@ defmodule Dala.MixProject do
           Dala.Gpu.Compute.Pipeline,
           Dala.ML.Gpu.Inference,
           Dala.Media.Gpu.Processor
+        ],
+        "ML & Burn": [
+          Dala.ML,
+          Dala.ML.Burn,
+          Dala.ML.Burn.Training,
+          Dala.ML.Burn.Serving
         ],
         Internals: [Dala.Dist, Dala.NativeLogger, Dala.List]
       ],
@@ -206,8 +213,12 @@ defmodule Dala.MixProject do
       {:axon, "~> 0.8"},
 
       # GPU compute runtime (CubeCL via Rust NIFs)
-      {:ex_cubecl, "~> 0.4"}
+      {:ex_cubecl, "~> 0.4"},
       # {:ex_cubecl, path: "../ex_cubecl"}
+
+      # Burn deep learning framework (Nx backend via Rust NIF)
+      {:ex_burn, "~> 0.1.2"}
+      # {:ex_burn, path: "../ex_burn"}
     ]
   end
 end

@@ -6,6 +6,9 @@ Dala integrates [EXCubeCL](https://hexdocs.pm/ex_cubecl/readme.html) for GPU com
 - **AI inference on GPU** — custom model kernels, preprocessing, postprocessing
 - **Realtime effects** — livestream filters, AR, virtual backgrounds
 - **Heavy data parallelism** — matrix ops, signal processing, physics simulation
+- **ML training + inference** — via ExBurn (Burn framework) using the same CubeCL GPU backend
+
+For ML training and inference, see the [ExBurn Integration Guide](./ex_burn.md). For image/video processing and custom kernels, see the sections below.
 
 ## Architecture
 

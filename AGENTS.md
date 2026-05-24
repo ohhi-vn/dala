@@ -466,6 +466,7 @@ These are the things we've burned ourselves on. Following them isn't optional.
 | Distribution, Permissions | `lib/dala/connectivity/dist.ex`, `lib/dala/permissions.ex` |
 | **Media Runtime** (video, scene graph, clock, filters, subtitles, adaptive bitrate, GPU surface) | `guides/media_runtime.md`, `lib/dala/media/`, `lib/dala/gpu.ex`, `lib/dala/gpu/command.ex`, `native/dala_gpu/` |
 | **GPU Compute** (EXCubeCL, CubeCL kernels, buffer management, pipelines, ML inference, media processing) | `guides/gpu_compute.md`, `lib/dala/gpu/compute/`, `lib/dala/ml/gpu/`, `lib/dala/media/gpu/` |
+| **ExBurn (Burn)** (Nx backend, training loop, serving, GPU bridge) | `lib/dala/ml/burn.ex`, `lib/dala/ml/burn/` |
 
 ## iOS ML Support (Nx ecosystem + CoreML + ONNX)
 
@@ -498,6 +499,17 @@ Dala supports machine learning via three paths:
   - Rust core: `native/dala_onnx/` (C ABI)
   - **Status**: Placeholder — thread-safe structure ready, actual inference not yet linked
 
+### ExBurn / Burn (Cross-Platform, GPU-Accelerated)
+
+- **ExBurn**: Bridge between Nx and the Burn deep learning framework (Rust)
+  - `Nx.Backend` implementation delegating to Burn via Rust NIFs
+  - GPU acceleration via Burn's CubeCL backend (Metal/Vulkan/CUDA)
+  - Training loop with Adam/SGD/RMSprop, LR scheduling, gradient clipping, callbacks
+  - Nx.Serving integration for batched concurrent inference
+  - Model management: compile, save/load, serialize, summary
+  - Access via `Dala.ML.Burn`, `Dala.ML.Burn.Training`, `Dala.ML.Burn.Serving`
+  - **Status**: Early alpha — basic ops and inference work, training uses numerical gradients
+
 **Not supported on iOS:** Emily (macOS-only), NxIREE, EXLA/XLA, Torchx.
 
 **Newly integrated (v0.0.6+):**
@@ -507,6 +519,7 @@ Dala supports machine learning via three paths:
 - `Dala.ML.setup/0` unified zero-config entry point
 - `Dala.ML.predict/2` unified predict dispatching to CoreML/ONNX/Axon
 - `Dala.ML.benchmark/1` for backend performance measurement
+- ExBurn (Burn) bridge for GPU-accelerated ML via `Dala.ML.Burn`
 
 Use `Dala.ML.setup/0` for zero-config setup (replaces `Dala.ML.EMLX.setup/0`).
 
