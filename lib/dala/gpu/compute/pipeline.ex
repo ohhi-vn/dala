@@ -3,8 +3,7 @@ defmodule Dala.Gpu.Compute.Pipeline do
   Multi-stage GPU compute pipeline orchestration.
 
   Pipelines chain multiple GPU operations (kernels, buffer copies, etc.)
-  into a single executable graph. Stages run sequentially with automatic
-  synchronization between stages.
+  into a single executable graph via EXCubeCL's native pipeline API.
 
   ## Example: Image processing pipeline
 
@@ -69,6 +68,12 @@ defmodule Dala.Gpu.Compute.Pipeline do
   - `:inputs` — list of input `Buffer` structs
   - `:output` — output `Buffer` struct
   - `:params` — map of kernel-specific parameters
+
+  ## EXCubeCL Backend
+
+  Under the hood, stages are compiled into an EXCubeCL native pipeline
+  (`ExCubecl.pipeline/0` + `ExCubecl.pipeline_add/5` + `ExCubecl.pipeline_run/1`)
+  for efficient batch submission. The pipeline is freed after execution.
   """
 
   @type stage :: %{
@@ -99,15 +104,17 @@ defmodule Dala.Gpu.Compute.Pipeline do
     %{pipeline | stages: stages ++ [stage]}
   end
 
-  @doc "Execute all stages in the pipeline sequentially."
+  @doc "Execute all stages in the pipeline via EXCubeCL native pipeline API."
   @spec run(t()) :: :ok | {:error, term()}
   def run(%__MODULE__{stages: stages}) do
-    Enum.reduce_while(stages, :ok, fn stage, :ok ->
-      case execute_stage(stage) do
-        :ok -> {:cont, :ok}
-        {:error, _reason} = err -> {:halt, err}
-      end
-    end)
+    with {:ok, pipeline_id} <- ExCubecl.pipeline(),
+         {:ok, pipeline_id} <- add_stages(pipeline_id, stages),
+         {:ok, _cmd_ids} <- ExCubecl.pipeline_run(pipeline_id) do
+      ExCubecl.pipeline_free(pipeline_id)
+      :ok
+    else
+      {:error, _reason} = err -> err
+    end
   end
 
   @doc "Return the number of stages in the pipeline."
@@ -137,28 +144,40 @@ defmodule Dala.Gpu.Compute.Pipeline do
   defp extract_ref(ref) when is_reference(ref), do: ref
   defp extract_ref(_), do: nil
 
-  # Private: execute a single stage
-  defp execute_stage(%{op: :run_kernel, kernel: kernel, inputs: inputs, output: output, params: params}) do
-    valid_inputs = Enum.filter(inputs, & &1)
+  # Private: add all stages to an EXCubeCL native pipeline.
+  defp add_stages(pipeline_id, stages) do
+    Enum.reduce_while(stages, {:ok, pipeline_id}, fn stage, {:ok, pid} ->
+      case add_stage(pid, stage) do
+        {:ok, ^pid} -> {:cont, {:ok, pid}}
+        {:error, _reason} = err -> {:halt, err}
+      end
+    end)
+  end
 
-    case ExCubecl.run_kernel(kernel, valid_inputs, output, params) do
-      :ok -> :ok
+  defp add_stage(pipeline_id, %{op: :run_kernel, kernel: kernel, inputs: inputs, output: output, params: params}) do
+    valid_inputs = Enum.filter(inputs, & &1)
+    kernel_string = Atom.to_string(kernel)
+    params_binary = :erlang.term_to_binary(params)
+
+    case ExCubecl.pipeline_add(pipeline_id, kernel_string, valid_inputs, output, params_binary) do
+      :ok -> {:ok, pipeline_id}
       {:error, _} = err -> err
     end
   end
 
-  defp execute_stage(%{op: :copy_buffer, inputs: [src | _], output: dst, params: params}) do
+  defp add_stage(pipeline_id, %{op: :copy_buffer, inputs: [src | _], output: dst, params: params}) do
     size = Map.get(params, :size, 0)
-    ExCubecl.submit(%{op: :copy_buffer, src: src, dst: dst, size: size})
-    :ok
+    # Submit copy as a string command via EXCubeCL submit/1
+    {:ok, cmd_id} = ExCubecl.submit("copy_buffer #{inspect(src)} #{inspect(dst)} #{size}")
+    {:ok, _} = ExCubecl.wait(cmd_id)
+    {:ok, pipeline_id}
   end
 
-  defp execute_stage(%{op: :barrier}) do
-    # Barrier: wait for all previous commands to complete
-    :ok
+  defp add_stage(pipeline_id, %{op: :barrier}) do
+    {:ok, pipeline_id}
   end
 
-  defp execute_stage(unknown) do
+  defp add_stage(_pipeline_id, unknown) do
     {:error, {:unknown_stage_op, Map.get(unknown, :op)}}
   end
 end

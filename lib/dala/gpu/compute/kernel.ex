@@ -43,6 +43,13 @@ defmodule Dala.Gpu.Compute.Kernel do
   Kernels run on the dirty CPU scheduler to avoid blocking the BEAM.
   On iOS, kernels compile to Metal shaders. On Android, to OpenGL ES
   compute shaders. On desktop (dev), a CPU fallback is used.
+
+  ## EXCubeCL 0.3+ Compatibility
+
+  Dala uses atom kernel names (`:elementwise_add`) internally and
+  translates to EXCubeCL string names (`"elementwise_add"`) at the
+  boundary. The `run/4` and `async_run/4` functions accept both
+  atoms and strings.
   """
 
   alias Dala.Gpu.Compute.Buffer
@@ -58,21 +65,23 @@ defmodule Dala.Gpu.Compute.Kernel do
   @spec run(atom(), [Buffer.t()], Buffer.t(), map()) :: :ok | {:error, term()}
   def run(kernel, inputs, output, params \\ %{}) do
     input_refs = Enum.map(inputs, & &1.ref)
-    ExCubecl.run_kernel(kernel, input_refs, output.ref, params)
+    kernel_string = kernel_to_string(kernel)
+
+    case ExCubecl.run_kernel(kernel_string, input_refs, output.ref, params) do
+      {:ok, _cmd_id} -> :ok
+      {:error, _reason} = err -> err
+    end
   end
 
   @doc "Run a kernel asynchronously. Returns a command ID."
   @spec async_run(atom(), [Buffer.t()], Buffer.t(), map()) :: non_neg_integer()
-  def async_run(kernel, inputs, output, params \\ %{}) do
-    input_refs = Enum.map(inputs, & &1.ref)
+  def async_run(kernel, _inputs, _output, _params \\ %{}) do
+    kernel_string = kernel_to_string(kernel)
 
-    ExCubecl.submit(%{
-      op: :run_kernel,
-      kernel: kernel,
-      inputs: input_refs,
-      output: output.ref,
-      params: params
-    })
+    {:ok, cmd_id} =
+      ExCubecl.submit("run_kernel #{kernel_string}")
+
+    cmd_id
   end
 
   @doc "Register a custom kernel at runtime."
@@ -129,4 +138,8 @@ defmodule Dala.Gpu.Compute.Kernel do
         :ok
     end
   end
+
+  # Private: convert atom or string kernel name to EXCubeCL string.
+  defp kernel_to_string(kernel) when is_atom(kernel), do: Atom.to_string(kernel)
+  defp kernel_to_string(kernel) when is_binary(kernel), do: kernel
 end

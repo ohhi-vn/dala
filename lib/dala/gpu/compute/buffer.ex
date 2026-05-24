@@ -13,8 +13,8 @@ defmodule Dala.Gpu.Compute.Buffer do
   4. Free via `Dala.Gpu.Compute.free/1`
 
   Buffers are automatically freed when the owning process exits
-  (via monitor-based cleanup), but explicit `free/1` is recommended
-  for long-lived processes.
+  (via Rust ResourceArc cleanup). Explicit `free/1` is a no-op but
+  provided for API compatibility.
   """
 
   @type t :: %__MODULE__{
@@ -29,16 +29,19 @@ defmodule Dala.Gpu.Compute.Buffer do
   @doc "Create a new GPU buffer from a list of values."
   @spec new(list(), tuple(), atom()) :: t()
   def new(data, shape, dtype \\ :f32) do
-    ref = ExCubecl.buffer(data, shape, dtype)
-    size_bytes = ExCubecl.size(ref)
+    shape_list = Tuple.to_list(shape)
+    {:ok, ref} = ExCubecl.buffer(data, shape_list, dtype)
+    {:ok, size_bytes} = ExCubecl.size(ref)
     %__MODULE__{ref: ref, shape: shape, dtype: dtype, size_bytes: size_bytes}
   end
 
   @doc "Create a zero-initialized GPU buffer."
   @spec zeros(tuple(), atom()) :: t()
   def zeros(shape, dtype \\ :f32) do
-    {total_size, _} =
-      Enum.reduce(shape, {1, shape}, fn dim, {acc, _} -> {acc * dim, nil} end)
+    total_size =
+      shape
+      |> Tuple.to_list()
+      |> Enum.reduce(1, &(&1 * &2))
 
     data = List.duplicate(0.0, total_size)
     new(data, shape, dtype)

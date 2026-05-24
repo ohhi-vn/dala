@@ -13,7 +13,7 @@ defmodule Dala.Gpu.Compute do
   │  Dala.Gpu.Compute                                    │
   │  ├── buffer management (create, read, free)           │
   │  ├── kernel execution (sync + async)                  │
-  │  ├── pipeline orchestration (multi-stage)             ││
+  │  ├── pipeline orchestration (multi-stage)             │
   │  └── stream scheduler (mobile-optimized)              │
   ├──────────────────────────────────────────────────────┤
   │  EXCubeCL (Elixir NIF stubs)                         │
@@ -26,7 +26,7 @@ defmodule Dala.Gpu.Compute do
 
       # Check GPU availability
       Dala.Gpu.Compute.device_info()
-      # %{name: "ExCubecl CPU (Rust NIF)", gpu: false, version: "0.2.0"}
+      # %{name: "ExCubecl CPU (Rust NIF)", gpu: false, version: "0.3.0"}
 
       # Create buffers
       a = Dala.Gpu.Compute.buffer([1.0, 2.0, 3.0], {3}, :f32)
@@ -34,13 +34,13 @@ defmodule Dala.Gpu.Compute do
       c = Dala.Gpu.Compute.buffer([0.0, 0.0, 0.0], {3}, :f32)
 
       # Run a kernel
-      Dala.Gpu.Compute.run_kernel(:elementwise_add, [a], c, %{})
+      Dala.Gpu.Compute.run_kernel(:elementwise_add, [a, b], c, %{})
 
       # Read results
       Dala.Gpu.Compute.read(c)
-      # [5.0, 7.0, 9.0]
+      # <<5.0, 7.0, 9.0>>  (binary)
 
-      # Cleanup
+      # Cleanup (optional — buffers auto-freed by ResourceArc)
       Dala.Gpu.Compute.free(a)
       Dala.Gpu.Compute.free(b)
       Dala.Gpu.Compute.free(c)
@@ -49,9 +49,9 @@ defmodule Dala.Gpu.Compute do
 
       cmd_id = Dala.Gpu.Compute.submit(%{
         op: :run_kernel,
-        kernel: :relu,
-        inputs: [a],
-        output: b,
+        kernel: "relu",
+        inputs: [a.ref],
+        output: b.ref,
         params: %{}
       })
 
@@ -116,11 +116,14 @@ defmodule Dala.Gpu.Compute do
 
   @doc "Return GPU device information."
   @spec device_info() :: map()
-  def device_info, do: ExCubecl.device_info()
+  def device_info do
+    {:ok, info} = ExCubecl.device_info()
+    info
+  end
 
   @doc "Return the EXCubeCL version string."
   @spec version() :: String.t()
-  def version, do: Map.get(device_info(), :version, "unknown")
+  def version, do: ExCubecl.version()
 
   @doc "Return true if a real GPU is available (not CPU fallback)."
   @spec gpu?() :: boolean()
@@ -171,34 +174,59 @@ defmodule Dala.Gpu.Compute do
 
   @doc "Return the shape of a buffer."
   @spec shape(Buffer.t()) :: tuple()
-  def shape(%Buffer{ref: ref}), do: ExCubecl.shape(ref)
+  def shape(%Buffer{ref: ref}) do
+    {:ok, shape_list} = ExCubecl.shape(ref)
+    List.to_tuple(shape_list)
+  end
 
   @doc "Return the data type of a buffer."
   @spec dtype(Buffer.t()) :: atom()
-  def dtype(%Buffer{ref: ref}), do: ExCubecl.dtype(ref)
+  def dtype(%Buffer{ref: ref}) do
+    {:ok, dtype_string} = ExCubecl.dtype(ref)
+    String.to_atom(dtype_string)
+  end
 
+  @doc "Return the size of a buffer in bytes."
   @spec size(Buffer.t()) :: non_neg_integer()
-  def size(%Buffer{ref: ref}), do: ExCubecl.size(ref)
+  def size(%Buffer{ref: ref}) do
+    {:ok, size} = ExCubecl.size(ref)
+    size
+  end
 
-  @doc "Read data from a GPU buffer back to an Elixir list."
-  @spec read(Buffer.t()) :: list()
-  def read(%Buffer{ref: ref}), do: ExCubecl.read(ref)
+  @doc """
+  Read data from a GPU buffer back to an Elixir binary.
+
+  EXCubeCL 0.3+ returns `{:ok, binary()}` from `read/1`.
+  This function returns the binary directly for a clean Dala API.
+
+  ## Example
+
+      data = Dala.Gpu.Compute.read(buf)
+      # <<5.0, 7.0, 9.0>>
+  """
+  @spec read(Buffer.t()) :: binary()
+  def read(%Buffer{ref: ref}) do
+    {:ok, data} = ExCubecl.read(ref)
+    data
+  end
+
+  @doc "Read data from a GPU buffer and convert to an Elixir list."
+  @spec read_list(Buffer.t()) :: list()
+  def read_list(%Buffer{ref: ref}) do
+    {:ok, data} = ExCubecl.read(ref)
+    :erlang.binary_to_list(data)
+  end
 
   @doc "Read data from a GPU buffer as a raw binary (zero-copy when possible)."
   @spec read_binary(Buffer.t()) :: binary()
   def read_binary(%Buffer{ref: ref}) do
-    ExCubecl.read(ref)
-    |> :erlang.list_to_binary()
-  rescue
-    _ ->
-      # Fallback: read as list then convert
-      ExCubecl.read(ref)
-      |> :erlang.list_to_binary()
+    {:ok, data} = ExCubecl.read(ref)
+    data
   end
 
   @doc "Free a GPU buffer and release all associated GPU memory."
   @spec free(Buffer.t()) :: :ok
-  # Buffers are automatically freed by GC (Rustler ResourceArc).
+  # Buffers are automatically freed by Rust ResourceArc cleanup.
   # This is a no-op for API compatibility.
   def free(%Buffer{}), do: :ok
 
@@ -220,7 +248,7 @@ defmodule Dala.Gpu.Compute do
 
   ## Example
 
-      Dala.Gpu.Compute.run_kernel(:elementwise_add, [a], c, %{})
+      Dala.Gpu.Compute.run_kernel(:elementwise_add, [a, b], c, %{})
       Dala.Gpu.Compute.run_kernel(:relu, [a], b, %{slope: 0.1})
       Dala.Gpu.Compute.run_kernel(:blur, [image_buf], out_buf, %{radius: 3, sigma: 1.5})
   """
@@ -230,15 +258,17 @@ defmodule Dala.Gpu.Compute do
   end
 
   @doc """
-  Run a kernel asynchronously. Returns a command ID for polling.
+  Submit a compute command asynchronously. Returns a command ID for polling.
+
+  The spec map is encoded as a string for EXCubeCL 0.3+.
 
   ## Example
 
       cmd_id = Dala.Gpu.Compute.submit(%{
         op: :run_kernel,
-        kernel: :relu,
-        inputs: [a],
-        output: b,
+        kernel: "relu",
+        inputs: [a.ref],
+        output: b.ref,
         params: %{}
       })
 
@@ -251,13 +281,18 @@ defmodule Dala.Gpu.Compute do
   """
   @spec submit(map()) :: non_neg_integer()
   def submit(spec) do
-    ExCubecl.submit(spec)
+    command_string = encode_submit_command(spec)
+    {:ok, cmd_id} = ExCubecl.submit(command_string)
+    cmd_id
   end
 
   @doc "Poll an async command. Returns `:pending`, `:completed`, or `{:error, reason}`."
   @spec poll(non_neg_integer()) :: :pending | :completed | {:error, term()}
   def poll(cmd_id) do
-    ExCubecl.poll(cmd_id)
+    case ExCubecl.poll(cmd_id) do
+      {:ok, status} -> status
+      {:error, _} = err -> err
+    end
   end
 
   @doc "Block until an async command completes. Returns `:ok` or `{:error, reason}`."
@@ -269,15 +304,38 @@ defmodule Dala.Gpu.Compute do
   @doc "Run a kernel asynchronously and wait for completion."
   @spec run_kernel_async(atom(), [Buffer.t()], Buffer.t(), map()) :: :ok | {:error, term()}
   def run_kernel_async(kernel, inputs, output, params \\ %{}) do
+    input_refs = Enum.map(inputs, & &1.ref)
+    kernel_string = Atom.to_string(kernel)
+
     cmd_id = submit(%{
       op: :run_kernel,
-      kernel: kernel,
-      inputs: inputs,
-      output: output,
+      kernel: kernel_string,
+      inputs: input_refs,
+      output: output.ref,
       params: params
     })
 
     wait(cmd_id)
+  end
+
+  # Private: encode a submit spec map into an EXCubeCL command string.
+  defp encode_submit_command(%{op: :run_kernel} = spec) do
+    kernel = Map.get(spec, :kernel)
+    inputs = Map.get(spec, :inputs, []) |> Enum.map(&inspect/1) |> Enum.join(", ")
+    output = Map.get(spec, :output) |> inspect()
+    params = Map.get(spec, :params, %{}) |> inspect()
+    "run_kernel #{kernel} [#{inputs}] #{output} #{params}"
+  end
+
+  defp encode_submit_command(%{op: :copy_buffer} = spec) do
+    src = inspect(Map.get(spec, :src))
+    dst = inspect(Map.get(spec, :dst))
+    size = Map.get(spec, :size, 0)
+    "copy_buffer #{src} #{dst} #{size}"
+  end
+
+  defp encode_submit_command(spec) do
+    inspect(spec)
   end
 
   # ── Pipeline orchestration ────────────────────────────────────────────────
@@ -302,8 +360,10 @@ defmodule Dala.Gpu.Compute do
 
   @doc "Free a pipeline and its internal resources."
   @spec free_pipeline(Pipeline.t()) :: :ok
-  def free_pipeline(%Pipeline{ref: ref}) do
-    ExCubecl.pipeline_free(ref)
+  def free_pipeline(%Pipeline{} = _pipeline) do
+    # Pipeline is freed automatically after run/1 completes.
+    # This is a no-op for API compatibility.
+    :ok
   end
 
   # ── Built-in kernel helpers ───────────────────────────────────────────────
@@ -383,9 +443,7 @@ defmodule Dala.Gpu.Compute do
   def run_to_surface(kernel, inputs, output, surface, params \\ %{}) do
     :ok = run_kernel(kernel, inputs, output, params)
 
-    pixels =
-      ExCubecl.read(output)
-      |> :erlang.list_to_binary()
+    pixels = read(output)
 
     Dala.Gpu.set_pixels(surface, pixels)
     Dala.Gpu.present(surface)
@@ -419,8 +477,7 @@ defmodule Dala.Gpu.Compute do
   @spec to_nx(Buffer.t(), tuple(), atom()) :: Nx.Tensor.t()
   def to_nx(buf, shape, dtype) do
     data = read(buf)
-    cube_dtype = dtype
-    nx_dtype = cube_dtype_to_nx(cube_dtype)
+    nx_dtype = cube_dtype_to_nx(dtype)
     Nx.from_binary(data, nx_dtype) |> Nx.reshape(shape)
   end
 

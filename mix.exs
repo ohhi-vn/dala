@@ -4,7 +4,7 @@ defmodule Dala.MixProject do
   def project do
     [
       app: :dala,
-      version: "0.4.0",
+      version: "0.5.0",
       elixir: "~> 1.18",
       erlang: ">= 27.0",
       start_permanent: Mix.env() == :prod,
@@ -206,8 +206,8 @@ defmodule Dala.MixProject do
       {:axon, "~> 0.8"},
 
       # GPU compute runtime (CubeCL via Rust NIFs)
-      {:ex_cubecl, "~> 0.3"}
-      #{:ex_cubecl, path: "../ex_cubecl"}
+      {:ex_cubecl, "~> 0.4"}
+      # {:ex_cubecl, path: "../ex_cubecl"}
     ]
   end
 end

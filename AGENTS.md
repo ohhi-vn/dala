@@ -573,24 +573,34 @@ Summary: `dala/ML_INTEGRATION_SUMMARY.md`
     - `Dala.Preview.Codegen.extract_handlers/1` — Extract event handler atoms from UI tree
     - Auto-generates `handle_event/3` stubs for all event handlers found in the tree
 
-## 24. **GPU compute via EXCubeCL.**
+## 24. **GPU compute via EXCubeCL (v0.4.0).**
     Dala integrates EXCubeCL for GPU compute workloads (image processing, AI inference, realtime effects).
     
     **Key modules:**
     - `Dala.Gpu.Compute` — High-level API: buffers, kernels, pipelines, Nx bridge
     - `Dala.Gpu.Compute.Buffer` — Typed buffer struct wrapper
     - `Dala.Gpu.Compute.Kernel` — Kernel execution + custom kernel registry
-    - `Dala.Gpu.Compute.Pipeline` — Multi-stage GPU pipelines
-    - `Dala.ML.Gpu.Inference` — GPU-accelerated ML inference
+    - `Dala.Gpu.Compute.Pipeline` — Multi-stage GPU pipelines (delegates to `ExCubecl.pipeline/0`)
+    - `Dala.ML.Gpu.Inference` — GPU-accelerated ML inference with VideoFrame support
     - `Dala.Media.Gpu.Processor` — GPU-accelerated video/image processing
+    
+    **EXCubeCL 0.4.0 Media Modules (via `Dala.Media.Gpu.Processor`):**
+    - `ExCubecl.Media` — Media I/O: open, streams, read_frame, close
+    - `ExCubecl.Video` — Video ops: overlay, mix, scale, crop, convert
+    - `ExCubecl.Audio` — Audio ops: mix, overlay, resample, channel conversion
+    - `ExCubecl.Filter` — GPU filters: apply, chain (gaussian_blur, sharpen, denoise, etc.)
+    - `ExCubecl.Transcode` — Encoding/muxing: start, write_frame, write_samples, finish
+    - `ExCubecl.VideoFrame` / `ExCubecl.AudioSamples` — GPU-resident media types
     
     **Key patterns:**
     - GPU compute is dirty-CPU scheduled (won't block BEAM)
     - On iOS → Metal shaders, Android → OpenGL ES compute, Desktop → CPU fallback
     - Use `Dala.Gpu.Compute.device_info()` to check GPU availability
-    - Always free buffers when done (or use `Dala.Gpu.Compute.free_many/1`)
+    - Buffers are auto-freed via Rust ResourceArc (no manual free needed)
     - For rendering results to screen, use `run_to_surface/5` to avoid CPU read-back
     - Pipelines batch multiple kernels into a single submission
+    - EXCubeCL uses string kernel names (`"elementwise_add"`), Dala translates atoms at the boundary
+    - EXCubeCL `read/1` returns `{:ok, binary()}` — already unwrapped by `Dala.Gpu.Compute.read/1`
     
     **Integration points:**
     - `Dala.Gpu` delegates to `Dala.Gpu.Compute` via `compute_buffer/3`, `compute_run/4`, etc.
