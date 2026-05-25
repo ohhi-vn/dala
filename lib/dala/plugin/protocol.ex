@@ -391,6 +391,7 @@ defmodule Dala.Plugin.Protocol do
   end
 
   defp decode_list_items(<<>>), do: []
+
   defp decode_list_items(<<slen::16, item::binary-size(slen), rest::binary>>) do
     [item | decode_list_items(rest)]
   end

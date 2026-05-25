@@ -64,7 +64,6 @@ defmodule Dala.Spark.Dsl do
   # @component_name module attributes are injected here at compile time.
   use Dala.Spark.Dsl.Entities
 
-
   # ── Screen section ──────────────────────────────────────────────────────
   # Holds all entities — both leaf and container.
   # Container entities use `recursive_as: :children` so they nest.
@@ -154,7 +153,9 @@ defmodule Dala.Spark.Dsl do
   defp generate_entity_imports do
     Dala.Ui.Component.components()
     |> Enum.map(fn {_name, comp} ->
-      mod = Module.concat(Dala.Spark.Dsl.Screen, comp.name |> Atom.to_string() |> Macro.camelize())
+      mod =
+        Module.concat(Dala.Spark.Dsl.Screen, comp.name |> Atom.to_string() |> Macro.camelize())
+
       quote do: import(unquote(mod))
     end)
   end
@@ -165,6 +166,7 @@ defmodule Dala.Spark.Dsl do
     quote do
       require Dala.Spark.Dsl
       import Dala.Spark.Dsl
+
       use Spark.Dsl,
         single_extension_kinds: [:dala],
         default_extensions: [dala: Dala.Spark.Dsl]
@@ -181,8 +183,6 @@ defmodule Dala.Spark.Dsl do
   # Spark's build_section skips defining the section macro for top-level
   # sections. We define it here manually to support the
   # `screen name: :foo do ... end` calling convention.
-
-
 
   # ── Verifier ────────────────────────────────────────────────────────────
 
@@ -291,5 +291,4 @@ defmodule Dala.Spark.Dsl do
   defmacro dala(do: block) do
     block
   end
-
 end

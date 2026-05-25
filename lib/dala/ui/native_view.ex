@@ -229,13 +229,16 @@ defmodule Dala.Ui.NativeView do
   # Cached per-module since the same module appears on every render.
   defp module_name(module) do
     case :ets.lookup(:dala_module_names, module) do
-      [{^module, name}] -> name
+      [{^module, name}] ->
+        name
+
       [] ->
         name =
           module
           |> Atom.to_string()
           |> String.replace_prefix("Elixir.", "")
           |> String.replace(".", "_")
+
         :ets.insert(:dala_module_names, {module, name})
         name
     end
@@ -247,9 +250,11 @@ defmodule Dala.Ui.NativeView do
     case :ets.whereis(:dala_module_names) do
       :undefined ->
         :ets.new(:dala_module_names, [:set, :public, :named_table, read_concurrency: true])
+
       _ ->
         :ok
     end
+
     :ok
   end
 end

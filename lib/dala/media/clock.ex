@@ -34,7 +34,7 @@ defmodule Dala.Media.Clock do
     :last_frame_us,
     :drift_us,
     :listeners,
-    :timer_ref,
+    :timer_ref
   ]
 
   # Client API
@@ -79,11 +79,11 @@ defmodule Dala.Media.Clock do
 
   @doc "Get frame statistics."
   @spec stats(clock_ref()) :: %{
-    frame_count: non_neg_integer(),
-    dropped_frames: non_neg_integer(),
-    drift_us: integer(),
-    target_fps: pos_integer()
-  }
+          frame_count: non_neg_integer(),
+          dropped_frames: non_neg_integer(),
+          drift_us: integer(),
+          target_fps: pos_integer()
+        }
   def stats(pid), do: GenServer.call(pid, :get_stats)
 
   # Server callbacks
@@ -92,18 +92,19 @@ defmodule Dala.Media.Clock do
   def init(opts) do
     target_fps = Keyword.get(opts, :target_fps, @default_fps)
 
-    {:ok, %__MODULE__{
-      target_fps: target_fps,
-      frame_budget_us: div(1_000_000, target_fps),
-      audio_clock_us: 0,
-      video_clock_us: 0,
-      frame_count: 0,
-      dropped_frames: 0,
-      last_frame_us: nil,
-      drift_us: 0,
-      listeners: [],
-      timer_ref: nil,
-    }}
+    {:ok,
+     %__MODULE__{
+       target_fps: target_fps,
+       frame_budget_us: div(1_000_000, target_fps),
+       audio_clock_us: 0,
+       video_clock_us: 0,
+       frame_count: 0,
+       dropped_frames: 0,
+       last_frame_us: nil,
+       drift_us: 0,
+       listeners: [],
+       timer_ref: nil
+     }}
   end
 
   @impl GenServer
@@ -135,11 +136,13 @@ defmodule Dala.Media.Clock do
         0
       end
 
-    {:noreply, %__MODULE__{state |
-      audio_clock_us: timestamp_us,
-      drift_us: drift,
-      dropped_frames: state.dropped_frames + dropped
-    }}
+    {:noreply,
+     %__MODULE__{
+       state
+       | audio_clock_us: timestamp_us,
+         drift_us: drift,
+         dropped_frames: state.dropped_frames + dropped
+     }}
   end
 
   def handle_cast({:video_frame, pts_us}, state) do
@@ -153,32 +156,34 @@ defmodule Dala.Media.Clock do
     frame_count = state.frame_count + 1
 
     for listener <- state.listeners do
-      send(listener, {:clock, :tick, %{
-        frame: frame_count,
-        timestamp_us: now,
-        drift_us: state.drift_us
-      }})
+      send(
+        listener,
+        {:clock, :tick,
+         %{
+           frame: frame_count,
+           timestamp_us: now,
+           drift_us: state.drift_us
+         }}
+      )
     end
 
     timer_ref = schedule_tick(state.frame_budget_us)
 
-    {:noreply, %__MODULE__{state |
-      frame_count: frame_count,
-      last_frame_us: now,
-      timer_ref: timer_ref
-    }}
+    {:noreply,
+     %__MODULE__{state | frame_count: frame_count, last_frame_us: now, timer_ref: timer_ref}}
   end
 
   @impl GenServer
   def handle_call(:get_drift, _from, state), do: {:reply, state.drift_us, state}
 
   def handle_call(:get_stats, _from, state) do
-    {:reply, %{
-      frame_count: state.frame_count,
-      dropped_frames: state.dropped_frames,
-      drift_us: state.drift_us,
-      target_fps: state.target_fps
-    }, state}
+    {:reply,
+     %{
+       frame_count: state.frame_count,
+       dropped_frames: state.dropped_frames,
+       drift_us: state.drift_us,
+       target_fps: state.target_fps
+     }, state}
   end
 
   # Private

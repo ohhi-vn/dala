@@ -22,12 +22,12 @@ defmodule Dala.Media.Subtitle do
   """
 
   @type cue :: %{
-    id: non_neg_integer(),
-    start_ms: non_neg_integer(),
-    end_ms: non_neg_integer(),
-    text: String.t(),
-    style: map()
-  }
+          id: non_neg_integer(),
+          start_ms: non_neg_integer(),
+          end_ms: non_neg_integer(),
+          text: String.t(),
+          style: map()
+        }
 
   @type parse_result :: {:ok, [cue()]} | {:error, term()}
 
@@ -81,8 +81,8 @@ defmodule Dala.Media.Subtitle do
 
     Enum.filter(cues, fn cue ->
       (cue.start_ms >= start_ms and cue.start_ms <= end_ms) or
-      (cue.end_ms >= start_ms and cue.end_ms <= end_ms) or
-      (cue.start_ms <= start_ms and cue.end_ms >= end_ms)
+        (cue.end_ms >= start_ms and cue.end_ms <= end_ms) or
+        (cue.start_ms <= start_ms and cue.end_ms >= end_ms)
     end)
   end
 
@@ -96,7 +96,7 @@ defmodule Dala.Media.Subtitle do
       font_size: Keyword.get(opts, :font_size, 24),
       color: Keyword.get(opts, :color, {255, 255, 255, 255}),
       background: Keyword.get(opts, :background, {0, 0, 0, 128}),
-      max_width: Keyword.get(opts, :max_width, 600),
+      max_width: Keyword.get(opts, :max_width, 600)
     }
   end
 
@@ -109,13 +109,14 @@ defmodule Dala.Media.Subtitle do
       [id_str, timing | text_lines] ->
         with {id, ""} <- Integer.parse(id_str),
              {:ok, start_ms, end_ms} <- parse_srt_timing(timing) do
-          {:ok, %{
-            id: id,
-            start_ms: start_ms,
-            end_ms: end_ms,
-            text: Enum.join(text_lines, "\n"),
-            style: %{},
-          }}
+          {:ok,
+           %{
+             id: id,
+             start_ms: start_ms,
+             end_ms: end_ms,
+             text: Enum.join(text_lines, "\n"),
+             style: %{}
+           }}
         else
           _ -> {:error, :invalid_block}
         end
@@ -126,7 +127,10 @@ defmodule Dala.Media.Subtitle do
   end
 
   defp parse_srt_timing(timing) do
-    case Regex.run(~r/(\d{2}):(\d{2}):(\d{2}),(\d{3})\s*-->\s*(\d{2}):(\d{2}):(\d{2}),(\d{3})/, timing) do
+    case Regex.run(
+           ~r/(\d{2}):(\d{2}):(\d{2}),(\d{3})\s*-->\s*(\d{2}):(\d{2}):(\d{2}),(\d{3})/,
+           timing
+         ) do
       [_, sh, sm, ss, sms, eh, em, es, ems] ->
         start_ms = to_ms(sh, sm, ss, sms)
         end_ms = to_ms(eh, em, es, ems)
@@ -139,9 +143,9 @@ defmodule Dala.Media.Subtitle do
 
   defp to_ms(h, m, s, ms) do
     String.to_integer(h) * 3_600_000 +
-    String.to_integer(m) * 60_000 +
-    String.to_integer(s) * 1_000 +
-    String.to_integer(ms)
+      String.to_integer(m) * 60_000 +
+      String.to_integer(s) * 1_000 +
+      String.to_integer(ms)
   end
 
   # Private — VTT parsing
@@ -153,13 +157,14 @@ defmodule Dala.Media.Subtitle do
       [timing | text_lines] when text_lines != [] ->
         case parse_vtt_timing(timing) do
           {:ok, start_ms, end_ms} ->
-            {:ok, %{
-              id: idx,
-              start_ms: start_ms,
-              end_ms: end_ms,
-              text: Enum.join(text_lines, "\n"),
-              style: %{},
-            }}
+            {:ok,
+             %{
+               id: idx,
+               start_ms: start_ms,
+               end_ms: end_ms,
+               text: Enum.join(text_lines, "\n"),
+               style: %{}
+             }}
 
           error ->
             error
@@ -171,7 +176,10 @@ defmodule Dala.Media.Subtitle do
   end
 
   defp parse_vtt_timing(timing) do
-    case Regex.run(~r/(\d{2}):(\d{2}):(\d{2})\.(\d{3})\s*-->\s*(\d{2}):(\d{2}):(\d{2})\.(\d{3})/, timing) do
+    case Regex.run(
+           ~r/(\d{2}):(\d{2}):(\d{2})\.(\d{3})\s*-->\s*(\d{2}):(\d{2}):(\d{2})\.(\d{3})/,
+           timing
+         ) do
       [_, sh, sm, ss, sms, eh, em, es, ems] ->
         start_ms = to_ms(sh, sm, ss, sms)
         end_ms = to_ms(eh, em, es, ems)

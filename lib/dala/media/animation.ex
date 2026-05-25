@@ -37,7 +37,7 @@ defmodule Dala.Media.Animation do
   defstruct [
     :clock_pid,
     :animations,
-    :next_id,
+    :next_id
   ]
 
   # Client API
@@ -70,11 +70,12 @@ defmodule Dala.Media.Animation do
 
   @impl GenServer
   def init(_opts) do
-    {:ok, %__MODULE__{
-      clock_pid: nil,
-      animations: %{},
-      next_id: 1,
-    }}
+    {:ok,
+     %__MODULE__{
+       clock_pid: nil,
+       animations: %{},
+       next_id: 1
+     }}
   end
 
   @impl GenServer
@@ -96,7 +97,7 @@ defmodule Dala.Media.Animation do
       start_frame: 0,
       duration_frames: duration_frames,
       easing: easing,
-      active: true,
+      active: true
     }
 
     animations = Map.put(state.animations, anim_id, anim)

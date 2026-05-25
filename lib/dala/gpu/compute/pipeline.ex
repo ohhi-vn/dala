@@ -154,7 +154,13 @@ defmodule Dala.Gpu.Compute.Pipeline do
     end)
   end
 
-  defp add_stage(pipeline_id, %{op: :run_kernel, kernel: kernel, inputs: inputs, output: output, params: params}) do
+  defp add_stage(pipeline_id, %{
+         op: :run_kernel,
+         kernel: kernel,
+         inputs: inputs,
+         output: output,
+         params: params
+       }) do
     valid_inputs = Enum.filter(inputs, & &1)
     kernel_string = Atom.to_string(kernel)
     params_binary = :erlang.term_to_binary(params)

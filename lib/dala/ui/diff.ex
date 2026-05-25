@@ -86,8 +86,12 @@ defmodule Dala.Ui.Diff do
     [{:remove, old_id}, {:insert, :root, 0, %Dala.Node{new | id: new_id}}]
   end
 
-  def diff(%Dala.Node{} = old, %{} = new_map), do: do_diff(old, Dala.Node.from_map(new_map, "root"))
-  def diff(%{} = old_map, %Dala.Node{} = new), do: do_diff(Dala.Node.from_map(old_map, "root"), new)
+  def diff(%Dala.Node{} = old, %{} = new_map),
+    do: do_diff(old, Dala.Node.from_map(new_map, "root"))
+
+  def diff(%{} = old_map, %Dala.Node{} = new),
+    do: do_diff(Dala.Node.from_map(old_map, "root"), new)
+
   def diff(%{} = old_map, %{} = new_map), do: diff_map(old_map, new_map)
 
   # Map-based diff entry points — convert to Nodes for the diff algorithm.

@@ -6,21 +6,19 @@ defmodule Dala.Spark.DslIntegrationTest do
       defmodule TestAllComponentsScreen do
         use Dala.Screen
 
+        screen name: :test_screen do
+          column do
+            padding(:space_md)
+            gap(:space_sm)
+            text("Hello World")
 
-          screen name: :test_screen do
-            column do
-              padding(:space_md)
+            row do
               gap(:space_sm)
-              text("Hello World")
-
-              row do
-                gap(:space_sm)
-                button("Button 1", on_tap: :increment)
-                button("Button 2", on_tap: :decrement)
-              end
+              button("Button 1", on_tap: :increment)
+              button("Button 2", on_tap: :decrement)
             end
           end
-
+        end
 
         def handle_event(:increment, _params, socket), do: {:noreply, socket}
         def handle_event(:decrement, _params, socket), do: {:noreply, socket}

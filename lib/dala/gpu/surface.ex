@@ -110,9 +110,13 @@ defmodule Dala.Gpu.Surface do
   end
 
   @doc "Load an image into the GPU texture pool."
-  @spec load_image(pid(), non_neg_integer(), binary(), non_neg_integer(), non_neg_integer()) :: :ok
+  @spec load_image(pid(), non_neg_integer(), binary(), non_neg_integer(), non_neg_integer()) ::
+          :ok
   def load_image(pid, id, rgba_binary, width, height) do
-    GenServer.cast(pid, {:command, Dala.Gpu.Command.encode_load_image(id, rgba_binary, width, height)})
+    GenServer.cast(
+      pid,
+      {:command, Dala.Gpu.Command.encode_load_image(id, rgba_binary, width, height)}
+    )
   end
 
   @doc "Remove an image from the GPU texture pool."
@@ -122,7 +126,14 @@ defmodule Dala.Gpu.Surface do
   end
 
   @doc "Draw a loaded image onto the framebuffer."
-  @spec draw_image(pid(), non_neg_integer(), integer(), integer(), non_neg_integer(), non_neg_integer()) :: :ok
+  @spec draw_image(
+          pid(),
+          non_neg_integer(),
+          integer(),
+          integer(),
+          non_neg_integer(),
+          non_neg_integer()
+        ) :: :ok
   def draw_image(pid, image_id, x, y, w, h) do
     GenServer.cast(pid, {:command, Dala.Gpu.Command.encode_image_blit(image_id, x, y, w, h)})
   end
@@ -140,7 +151,12 @@ defmodule Dala.Gpu.Surface do
   end
 
   @doc "Dispatch a GPU compute shader."
-  @spec dispatch_compute(pid(), String.t(), binary(), {non_neg_integer(), non_neg_integer(), non_neg_integer()}) :: :ok | {:error, term()}
+  @spec dispatch_compute(
+          pid(),
+          String.t(),
+          binary(),
+          {non_neg_integer(), non_neg_integer(), non_neg_integer()}
+        ) :: :ok | {:error, term()}
   def dispatch_compute(pid, shader_source, params, workgroup_count) do
     GenServer.call(pid, {:dispatch_compute, shader_source, params, workgroup_count})
   end
@@ -164,43 +180,98 @@ defmodule Dala.Gpu.Surface do
   end
 
   @doc "Draw a circle outline."
-  @spec draw_circle(pid(), integer(), integer(), non_neg_integer(), Dala.Gpu.Command.color()) :: :ok
+  @spec draw_circle(pid(), integer(), integer(), non_neg_integer(), Dala.Gpu.Command.color()) ::
+          :ok
   def draw_circle(pid, cx, cy, radius, color) do
     GenServer.cast(pid, {:command, Dala.Gpu.Command.encode_draw_circle(cx, cy, radius, color)})
   end
 
   @doc "Fill a circle."
-  @spec fill_circle(pid(), integer(), integer(), non_neg_integer(), Dala.Gpu.Command.color()) :: :ok
+  @spec fill_circle(pid(), integer(), integer(), non_neg_integer(), Dala.Gpu.Command.color()) ::
+          :ok
   def fill_circle(pid, cx, cy, radius, color) do
     GenServer.cast(pid, {:command, Dala.Gpu.Command.encode_fill_circle(cx, cy, radius, color)})
   end
 
   @doc "Draw a triangle outline."
-  @spec draw_triangle(pid(), integer(), integer(), integer(), integer(), integer(), integer(), Dala.Gpu.Command.color()) :: :ok
+  @spec draw_triangle(
+          pid(),
+          integer(),
+          integer(),
+          integer(),
+          integer(),
+          integer(),
+          integer(),
+          Dala.Gpu.Command.color()
+        ) :: :ok
   def draw_triangle(pid, x1, y1, x2, y2, x3, y3, color) do
-    GenServer.cast(pid, {:command, Dala.Gpu.Command.encode_draw_triangle(x1, y1, x2, y2, x3, y3, color)})
+    GenServer.cast(
+      pid,
+      {:command, Dala.Gpu.Command.encode_draw_triangle(x1, y1, x2, y2, x3, y3, color)}
+    )
   end
 
   @doc "Fill a triangle."
-  @spec fill_triangle(pid(), integer(), integer(), integer(), integer(), integer(), integer(), Dala.Gpu.Command.color()) :: :ok
+  @spec fill_triangle(
+          pid(),
+          integer(),
+          integer(),
+          integer(),
+          integer(),
+          integer(),
+          integer(),
+          Dala.Gpu.Command.color()
+        ) :: :ok
   def fill_triangle(pid, x1, y1, x2, y2, x3, y3, color) do
-    GenServer.cast(pid, {:command, Dala.Gpu.Command.encode_fill_triangle(x1, y1, x2, y2, x3, y3, color)})
+    GenServer.cast(
+      pid,
+      {:command, Dala.Gpu.Command.encode_fill_triangle(x1, y1, x2, y2, x3, y3, color)}
+    )
   end
 
   @doc "Draw a rounded rectangle outline."
-  @spec draw_round_rect(pid(), non_neg_integer(), non_neg_integer(), non_neg_integer(), non_neg_integer(), non_neg_integer(), Dala.Gpu.Command.color()) :: :ok
+  @spec draw_round_rect(
+          pid(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          Dala.Gpu.Command.color()
+        ) :: :ok
   def draw_round_rect(pid, x, y, w, h, radius, color) do
-    GenServer.cast(pid, {:command, Dala.Gpu.Command.encode_draw_round_rect(x, y, w, h, radius, color)})
+    GenServer.cast(
+      pid,
+      {:command, Dala.Gpu.Command.encode_draw_round_rect(x, y, w, h, radius, color)}
+    )
   end
 
   @doc "Fill a rounded rectangle."
-  @spec fill_round_rect(pid(), non_neg_integer(), non_neg_integer(), non_neg_integer(), non_neg_integer(), non_neg_integer(), Dala.Gpu.Command.color()) :: :ok
+  @spec fill_round_rect(
+          pid(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          Dala.Gpu.Command.color()
+        ) :: :ok
   def fill_round_rect(pid, x, y, w, h, radius, color) do
-    GenServer.cast(pid, {:command, Dala.Gpu.Command.encode_fill_round_rect(x, y, w, h, radius, color)})
+    GenServer.cast(
+      pid,
+      {:command, Dala.Gpu.Command.encode_fill_round_rect(x, y, w, h, radius, color)}
+    )
   end
 
   @doc "Set the clipping rectangle."
-  @spec set_clip(pid(), non_neg_integer(), non_neg_integer(), non_neg_integer(), non_neg_integer(), boolean()) :: :ok
+  @spec set_clip(
+          pid(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          boolean()
+        ) :: :ok
   def set_clip(pid, x, y, w, h, enabled) do
     GenServer.cast(pid, {:command, Dala.Gpu.Command.encode_set_clip(x, y, w, h, enabled)})
   end
@@ -274,7 +345,11 @@ defmodule Dala.Gpu.Surface do
     {:reply, %{width: width, height: height}, state}
   end
 
-  def handle_call({:dispatch_compute, shader_source, params, workgroup_count}, _from, %{ref: ref} = state) do
+  def handle_call(
+        {:dispatch_compute, shader_source, params, workgroup_count},
+        _from,
+        %{ref: ref} = state
+      ) do
     cmd = Dala.Gpu.Command.encode_dispatch_compute(shader_source, params, workgroup_count)
     result = Dala.Gpu.Native.surface_command(ref, cmd)
     {:reply, result, state}

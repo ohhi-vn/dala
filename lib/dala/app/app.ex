@@ -53,7 +53,6 @@ defmodule Dala.App.App do
   """
   @callback navigation(platform :: atom()) :: map()
 
-
   @doc """
   App-specific startup hook. Called by the generated `start/0` after all
   framework initialization is complete.

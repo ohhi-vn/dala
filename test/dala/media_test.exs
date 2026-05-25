@@ -6,7 +6,7 @@ defmodule Dala.MediaTest do
     Subtitle,
     Filter,
     Animation,
-    Adaptive,
+    Adaptive
   }
 
   describe "clock" do
@@ -75,7 +75,7 @@ defmodule Dala.MediaTest do
       cues = [
         %{id: 1, start_ms: 0, end_ms: 3000, text: "First", style: %{}},
         %{id: 2, start_ms: 3000, end_ms: 6000, text: "Second", style: %{}},
-        %{id: 3, start_ms: 6000, end_ms: 9000, text: "Third", style: %{}},
+        %{id: 3, start_ms: 6000, end_ms: 9000, text: "Third", style: %{}}
       ]
 
       assert Subtitle.active_cue(cues, 1_500_000).text == "First"
@@ -88,7 +88,7 @@ defmodule Dala.MediaTest do
       cues = [
         %{id: 1, start_ms: 0, end_ms: 3000, text: "First", style: %{}},
         %{id: 2, start_ms: 3000, end_ms: 6000, text: "Second", style: %{}},
-        %{id: 3, start_ms: 6000, end_ms: 9000, text: "Third", style: %{}},
+        %{id: 3, start_ms: 6000, end_ms: 9000, text: "Third", style: %{}}
       ]
 
       result = Subtitle.cues_in_range(cues, 2_000_000, 5_000_000)
@@ -159,22 +159,28 @@ defmodule Dala.MediaTest do
 
     test "creates animation" do
       {:ok, anim} = Animation.start_link([])
-      {:ok, id} = Animation.animate(anim, make_ref(), :opacity, %{
-        from: 0.0,
-        to: 1.0,
-        duration_ms: 500,
-        easing: :ease_in_out
-      })
+
+      {:ok, id} =
+        Animation.animate(anim, make_ref(), :opacity, %{
+          from: 0.0,
+          to: 1.0,
+          duration_ms: 500,
+          easing: :ease_in_out
+        })
+
       assert is_reference(id)
     end
 
     test "cancels animation" do
       {:ok, anim} = Animation.start_link([])
-      {:ok, id} = Animation.animate(anim, make_ref(), :opacity, %{
-        from: 0.0,
-        to: 1.0,
-        duration_ms: 500,
-      })
+
+      {:ok, id} =
+        Animation.animate(anim, make_ref(), :opacity, %{
+          from: 0.0,
+          to: 1.0,
+          duration_ms: 500
+        })
+
       assert :ok = Animation.cancel(anim, id)
     end
 
@@ -182,7 +188,13 @@ defmodule Dala.MediaTest do
       {:ok, anim} = Animation.start_link([])
       node_id = make_ref()
       Animation.animate(anim, node_id, :opacity, %{from: 0.0, to: 1.0, duration_ms: 500})
-      Animation.animate(anim, node_id, :position, %{from: {0, 0}, to: {100, 200}, duration_ms: 500})
+
+      Animation.animate(anim, node_id, :position, %{
+        from: {0, 0},
+        to: {100, 200},
+        duration_ms: 500
+      })
+
       assert :ok = Animation.cancel_all(anim, node_id)
     end
   end
@@ -201,12 +213,13 @@ defmodule Dala.MediaTest do
 
     test "reports stats without crashing" do
       {:ok, adapter} = Adaptive.start_link([])
+
       Adaptive.report_stats(adapter, %{
         bytes_received: 50000,
         packets_lost: 0,
         packets_received: 100,
         jitter_ms: 10,
-        rtt_ms: 50,
+        rtt_ms: 50
       })
     end
 
@@ -220,7 +233,7 @@ defmodule Dala.MediaTest do
           packets_lost: 10,
           packets_received: 90,
           jitter_ms: 10,
-          rtt_ms: 50,
+          rtt_ms: 50
         })
       end
 
@@ -238,7 +251,7 @@ defmodule Dala.MediaTest do
           packets_lost: 20,
           packets_received: 80,
           jitter_ms: 100,
-          rtt_ms: 200,
+          rtt_ms: 200
         })
       end
 

@@ -162,7 +162,7 @@ defmodule Dala.ML.Preprocess do
   """
   @spec mel_spectrogram(Nx.Tensor.t(), keyword()) :: {:ok, Nx.Tensor.t()}
   def mel_spectrogram(samples, opts \\ []) do
-    #sample_rate = Keyword.get(opts, :sample_rate, 16000)
+    # sample_rate = Keyword.get(opts, :sample_rate, 16000)
     n_fft = Keyword.get(opts, :n_fft, 400)
     n_mels = Keyword.get(opts, :n_mels, 80)
     hop_length = Keyword.get(opts, :hop_length, 160)
@@ -200,6 +200,7 @@ defmodule Dala.ML.Preprocess do
     # Ensure total size is a multiple of n_fft for reshape
     padded_size = elem(Nx.shape(padded), 0)
     remainder = rem(padded_size, n_fft)
+
     padded =
       if remainder != 0 do
         extra = n_fft - remainder
@@ -207,6 +208,7 @@ defmodule Dala.ML.Preprocess do
       else
         padded
       end
+
     # Return frames (simplified)
     Nx.reshape(padded, {:auto, n_fft})
   end

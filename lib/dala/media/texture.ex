@@ -32,13 +32,14 @@ defmodule Dala.Media.Texture do
     :pool_size,
     :available,
     :in_use,
-    :texture_map,
+    :texture_map
   ]
 
   # Client API
 
   @doc "Create a texture pool with the given dimensions."
-  @spec new_pool(non_neg_integer(), non_neg_integer(), keyword()) :: {:ok, pool_ref()} | {:error, term()}
+  @spec new_pool(non_neg_integer(), non_neg_integer(), keyword()) ::
+          {:ok, pool_ref()} | {:error, term()}
   def new_pool(width, height, opts \\ []) do
     GenServer.start_link(__MODULE__, {width, height, opts})
   end
@@ -60,7 +61,11 @@ defmodule Dala.Media.Texture do
   end
 
   @doc "Get pool statistics."
-  @spec stats(pool_ref()) :: %{available: non_neg_integer(), in_use: non_neg_integer(), total: non_neg_integer()}
+  @spec stats(pool_ref()) :: %{
+          available: non_neg_integer(),
+          in_use: non_neg_integer(),
+          total: non_neg_integer()
+        }
   def stats(pid), do: GenServer.call(pid, :stats)
 
   # Server callbacks
@@ -78,7 +83,10 @@ defmodule Dala.Media.Texture do
              Map.put(map, texture_id, %{width: width, height: height, format: format})}
 
           {:error, reason} ->
-            Logger.warning("Failed to create texture #{map_size(map) + 1}/#{count}: #{inspect(reason)}")
+            Logger.warning(
+              "Failed to create texture #{map_size(map) + 1}/#{count}: #{inspect(reason)}"
+            )
+
             {avail, map}
         end
       end)
@@ -91,14 +99,15 @@ defmodule Dala.Media.Texture do
     else
       Logger.info("Texture pool created: #{actual_count}/#{count} textures (#{width}x#{height})")
 
-      {:ok, %__MODULE__{
-        width: width,
-        height: height,
-        pool_size: actual_count,
-        available: Enum.reverse(available),
-        in_use: MapSet.new(),
-        texture_map: texture_map,
-      }}
+      {:ok,
+       %__MODULE__{
+         width: width,
+         height: height,
+         pool_size: actual_count,
+         available: Enum.reverse(available),
+         in_use: MapSet.new(),
+         texture_map: texture_map
+       }}
     end
   end
 
@@ -114,11 +123,12 @@ defmodule Dala.Media.Texture do
   end
 
   def handle_call(:stats, _from, state) do
-    {:reply, %{
-      available: length(state.available),
-      in_use: MapSet.size(state.in_use),
-      total: state.pool_size
-    }, state}
+    {:reply,
+     %{
+       available: length(state.available),
+       in_use: MapSet.size(state.in_use),
+       total: state.pool_size
+     }, state}
   end
 
   @impl GenServer

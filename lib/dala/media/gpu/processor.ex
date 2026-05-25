@@ -127,7 +127,8 @@ defmodule Dala.Media.Gpu.Processor do
   # ── Pipeline lifecycle ────────────────────────────────────────────────────
 
   @doc "Start a new GPU processing pipeline for the given dimensions."
-  @spec start_pipeline(non_neg_integer(), non_neg_integer()) :: {:ok, context()} | {:error, term()}
+  @spec start_pipeline(non_neg_integer(), non_neg_integer()) ::
+          {:ok, context()} | {:error, term()}
   def start_pipeline(width, height) do
     num_pixels = width * height * 4
 
@@ -150,7 +151,12 @@ defmodule Dala.Media.Gpu.Processor do
 
   @doc "Stop a processing pipeline and free all GPU resources."
   @spec stop_pipeline(context()) :: :ok
-  def stop_pipeline(%__MODULE__{input_buf: input, output_buf: output, temp_buf: temp, pipeline: pipeline}) do
+  def stop_pipeline(%__MODULE__{
+        input_buf: input,
+        output_buf: output,
+        temp_buf: temp,
+        pipeline: pipeline
+      }) do
     Compute.free_many([input, output, temp])
 
     if pipeline do
@@ -175,19 +181,22 @@ defmodule Dala.Media.Gpu.Processor do
     input_list = :erlang.binary_to_list(rgba_data)
 
     with {:ok, input_buf} <- build_buffer(input_list, length(input_list), :u8),
-         {output_buf, _temp_buf} <- execute_filters(input_buf, ctx.output_buf, ctx.temp_buf, filters) do
+         {output_buf, _temp_buf} <-
+           execute_filters(input_buf, ctx.output_buf, ctx.temp_buf, filters) do
       result = Compute.read_binary(output_buf)
       {:ok, result}
     end
   end
 
   @doc "Process a frame asynchronously. Returns `{:ok, cmd_id}`."
-  @spec process_frame_async(context(), binary(), [filter_spec()]) :: {:ok, non_neg_integer()} | {:error, term()}
+  @spec process_frame_async(context(), binary(), [filter_spec()]) ::
+          {:ok, non_neg_integer()} | {:error, term()}
   def process_frame_async(%__MODULE__{} = ctx, rgba_data, filters) do
     input_list = :erlang.binary_to_list(rgba_data)
 
     with {:ok, input_buf} <- build_buffer(input_list, length(input_list), :u8),
-         {:ok, pipeline} <- build_filter_pipeline(input_buf, ctx.output_buf, ctx.temp_buf, filters),
+         {:ok, pipeline} <-
+           build_filter_pipeline(input_buf, ctx.output_buf, ctx.temp_buf, filters),
          {:ok, _cmd_ids} <- ExCubecl.pipeline_run(pipeline) do
       {:ok, pipeline}
     end
@@ -212,7 +221,8 @@ defmodule Dala.Media.Gpu.Processor do
   # ── Convenience filter functions ──────────────────────────────────────────
 
   @doc "Blur filter."
-  @spec blur(binary(), non_neg_integer(), non_neg_integer(), keyword()) :: {:ok, binary()} | {:error, term()}
+  @spec blur(binary(), non_neg_integer(), non_neg_integer(), keyword()) ::
+          {:ok, binary()} | {:error, term()}
   def blur(data, w, h, opts \\ []) do
     radius = Keyword.get(opts, :radius, 3)
     sigma = Keyword.get(opts, :sigma, 1.5)
@@ -220,32 +230,37 @@ defmodule Dala.Media.Gpu.Processor do
   end
 
   @doc "Sharpen filter."
-  @spec sharpen(binary(), non_neg_integer(), non_neg_integer(), keyword()) :: {:ok, binary()} | {:error, term()}
+  @spec sharpen(binary(), non_neg_integer(), non_neg_integer(), keyword()) ::
+          {:ok, binary()} | {:error, term()}
   def sharpen(data, w, h, opts \\ []) do
     amount = Keyword.get(opts, :amount, 0.5)
     apply_filter(data, w, h, :sharpen, %{amount: amount})
   end
 
   @doc "Grayscale filter."
-  @spec grayscale(binary(), non_neg_integer(), non_neg_integer()) :: {:ok, binary()} | {:error, term()}
+  @spec grayscale(binary(), non_neg_integer(), non_neg_integer()) ::
+          {:ok, binary()} | {:error, term()}
   def grayscale(data, w, h) do
     apply_filter(data, w, h, :grayscale, %{})
   end
 
   @doc "Brightness adjustment."
-  @spec brightness(binary(), non_neg_integer(), non_neg_integer(), float()) :: {:ok, binary()} | {:error, term()}
+  @spec brightness(binary(), non_neg_integer(), non_neg_integer(), float()) ::
+          {:ok, binary()} | {:error, term()}
   def brightness(data, w, h, value) do
     apply_filter(data, w, h, :brightness, %{value: value})
   end
 
   @doc "Contrast adjustment."
-  @spec contrast(binary(), non_neg_integer(), non_neg_integer(), float()) :: {:ok, binary()} | {:error, term()}
+  @spec contrast(binary(), non_neg_integer(), non_neg_integer(), float()) ::
+          {:ok, binary()} | {:error, term()}
   def contrast(data, w, h, value) do
     apply_filter(data, w, h, :contrast, %{value: value})
   end
 
   @doc "Saturation adjustment."
-  @spec saturation(binary(), non_neg_integer(), non_neg_integer(), float()) :: {:ok, binary()} | {:error, term()}
+  @spec saturation(binary(), non_neg_integer(), non_neg_integer(), float()) ::
+          {:ok, binary()} | {:error, term()}
   def saturation(data, w, h, value) do
     apply_filter(data, w, h, :saturation, %{value: value})
   end
@@ -576,7 +591,8 @@ defmodule Dala.Media.Gpu.Processor do
   # Private: execute a chain of filters
   defp execute_filters(input_buf, _output_buf, temp_buf, filters) do
     {final_output, _final_temp} =
-      Enum.reduce(filters, {input_buf, temp_buf}, fn {filter, params}, {current_input, current_temp} ->
+      Enum.reduce(filters, {input_buf, temp_buf}, fn {filter, params},
+                                                     {current_input, current_temp} ->
         case Compute.run_kernel(filter, [current_input], current_temp, params) do
           :ok -> :ok
           {:error, _} = err -> err
@@ -596,11 +612,14 @@ defmodule Dala.Media.Gpu.Processor do
 
     # Add each filter as a stage, ping-ponging between temp and output
     {final_pipeline, _} =
-      Enum.reduce_while(filters, {pipeline, {:input, input_buf}}, fn {filter, params}, {pipe, {:input, current_input}} ->
-        {target, next_input} = case current_input do
-          ^input_buf -> {output_buf, temp_buf}
-          _ -> {temp_buf, output_buf}
-        end
+      Enum.reduce_while(filters, {pipeline, {:input, input_buf}}, fn {filter, params},
+                                                                     {pipe,
+                                                                      {:input, current_input}} ->
+        {target, next_input} =
+          case current_input do
+            ^input_buf -> {output_buf, temp_buf}
+            _ -> {temp_buf, output_buf}
+          end
 
         case ExCubecl.pipeline_add(pipe, Atom.to_string(filter), [current_input], target, params) do
           :ok -> {:cont, {pipe, {:input, next_input}}}

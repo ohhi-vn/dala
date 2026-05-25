@@ -114,9 +114,13 @@ defmodule Dala.ML.Gpu.Inference do
     output_buf = Compute.buffer_zeros(model.output_shape, :f32)
 
     # Build a pipeline with the model's stages and run it
-    pipeline = Enum.reduce(model.stages, Compute.pipeline(), fn stage, pipe ->
-      Compute.pipeline_add(pipe, Map.put(stage, :inputs, [input_buf]) |> Map.put(:output, output_buf))
-    end)
+    pipeline =
+      Enum.reduce(model.stages, Compute.pipeline(), fn stage, pipe ->
+        Compute.pipeline_add(
+          pipe,
+          Map.put(stage, :inputs, [input_buf]) |> Map.put(:output, output_buf)
+        )
+      end)
 
     case Compute.pipeline_run(pipeline) do
       :ok ->
@@ -209,9 +213,13 @@ defmodule Dala.ML.Gpu.Inference do
     frame_buf = frame_to_buffer(frame)
     output_buf = Compute.buffer_zeros(model.output_shape, :f32)
 
-    pipeline = Enum.reduce(model.stages, Compute.pipeline(), fn stage, pipe ->
-      Compute.pipeline_add(pipe, Map.put(stage, :inputs, [frame_buf]) |> Map.put(:output, output_buf))
-    end)
+    pipeline =
+      Enum.reduce(model.stages, Compute.pipeline(), fn stage, pipe ->
+        Compute.pipeline_add(
+          pipe,
+          Map.put(stage, :inputs, [frame_buf]) |> Map.put(:output, output_buf)
+        )
+      end)
 
     case Compute.pipeline_run(pipeline) do
       :ok ->
@@ -289,7 +297,11 @@ defmodule Dala.ML.Gpu.Inference do
       preprocess: :yolo_normalize,
       postprocess: :nms,
       stages: [
-        %{op: :run_kernel, kernel: "yolo_v5", params: %{conf_threshold: 0.25, iou_threshold: 0.45}}
+        %{
+          op: :run_kernel,
+          kernel: "yolo_v5",
+          params: %{conf_threshold: 0.25, iou_threshold: 0.45}
+        }
       ]
     }
   end

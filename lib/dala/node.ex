@@ -100,8 +100,11 @@ defmodule Dala.Node do
   @spec stable_id(String.t() | atom()) :: non_neg_integer()
   def stable_id(id) do
     id_str = to_string(id)
+
     case :ets.lookup(:dala_id_cache, id_str) do
-      [{^id_str, hash}] -> hash
+      [{^id_str, hash}] ->
+        hash
+
       [] ->
         hash = compute_sha256_u64(id_str)
         :ets.insert(:dala_id_cache, {id_str, hash})
@@ -115,9 +118,11 @@ defmodule Dala.Node do
     case :ets.whereis(:dala_id_cache) do
       :undefined ->
         :ets.new(:dala_id_cache, [:set, :public, :named_table, read_concurrency: true])
+
       _ ->
         :ok
     end
+
     :ok
   end
 
@@ -125,7 +130,9 @@ defmodule Dala.Node do
   @spec clear_id_cache() :: :ok
   def clear_id_cache do
     case :ets.whereis(:dala_id_cache) do
-      :undefined -> :ok
+      :undefined ->
+        :ok
+
       _ ->
         :ets.delete_all_objects(:dala_id_cache)
         :ok

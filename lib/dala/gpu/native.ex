@@ -50,11 +50,25 @@ defmodule Dala.Gpu.Native do
   # ── Compute / Shader ──────────────────────────────────────────────────────
 
   @doc "Dispatch a GPU compute shader on the surface."
-  @spec surface_dispatch_compute(reference(), binary(), binary(), non_neg_integer(), non_neg_integer(), non_neg_integer()) :: :ok
-  def surface_dispatch_compute(_ref, _shader, _params, _wg_x, _wg_y, _wg_z), do: :erlang.nif_error(:nif_not_loaded)
+  @spec surface_dispatch_compute(
+          reference(),
+          binary(),
+          binary(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer()
+        ) :: :ok
+  def surface_dispatch_compute(_ref, _shader, _params, _wg_x, _wg_y, _wg_z),
+    do: :erlang.nif_error(:nif_not_loaded)
 
   @doc "Read pixel data back from the GPU."
-  @spec surface_read_pixels(reference(), non_neg_integer(), non_neg_integer(), non_neg_integer(), non_neg_integer()) :: binary()
+  @spec surface_read_pixels(
+          reference(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer()
+        ) :: binary()
   def surface_read_pixels(_ref, _x, _y, _w, _h), do: :erlang.nif_error(:nif_not_loaded)
 
   @doc "Load or hot-reload a shader."

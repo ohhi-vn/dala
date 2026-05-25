@@ -8,7 +8,10 @@ defmodule TestCapture do
     output = ExUnit.run()
 
     # Write results
-    File.write!("/Users/manhvu/ohhi/OSS_Lib/dala/test_capture_output.txt", "Test run completed: #{inspect(output)}")
+    File.write!(
+      "/Users/manhvu/ohhi/OSS_Lib/dala/test_capture_output.txt",
+      "Test run completed: #{inspect(output)}"
+    )
   end
 end
 

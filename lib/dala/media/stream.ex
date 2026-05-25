@@ -21,13 +21,15 @@ defmodule Dala.Media.Stream do
 
   @doc "Start a complete video stream with all actors."
   @spec start_video_stream(Dala.Socket.t(), String.t(), keyword()) ::
-    {:ok, %{video: pid(), audio: pid() | nil, clock: pid(), scene: pid()}} | {:error, term()}
+          {:ok, %{video: pid(), audio: pid() | nil, clock: pid(), scene: pid()}}
+          | {:error, term()}
   def start_video_stream(socket, url, opts \\ []) do
     with {:ok, video} <- Dala.Media.Video.start_stream(socket, url, opts),
          {:ok, clock} <- Dala.Media.Clock.start_link(target_fps: Keyword.get(opts, :fps, 60)),
          width = Keyword.get(opts, :width, 1920),
          height = Keyword.get(opts, :height, 1080),
-         {:ok, scene} <- Dala.Media.Scene.new(width, height, target_fps: Keyword.get(opts, :fps, 60)) do
+         {:ok, scene} <-
+           Dala.Media.Scene.new(width, height, target_fps: Keyword.get(opts, :fps, 60)) do
       Dala.Media.Clock.subscribe(clock, scene)
       {:ok, %{video: video, audio: nil, clock: clock, scene: scene}}
     end
@@ -35,7 +37,7 @@ defmodule Dala.Media.Stream do
 
   @doc "Start a camera stream with compositing."
   @spec start_camera_stream(Dala.Socket.t(), keyword()) ::
-    {:ok, %{video: pid(), clock: pid(), scene: pid()}} | {:error, term()}
+          {:ok, %{video: pid(), clock: pid(), scene: pid()}} | {:error, term()}
   def start_camera_stream(socket, opts \\ []) do
     with {:ok, video} <- Dala.Media.Video.start_camera_stream(socket, opts),
          {:ok, clock} <- Dala.Media.Clock.start_link(target_fps: 30),

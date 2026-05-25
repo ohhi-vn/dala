@@ -48,11 +48,12 @@ defmodule Dala.Platform.NativeLogger do
   def install(opts \\ []) do
     nif = Keyword.get(opts, :nif, Dala.Platform.Native)
 
-    platform = try do
-      nif.platform()
-    rescue
-      _ -> :host
-    end
+    platform =
+      try do
+        nif.platform()
+      rescue
+        _ -> :host
+      end
 
     if platform in [:android, :ios] do
       case :logger.add_handler(@handler_id, __MODULE__, %{nif: nif}) do

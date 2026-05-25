@@ -132,7 +132,9 @@ defmodule Dala.Gpu.Compute.Kernel do
   @spec clear_registry() :: :ok
   def clear_registry do
     case :ets.whereis(:dala_gpu_kernels) do
-      :undefined -> :ok
+      :undefined ->
+        :ok
+
       _ ->
         :ets.delete_all_objects(:dala_gpu_kernels)
         :ok

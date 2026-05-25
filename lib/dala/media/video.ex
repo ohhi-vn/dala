@@ -43,13 +43,14 @@ defmodule Dala.Media.Video do
     :volume,
     :loop,
     :texture_id,
-    :decoder_ref,
+    :decoder_ref
   ]
 
   # Client API
 
   @doc "Start a video stream from a URL or local path."
-  @spec start_stream(Dala.Socket.t(), String.t(), keyword()) :: {:ok, stream_ref()} | {:error, term()}
+  @spec start_stream(Dala.Socket.t(), String.t(), keyword()) ::
+          {:ok, stream_ref()} | {:error, term()}
   def start_stream(socket, url, opts \\ []) do
     GenServer.start_link(__MODULE__, {socket, url, opts})
   end
@@ -61,7 +62,8 @@ defmodule Dala.Media.Video do
   end
 
   @doc "Start decoding a stream but don't render yet (for buffering)."
-  @spec prepare_stream(Dala.Socket.t(), String.t(), keyword()) :: {:ok, stream_ref()} | {:error, term()}
+  @spec prepare_stream(Dala.Socket.t(), String.t(), keyword()) ::
+          {:ok, stream_ref()} | {:error, term()}
   def prepare_stream(socket, url, opts \\ []) do
     GenServer.start_link(__MODULE__, {socket, url, Keyword.put(opts, :prepare_only, true)})
   end
@@ -121,7 +123,7 @@ defmodule Dala.Media.Video do
       volume: Keyword.get(opts, :volume, 1.0),
       loop: Keyword.get(opts, :loop, false),
       texture_id: nil,
-      decoder_ref: nil,
+      decoder_ref: nil
     }
 
     state =
@@ -132,7 +134,9 @@ defmodule Dala.Media.Video do
       else
         # URL stream: initialize hardware decoder via native
         case Dala.Platform.Native.video_init_decoder(source) do
-          {:ok, ref} -> %{state | decoder_ref: ref}
+          {:ok, ref} ->
+            %{state | decoder_ref: ref}
+
           {:error, reason} ->
             Logger.error("Failed to init video decoder: #{inspect(reason)}")
             %{state | state: :error}

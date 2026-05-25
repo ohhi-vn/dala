@@ -58,12 +58,12 @@ defmodule Dala.Media.Scene do
   @type z_index :: integer()
   @type opacity :: float()
   @type transform :: %{
-    position: position(),
-    scale: {float(), float()},
-    rotation: float(),
-    opacity: opacity(),
-    z_index: z_index()
-  }
+          position: position(),
+          scale: {float(), float()},
+          rotation: float(),
+          opacity: opacity(),
+          z_index: z_index()
+        }
 
   defstruct [
     :width,
@@ -74,13 +74,14 @@ defmodule Dala.Media.Scene do
     :last_frame_time,
     :target_fps,
     :gpu_surface,
-    :texture_pool,
+    :texture_pool
   ]
 
   # Client API
 
   @doc "Create a new scene with the given dimensions."
-  @spec new(non_neg_integer(), non_neg_integer(), keyword()) :: {:ok, scene_ref()} | {:error, term()}
+  @spec new(non_neg_integer(), non_neg_integer(), keyword()) ::
+          {:ok, scene_ref()} | {:error, term()}
   def new(width, height, opts \\ []) do
     GenServer.start_link(__MODULE__, {width, height, opts})
   end
@@ -137,13 +138,15 @@ defmodule Dala.Media.Scene do
   @spec add_image(scene_ref(), keyword()) :: {:ok, node_id()} | {:error, term()}
   def add_image(pid, opts) do
     image_id = Keyword.fetch!(opts, :image_id)
+
     props = %{
       image_id: image_id,
       position: Keyword.get(opts, :position, {0, 0}),
       size: Keyword.get(opts, :size, {100, 100}),
       z_index: Keyword.get(opts, :z_index, 0),
-      opacity: Keyword.get(opts, :opacity, 1.0),
+      opacity: Keyword.get(opts, :opacity, 1.0)
     }
+
     add_node(pid, :image, props)
   end
 
@@ -178,23 +181,25 @@ defmodule Dala.Media.Scene do
     stream = Keyword.fetch!(opts, :stream)
     pip? = Keyword.get(opts, :pip, false)
 
-    {position, size} = if pip? do
-      scene_w = Keyword.get(opts, :scene_width, 1920)
-      _scene_h = Keyword.get(opts, :scene_height, 1080)
-      pip_size = Keyword.get(opts, :pip_size, {200, 150})
-      pip_pos = Keyword.get(opts, :pip_position, {scene_w - elem(pip_size, 0) - 20, 20})
-      {pip_pos, pip_size}
-    else
-      {Keyword.get(opts, :position, {0, 0}), Keyword.get(opts, :size, {1920, 1080})}
-    end
+    {position, size} =
+      if pip? do
+        scene_w = Keyword.get(opts, :scene_width, 1920)
+        _scene_h = Keyword.get(opts, :scene_height, 1080)
+        pip_size = Keyword.get(opts, :pip_size, {200, 150})
+        pip_pos = Keyword.get(opts, :pip_position, {scene_w - elem(pip_size, 0) - 20, 20})
+        {pip_pos, pip_size}
+      else
+        {Keyword.get(opts, :position, {0, 0}), Keyword.get(opts, :size, {1920, 1080})}
+      end
 
     props = %{
       stream: stream,
       position: position,
       size: size,
       z_index: Keyword.get(opts, :z_index, 0),
-      opacity: Keyword.get(opts, :opacity, 1.0),
+      opacity: Keyword.get(opts, :opacity, 1.0)
     }
+
     add_node(pid, :video, props)
   end
 
@@ -211,8 +216,9 @@ defmodule Dala.Media.Scene do
   def set_pip_transform(pid, node_id, opts) do
     transform = %{
       position: Keyword.get(opts, :position, {0, 0}),
-      size: Keyword.get(opts, :size, {200, 150}),
+      size: Keyword.get(opts, :size, {200, 150})
     }
+
     set_transform(pid, node_id, transform)
   end
 
@@ -243,7 +249,7 @@ defmodule Dala.Media.Scene do
       last_frame_time: nil,
       target_fps: target_fps,
       gpu_surface: nil,
-      texture_pool: %{},
+      texture_pool: %{}
     }
 
     case Dala.Gpu.create_surface(width, height) do
@@ -343,7 +349,7 @@ defmodule Dala.Media.Scene do
       scale: Map.get(props, :scale, {1.0, 1.0}),
       rotation: Map.get(props, :rotation, 0.0),
       opacity: Map.get(props, :opacity, 1.0),
-      z_index: Map.get(props, :z_index, 0),
+      z_index: Map.get(props, :z_index, 0)
     }
 
     %{
@@ -358,7 +364,7 @@ defmodule Dala.Media.Scene do
       effect_type: Map.get(props, :type),
       radius: Map.get(props, :radius, 0.0),
       input: Map.get(props, :input),
-      visible: Map.get(props, :visible, true),
+      visible: Map.get(props, :visible, true)
     }
   end
 

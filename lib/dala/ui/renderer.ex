@@ -350,6 +350,7 @@ defmodule Dala.Ui.Renderer do
   # reverses once at the end, avoiding the double-prepend + double-reverse
   # pattern of the previous Enum.reduce implementation.
   defp encode_children_binary([], 0, {bins, ids, count}), do: {bins, ids, count}
+
   defp encode_children_binary(children, _count, acc) do
     {bins, ids, count} =
       Enum.reduce(children, acc, fn child, {bins, ids, cnt} ->

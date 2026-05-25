@@ -95,7 +95,10 @@ defmodule Dala.Ui.Widgets do
       |> Enum.filter(fn {_k, v} -> v != nil end)
       |> Map.new()
 
-    allowed = @layout_props ++ @gesture_props ++ @accessibility_props ++ [:align_items, :justify_content, :alignment, :justify]
+    allowed =
+      @layout_props ++
+        @gesture_props ++
+        @accessibility_props ++ [:align_items, :justify_content, :alignment, :justify]
 
     %{
       type: :column,
@@ -122,7 +125,10 @@ defmodule Dala.Ui.Widgets do
       |> Enum.filter(fn {_k, v} -> v != nil end)
       |> Map.new()
 
-    allowed = @layout_props ++ @gesture_props ++ @accessibility_props ++ [:align_items, :justify_content, :alignment, :justify]
+    allowed =
+      @layout_props ++
+        @gesture_props ++
+        @accessibility_props ++ [:align_items, :justify_content, :alignment, :justify]
 
     %{
       type: :row,
@@ -509,7 +515,18 @@ defmodule Dala.Ui.Widgets do
 
     %{
       type: :video,
-      props: Map.take(props, [:src, :source, :autoplay, :loop, :muted, :controls, :width, :height, :accessibility_id]),
+      props:
+        Map.take(props, [
+          :src,
+          :source,
+          :autoplay,
+          :loop,
+          :muted,
+          :controls,
+          :width,
+          :height,
+          :accessibility_id
+        ]),
       children: []
     }
   end
@@ -812,7 +829,15 @@ defmodule Dala.Ui.Widgets do
   def progress_bar(%{} = props) do
     %{
       type: :progress_bar,
-      props: Map.take(props, [:progress, :indeterminate, :color, :background, :height, :accessibility_id]),
+      props:
+        Map.take(props, [
+          :progress,
+          :indeterminate,
+          :color,
+          :background,
+          :height,
+          :accessibility_id
+        ]),
       children: []
     }
   end
@@ -895,7 +920,11 @@ defmodule Dala.Ui.Widgets do
       |> then(fn p -> if props[:title], do: Map.put(p, :title, props[:title]), else: p end)
       |> then(fn p -> if props[:width], do: Map.put(p, :width, props[:width]), else: p end)
       |> then(fn p -> if props[:height], do: Map.put(p, :height, props[:height]), else: p end)
-      |> then(fn p -> if props[:accessibility_id], do: Map.put(p, :accessibility_id, props[:accessibility_id]), else: p end)
+      |> then(fn p ->
+        if props[:accessibility_id],
+          do: Map.put(p, :accessibility_id, props[:accessibility_id]),
+          else: p
+      end)
 
     %{type: :web_view, props: node_props, children: []}
   end

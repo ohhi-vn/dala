@@ -75,6 +75,7 @@ defmodule Dala.ML do
         if Dala.ML.Burn.available?() do
           Dala.ML.Burn.configure!(device: :gpu)
         end
+
         :ok
 
       true ->
@@ -141,10 +142,15 @@ defmodule Dala.ML do
           function_exported?(Dala.Native, :coreml_load_model, 2),
       onnx_available: Dala.ML.ONNX.available?(),
       gpu_compute_available: Code.ensure_loaded?(ExCubecl),
-      gpu_device: (if Code.ensure_loaded?(ExCubecl), do: Dala.Gpu.Compute.device_info(), else: nil),
+      gpu_device:
+        if(Code.ensure_loaded?(ExCubecl), do: Dala.Gpu.Compute.device_info(), else: nil),
       burn_available: Dala.ML.Burn.available?(),
+      burn_nif_loaded: Dala.ML.Burn.nif_loaded?(),
       burn_gpu: Dala.ML.Burn.gpu?(),
       burn_device: Dala.ML.Burn.default_device(),
+      burn_device_name: Dala.ML.Burn.device_name(),
+      burn_cuda: Dala.ML.Burn.cuda_available?(),
+      burn_backends: Dala.ML.Burn.available_backends(),
       libraries: %{
         nx: Code.ensure_loaded?(Nx),
         scholar: Code.ensure_loaded?(Scholar),
@@ -166,6 +172,35 @@ defmodule Dala.ML do
     %{status: :ok, sum: sum, backend: Dala.Ml.Nx.default_backend()}
   rescue
     e -> %{status: :error, message: Exception.message(e)}
+  end
+
+  @doc """
+  Runs a smoke test of the ExBurn pipeline.
+
+  Returns `:ok` if ExBurn is working, or `{:error, reason}` if not.
+  """
+  @spec burn_smoke_test() :: :ok | {:error, String.t()}
+  def burn_smoke_test do
+    Dala.ML.Burn.smoke_test()
+  end
+
+  @doc """
+  Returns a formatted summary of the ExBurn environment.
+  """
+  @spec burn_summary() :: String.t()
+  def burn_summary do
+    Dala.ML.Burn.summary()
+  end
+
+  @doc """
+  Enables the ExBurn defn compiler for GPU-accelerated Nx.Defn expressions.
+
+  After calling this, all `defn` functions will be compiled through
+  ExBurn's custom defn compiler and executed on the GPU via Burn.
+  """
+  @spec enable_burn_defn!() :: :ok
+  def enable_burn_defn! do
+    Dala.ML.Burn.enable_defn_compiler!()
   end
 
   @doc """

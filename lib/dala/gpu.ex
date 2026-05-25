@@ -261,7 +261,12 @@ defmodule Dala.Gpu do
 
   For filter presets, see `Dala.Media.Filter`.
   """
-  @spec dispatch_compute(surface_pid(), String.t(), binary(), {non_neg_integer(), non_neg_integer(), non_neg_integer()}) :: :ok | {:error, term()}
+  @spec dispatch_compute(
+          surface_pid(),
+          String.t(),
+          binary(),
+          {non_neg_integer(), non_neg_integer(), non_neg_integer()}
+        ) :: :ok | {:error, term()}
   def dispatch_compute(pid, shader_source, params \\ <<>>, workgroup_count \\ {1, 1, 1}) do
     Surface.dispatch_compute(pid, shader_source, params, workgroup_count)
   end
@@ -355,31 +360,72 @@ defmodule Dala.Gpu do
   end
 
   @doc "Draw a triangle outline from three points."
-  @spec draw_triangle(surface_pid(), integer(), integer(), integer(), integer(), integer(), integer(), color()) :: :ok
+  @spec draw_triangle(
+          surface_pid(),
+          integer(),
+          integer(),
+          integer(),
+          integer(),
+          integer(),
+          integer(),
+          color()
+        ) :: :ok
   def draw_triangle(pid, x1, y1, x2, y2, x3, y3, color) do
     Surface.draw_triangle(pid, x1, y1, x2, y2, x3, y3, color)
   end
 
   @doc "Fill a triangle."
-  @spec fill_triangle(surface_pid(), integer(), integer(), integer(), integer(), integer(), integer(), color()) :: :ok
+  @spec fill_triangle(
+          surface_pid(),
+          integer(),
+          integer(),
+          integer(),
+          integer(),
+          integer(),
+          integer(),
+          color()
+        ) :: :ok
   def fill_triangle(pid, x1, y1, x2, y2, x3, y3, color) do
     Surface.fill_triangle(pid, x1, y1, x2, y2, x3, y3, color)
   end
 
   @doc "Draw a rounded rectangle outline."
-  @spec draw_round_rect(surface_pid(), non_neg_integer(), non_neg_integer(), non_neg_integer(), non_neg_integer(), non_neg_integer(), color()) :: :ok
+  @spec draw_round_rect(
+          surface_pid(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          color()
+        ) :: :ok
   def draw_round_rect(pid, x, y, w, h, radius, color) do
     Surface.draw_round_rect(pid, x, y, w, h, radius, color)
   end
 
   @doc "Fill a rounded rectangle."
-  @spec fill_round_rect(surface_pid(), non_neg_integer(), non_neg_integer(), non_neg_integer(), non_neg_integer(), non_neg_integer(), color()) :: :ok
+  @spec fill_round_rect(
+          surface_pid(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          color()
+        ) :: :ok
   def fill_round_rect(pid, x, y, w, h, radius, color) do
     Surface.fill_round_rect(pid, x, y, w, h, radius, color)
   end
 
   @doc "Set the clipping rectangle. Pass `enabled: false` to disable clipping."
-  @spec set_clip(surface_pid(), non_neg_integer(), non_neg_integer(), non_neg_integer(), non_neg_integer(), boolean()) :: :ok
+  @spec set_clip(
+          surface_pid(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          boolean()
+        ) :: :ok
   def set_clip(pid, x, y, w, h, enabled \\ true) do
     Surface.set_clip(pid, x, y, w, h, enabled)
   end

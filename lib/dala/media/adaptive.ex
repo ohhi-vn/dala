@@ -45,16 +45,19 @@ defmodule Dala.Media.Adaptive do
   @default_min_buffer_ms 500
 
   defstruct [
-    :state,              # :stable | :degrading | :recovering | :buffered
+    # :stable | :degrading | :recovering | :buffered
+    :state,
     :current_bitrate,
     :min_bitrate,
     :max_bitrate,
     :target_buffer_ms,
     :min_buffer_ms,
     :current_buffer_ms,
-    :stats_history,      # list of recent network stats
-    :last_adjustment_ms, # timestamp of last quality adjustment
-    :adjustment_interval_ms,
+    # list of recent network stats
+    :stats_history,
+    # timestamp of last quality adjustment
+    :last_adjustment_ms,
+    :adjustment_interval_ms
   ]
 
   # Client API
@@ -103,24 +106,26 @@ defmodule Dala.Media.Adaptive do
     max_bitrate = Keyword.get(opts, :max_bitrate, @default_max_bitrate)
     now = System.monotonic_time(:millisecond)
 
-    {:ok, %__MODULE__{
-      state: :stable,
-      current_bitrate: max_bitrate,
-      min_bitrate: min_bitrate,
-      max_bitrate: max_bitrate,
-      target_buffer_ms: Keyword.get(opts, :target_buffer_ms, @default_target_buffer_ms),
-      min_buffer_ms: Keyword.get(opts, :min_buffer_ms, @default_min_buffer_ms),
-      current_buffer_ms: 0,
-      stats_history: [],
-      last_adjustment_ms: now,
-      adjustment_interval_ms: Keyword.get(opts, :adjustment_interval_ms, 1000),
-    }}
+    {:ok,
+     %__MODULE__{
+       state: :stable,
+       current_bitrate: max_bitrate,
+       min_bitrate: min_bitrate,
+       max_bitrate: max_bitrate,
+       target_buffer_ms: Keyword.get(opts, :target_buffer_ms, @default_target_buffer_ms),
+       min_buffer_ms: Keyword.get(opts, :min_buffer_ms, @default_min_buffer_ms),
+       current_buffer_ms: 0,
+       stats_history: [],
+       last_adjustment_ms: now,
+       adjustment_interval_ms: Keyword.get(opts, :adjustment_interval_ms, 1000)
+     }}
   end
 
   @impl GenServer
   def handle_call({:report_stats, stats}, _from, state) do
     history = Enum.take([stats | state.stats_history], 10)
     now = System.monotonic_time(:millisecond)
+
     state =
       if now - state.last_adjustment_ms >= state.adjustment_interval_ms do
         evaluate(%{state | stats_history: history, last_adjustment_ms: now})
@@ -145,16 +150,17 @@ defmodule Dala.Media.Adaptive do
   end
 
   def handle_call(:diagnostic, _from, state) do
-    {:reply, %{
-      state: state.state,
-      current_bitrate: state.current_bitrate,
-      min_bitrate: state.min_bitrate,
-      max_bitrate: state.max_bitrate,
-      current_buffer_ms: state.current_buffer_ms,
-      target_buffer_ms: state.target_buffer_ms,
-      resolution: bitrate_to_resolution(state.current_bitrate),
-      samples: length(state.stats_history),
-    }, state}
+    {:reply,
+     %{
+       state: state.state,
+       current_bitrate: state.current_bitrate,
+       min_bitrate: state.min_bitrate,
+       max_bitrate: state.max_bitrate,
+       current_buffer_ms: state.current_buffer_ms,
+       target_buffer_ms: state.target_buffer_ms,
+       resolution: bitrate_to_resolution(state.current_bitrate),
+       samples: length(state.stats_history)
+     }, state}
   end
 
   # Private — adaptive algorithm
@@ -207,8 +213,8 @@ defmodule Dala.Media.Adaptive do
   end
 
   defp loss_rate(samples) do
-    total_packets = Enum.reduce(samples, 0, &(&1[:packets_received] || 0) + &2)
-    total_lost = Enum.reduce(samples, 0, &(&1[:packets_lost] || 0) + &2)
+    total_packets = Enum.reduce(samples, 0, &((&1[:packets_received] || 0) + &2))
+    total_lost = Enum.reduce(samples, 0, &((&1[:packets_lost] || 0) + &2))
 
     if total_packets > 0 do
       total_lost / (total_packets + total_lost)

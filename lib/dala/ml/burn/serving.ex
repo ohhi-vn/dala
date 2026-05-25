@@ -18,7 +18,9 @@ defmodule Dala.ML.Burn.Serving do
 
       # Or supervise it in your app tree
       children = [
-        {Nx.Serving, serving: serving, name: :my_model_serving}
+        {Nx.Serving,
+         serving: Dala.ML.Burn.Serving.build(trained_model, batch_size: 32),
+         name: :my_model_serving}
       ]
 
   ## Options
@@ -60,17 +62,58 @@ defmodule Dala.ML.Burn.Serving do
   end
 
   @doc """
-  Builds an `Nx.Serving` and supervises it under a registry.
+  Returns the status of the serving as a map.
+  """
+  @spec status(ExBurn.Serving.t()) :: map()
+  def status(%ExBurn.Serving{} = serving) do
+    ExBurn.Serving.status(serving)
+  end
+
+  @doc "Returns a new serving with the specified batch size."
+  @spec with_batch_size(ExBurn.Serving.t(), pos_integer()) :: ExBurn.Serving.t()
+  def with_batch_size(%ExBurn.Serving{} = serving, batch_size) do
+    ExBurn.Serving.with_batch_size(serving, batch_size)
+  end
+
+  @doc "Returns a new serving with the specified batch timeout."
+  @spec with_timeout(ExBurn.Serving.t(), pos_integer()) :: ExBurn.Serving.t()
+  def with_timeout(%ExBurn.Serving{} = serving, timeout) do
+    ExBurn.Serving.with_timeout(serving, timeout)
+  end
+
+  @doc """
+  Builds an `Nx.Serving` and supervises it under a DynamicSupervisor.
+
+  ## Options
+
+  * `:name` — Name for the serving (default: `:burn_serving`)
+  * `:supervisor` — DynamicSupervisor pid or name (required)
 
   Returns `{:ok, pid}` on success.
+
+  ## Example
+
+      Dala.ML.Burn.Serving.supervise(model,
+        name: :my_model,
+        supervisor: MyApp.DynamicSupervisor
+      )
+
+  Alternatively, add the serving directly to your app's children list:
+
+      children = [
+        {Nx.Serving,
+         serving: Dala.ML.Burn.Serving.build(model, batch_size: 32),
+         name: :my_model}
+      ]
   """
   @spec supervise(ExBurn.Model.t(), keyword()) :: {:ok, pid()} | {:error, term()}
   def supervise(%ExBurn.Model{} = model, opts \\ []) do
     name = Keyword.get(opts, :name, :burn_serving)
+    supervisor = Keyword.fetch!(opts, :supervisor)
     serving = build(model, opts)
 
     case DynamicSupervisor.start_child(
-           Dala.App.supervisor(),
+           supervisor,
            {Nx.Serving, serving: serving, name: name}
          ) do
       {:ok, pid} -> {:ok, pid}

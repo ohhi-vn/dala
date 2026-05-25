@@ -307,13 +307,14 @@ defmodule Dala.Gpu.Compute do
     input_refs = Enum.map(inputs, & &1.ref)
     kernel_string = Atom.to_string(kernel)
 
-    cmd_id = submit(%{
-      op: :run_kernel,
-      kernel: kernel_string,
-      inputs: input_refs,
-      output: output.ref,
-      params: params
-    })
+    cmd_id =
+      submit(%{
+        op: :run_kernel,
+        kernel: kernel_string,
+        inputs: input_refs,
+        output: output.ref,
+        params: params
+      })
 
     wait(cmd_id)
   end

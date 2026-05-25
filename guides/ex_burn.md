@@ -4,7 +4,7 @@ Dala integrates [ExBurn](https://github.com/ohhi-vn/ex_burn), a bridge between N
 
 ## Status
 
-**Early alpha** — basic ops and inference work. Training uses numerical gradients. Burn's autodiff integration is planned for a future release.
+**v0.3.0** — Full Nx backend, defn compiler, training loop, serving, model management. Training uses numerical gradients (central and batch modes). Burn's autodiff integration planned for a future release.
 
 ## Architecture
 
@@ -12,6 +12,8 @@ Dala integrates [ExBurn](https://github.com/ohhi-vn/ex_burn), a bridge between N
 Axon model
    ↓
 Nx.Defn graph
+   ↓
+ExBurn.Defn.Compiler (Nx.Defn.Compiler behaviour)
    ↓
 ExBurn.Backend (Nx.Backend behaviour)
    ↓
@@ -287,6 +289,12 @@ children = [
    name: :my_model_serving}
 ]
 
+# Or use the convenience helper
+{:ok, _pid} = Dala.ML.Burn.Serving.supervise(trained_model,
+  name: :my_model_serving,
+  supervisor: MyApp.DynamicSupervisor
+)
+
 # Then use it from anywhere
 output = Nx.Serving.run(:my_model_serving, input_tensor)
 ```
@@ -376,7 +384,7 @@ raise ExBurn.Error,
 ## Troubleshooting
 
 ### `available?()` returns `false`
-- Ensure `ex_burn` is in your deps: `{:ex_burn, "~> 0.1"}`
+- Ensure `ex_burn` is in your deps: `{:ex_burn, "~> 0.3"}`
 - Run `mix deps.get && mix compile`
 - The Rust NIF will be compiled automatically via Rustler
 

@@ -34,16 +34,16 @@ defmodule Dala.Media.Pipeline do
 
   @type pipeline_ref :: pid()
   @type config :: %{
-    url: String.t(),
-    width: non_neg_integer(),
-    height: non_neg_integer(),
-    fps: pos_integer(),
-    subtitles: String.t() | nil,
-    filters: [atom()],
-    adaptive: boolean(),
-    loop: boolean(),
-    volume: float(),
-  }
+          url: String.t(),
+          width: non_neg_integer(),
+          height: non_neg_integer(),
+          fps: pos_integer(),
+          subtitles: String.t() | nil,
+          filters: [atom()],
+          adaptive: boolean(),
+          loop: boolean(),
+          volume: float()
+        }
 
   defstruct [
     :config,
@@ -55,7 +55,8 @@ defmodule Dala.Media.Pipeline do
     :adaptive_pid,
     :subtitle_cues,
     :filter_list,
-    :state,  # :idle | :playing | :paused | :error
+    # :idle | :playing | :paused | :error
+    :state
   ]
 
   # Client API
@@ -116,7 +117,7 @@ defmodule Dala.Media.Pipeline do
       adaptive_pid: nil,
       subtitle_cues: [],
       filter_list: Map.get(config, :filters, []),
-      state: :idle,
+      state: :idle
     }
 
     case setup_pipeline(state) do
@@ -157,16 +158,19 @@ defmodule Dala.Media.Pipeline do
 
   def handle_call(:diagnostic, _from, state) do
     clock_stats = if state.clock_pid, do: Dala.Media.Clock.stats(state.clock_pid), else: %{}
-    adaptive_diag = if state.adaptive_pid, do: Dala.Media.Adaptive.diagnostic(state.adaptive_pid), else: %{}
 
-    {:reply, %{
-      state: state.state,
-      config: Map.take(state.config, [:url, :width, :height, :fps]),
-      clock: clock_stats,
-      adaptive: adaptive_diag,
-      filters: state.filter_list,
-      subtitles: length(state.subtitle_cues),
-    }, state}
+    adaptive_diag =
+      if state.adaptive_pid, do: Dala.Media.Adaptive.diagnostic(state.adaptive_pid), else: %{}
+
+    {:reply,
+     %{
+       state: state.state,
+       config: Map.take(state.config, [:url, :width, :height, :fps]),
+       clock: clock_stats,
+       adaptive: adaptive_diag,
+       filters: state.filter_list,
+       subtitles: length(state.subtitle_cues)
+     }, state}
   end
 
   def handle_call({:add_filter, filter_type, _params}, _from, state) do
@@ -191,11 +195,13 @@ defmodule Dala.Media.Pipeline do
     height = Map.get(config, :height, 1080)
     fps = Map.get(config, :fps, 60)
 
-    with {:ok, video} <- Dala.Media.Video.start_stream(self(), Map.get(config, :url), [
-           width: width, height: height,
-           volume: Map.get(config, :volume, 1.0),
-           loop: Map.get(config, :loop, false),
-         ]),
+    with {:ok, video} <-
+           Dala.Media.Video.start_stream(self(), Map.get(config, :url),
+             width: width,
+             height: height,
+             volume: Map.get(config, :volume, 1.0),
+             loop: Map.get(config, :loop, false)
+           ),
          {:ok, clock} <- Dala.Media.Clock.start_link(target_fps: fps),
          {:ok, scene} <- Dala.Media.Scene.new(width, height, target_fps: fps),
          {:ok, anim} <- Dala.Media.Animation.start_link([]),
@@ -209,37 +215,42 @@ defmodule Dala.Media.Pipeline do
       Dala.Media.Clock.subscribe(clock, anim)
 
       # Add video node to scene
-      {:ok, _video_node} = Dala.Media.Scene.add_node(scene, :video, %{
-        stream: video,
-        position: {0, 0},
-        size: {width, height},
-        z_index: 0,
-      })
+      {:ok, _video_node} =
+        Dala.Media.Scene.add_node(scene, :video, %{
+          stream: video,
+          position: {0, 0},
+          size: {width, height},
+          z_index: 0
+        })
 
       # Add subtitle overlay node if subtitles loaded
       scene =
         if subtitle_cues != [] do
-          {:ok, _sub_node} = Dala.Media.Scene.add_node(scene, :text, %{
-            text: "",
-            position: {0, height - 80},
-            size: {width, 60},
-            z_index: 100,
-            visible: true,
-          })
+          {:ok, _sub_node} =
+            Dala.Media.Scene.add_node(scene, :text, %{
+              text: "",
+              position: {0, height - 80},
+              size: {width, 60},
+              z_index: 100,
+              visible: true
+            })
+
           scene
         else
           scene
         end
 
-      {:ok, %__MODULE__{state |
-        video_pid: video,
-        clock_pid: clock,
-        scene_pid: scene,
-        anim_pid: anim,
-        texture_pool_pid: pool,
-        adaptive_pid: adaptive,
-        subtitle_cues: subtitle_cues
-      }}
+      {:ok,
+       %__MODULE__{
+         state
+         | video_pid: video,
+           clock_pid: clock,
+           scene_pid: scene,
+           anim_pid: anim,
+           texture_pool_pid: pool,
+           adaptive_pid: adaptive,
+           subtitle_cues: subtitle_cues
+       }}
     end
   end
 

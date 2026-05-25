@@ -4,7 +4,7 @@ defmodule Dala.MixProject do
   def project do
     [
       app: :dala,
-      version: "0.6.0",
+      version: "0.6.1",
       elixir: "~> 1.18",
       erlang: ">= 27.0",
       start_permanent: Mix.env() == :prod,
@@ -174,7 +174,14 @@ defmodule Dala.MixProject do
   end
 
   defp elixirc_paths(:test),
-    do: ["lib", "test/onboarding", "test/onboarding/support", "dev_tools","dev_tools/dala/preview",  "dev_tools/test"]
+    do: [
+      "lib",
+      "test/onboarding",
+      "test/onboarding/support",
+      "dev_tools",
+      "dev_tools/dala/preview",
+      "dev_tools/test"
+    ]
 
   defp elixirc_paths(:dev), do: ["lib", "dev_tools", "dev_tools/dala/preview", "dev_tools/test"]
   defp elixirc_paths(_), do: ["lib"]
@@ -217,8 +224,8 @@ defmodule Dala.MixProject do
       # {:ex_cubecl, path: "../ex_cubecl"}
 
       # Burn deep learning framework (Nx backend via Rust NIF)
-      {:ex_burn, "~> 0.1.2"}
-      # {:ex_burn, path: "../ex_burn"}
+      {:ex_burn, "~> 0.3"}
+     # {:ex_burn, path: "../ex_burn"}
     ]
   end
 end
