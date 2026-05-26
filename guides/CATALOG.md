@@ -12,7 +12,7 @@ Complete classification of documentation guides in the Dala project.
 | **Events** | [Events](#events--interaction), [Event Model](#events--interaction), [Event Audit](#events--interaction) |
 | **Testing** | [Testing](#testing--development), [Agentic Coding](#testing--development) |
 | **iOS Development** | [iOS Physical Device](#ios--rust), [iOS ML Support](#ios--rust), [Rustler in Mobile](#ios--rust) |
-| **Data & APIs** | [Data & Persistence](#data--device-apis), [Device Capabilities](#data--device-apis) |
+| **Data & APIs** | [Data & Persistence](#data--device-apis), [File Storage](#data--device-apis), [Device Capabilities](#data--device-apis) |
 | **Advanced** | [LiveView Integration](#advanced-topics), [Publishing](#advanced-topics), [Security](#advanced-topics) |
 
 ---
@@ -158,6 +158,20 @@ Guides for data persistence and accessing device capabilities.
 
 ---
 
+### [File Storage](storage.md)
+**File**: `guides/storage.md`  
+**Description**: File storage API for reading, writing, and managing files on-device using named locations.
+
+**Key sections**:
+- Locations (:temp, :documents, :cache, :app_support)
+- Create, read, write, update, delete operations
+- File information and listing
+- Platform-specific storage (iOS/Android)
+- File picker integration
+- Complete example
+
+---
+
 ### [Device Capabilities](device_capabilities.md)
 **File**: `guides/device_capabilities.md`  
 **Description**: Accessing device features (camera, location, biometrics, etc.) and capability detection.
@@ -257,11 +271,11 @@ Advanced guides for specialized use cases.
 | Getting Started | 3 | Getting Started, Architecture, Build & BEAM Loading |
 | UI & Components | 9 | Components, Styling, Theming, UI Design, UI Render Pipeline, Render Engine, Binary Protocol, Spark DSL, Screen Lifecycle, Navigation |
 | Events & Interaction | 3 | Events, Event Model, Event Audit |
-| Data & Device APIs | 2 | Data & Persistence, Device Capabilities |
+| Data & Device APIs | 3 | Data & Persistence, File Storage, Device Capabilities |
 | Testing & Development | 2 | Testing, Agentic Coding |
 | iOS & Rust | 4 | iOS Physical Device, iOS ML Support, EMLX iOS Summary, Rustler in Mobile |
 | Advanced Topics | 4 | LiveView Integration, Publishing, Security, Troubleshooting |
-| **Total** | **28** | ]
+| **Total** | **29** | ]
 
 ---
 

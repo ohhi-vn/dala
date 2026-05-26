@@ -458,7 +458,7 @@ These are the things we've burned ourselves on. Following them isn't optional.
 | Event system (unified API, bridge, target, throttle) | `lib/dala/event/event.ex`, `lib/dala/event/bridge.ex`, `lib/dala/event/target.ex`, `lib/dala/event/throttle.ex` |
 | NativeView component lifecycle | `lib/dala/ui/native_view.ex`, `lib/dala/ui/native_view/server.ex`, `lib/dala/ui/native_view/registry.ex` |
 | Background execution, Linking, Settings, State | `lib/dala/platform/background.ex`, `lib/dala/platform/linking.ex`, `lib/dala/platform/settings.ex`, `lib/dala/platform/state.ex` |
-| Storage (files, blobs, photos) | `lib/dala/storage/storage.ex`, `lib/dala/storage/blob.ex`, `lib/dala/storage/files.ex`, `lib/dala/media/photos.ex` |
+| Storage (files, blobs, photos) | `guides/storage.md`, `lib/dala/storage/storage.ex`, `lib/dala/storage/blob.ex`, `lib/dala/storage/files.ex`, `lib/dala/media/photos.ex` |
 | Alerts, toasts, WebView bridge, Motion sensors | `lib/dala/ui/feedback/alert.ex`, `lib/dala/ui/embedded/webview.ex`, `lib/dala/ui/sensor/motion.ex` |
 | NFC tag reading | `lib/dala/hardware/nfc.ex` |
 | NFC / barcode format parser | `lib/dala/ui/scan.ex` |
