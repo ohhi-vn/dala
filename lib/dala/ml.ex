@@ -287,8 +287,8 @@ defmodule Dala.ML do
       iterations: iterations
     }
 
-    # Include Burn benchmark if available
-    if Dala.ML.Burn.available?() do
+    # Include Burn benchmark if available and NIF is functional
+    if Dala.ML.Burn.available?() and Dala.ML.Burn.nif_loaded?() do
       burn_result = benchmark_backend(ExBurn.Backend, size, iterations)
       Map.put(result, :burn, burn_result)
     else

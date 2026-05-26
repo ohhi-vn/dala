@@ -225,7 +225,7 @@ defmodule Dala.MixProject do
 
       # Burn deep learning framework (Nx backend via Rust NIF)
       {:ex_burn, "~> 0.3"}
-     # {:ex_burn, path: "../ex_burn"}
+      # {:ex_burn, path: "../ex_burn"}
     ]
   end
 end

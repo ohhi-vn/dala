@@ -210,7 +210,7 @@ defmodule Dala.ML.Burn.Training do
 
     callbacks =
       [history_cb] ++
-        (if verbose, do: [logging_callback()], else: []) ++
+        if(verbose, do: [logging_callback()], else: []) ++
         Keyword.get(opts, :callbacks, [])
 
     opts = Keyword.put(opts, :callbacks, callbacks)

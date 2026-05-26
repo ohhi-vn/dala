@@ -168,8 +168,8 @@ defmodule Dala.Spark.Dsl do
       import Dala.Spark.Dsl
 
       use Spark.Dsl,
-        single_extension_kinds: [:dala],
-        default_extensions: [dala: Dala.Spark.Dsl]
+        many_extension_kinds: [:extensions],
+        default_extensions: [extensions: [Dala.Spark.Dsl]]
 
       # Ensure @extensions is set for the top-level module so that
       # generated entity macros (e.g. attribute/3) can look it up via

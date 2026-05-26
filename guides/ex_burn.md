@@ -34,7 +34,7 @@ Metal (iOS) / Vulkan (Android) / CUDA → GPU
 | Android  | Vulkan  | ✅     |
 | macOS    | Metal   | ✅     |
 | Linux    | Vulkan  | ✅     |
-| NVIDIA   | CUDA    | 🔜     |
+| NVIDIA   | CUDA    | ✅     |
 
 ## Quick Start
 
@@ -45,6 +45,10 @@ Metal (iOS) / Vulkan (Android) / CUDA → GPU
 Dala.ML.Burn.available?()
 # true
 
+# Is the NIF library responding?
+Dala.ML.Burn.nif_loaded?()
+# true
+
 # Is a GPU available?
 Dala.ML.Burn.gpu?()
 # true on iOS/Android with GPU support
@@ -52,6 +56,21 @@ Dala.ML.Burn.gpu?()
 # What device will be used?
 Dala.ML.Burn.default_device()
 # :gpu or :cpu
+
+# Device name
+Dala.ML.Burn.device_name()
+# "Metal (Apple GPU)" | "CUDA (NVIDIA GPU)" | "NdArray (CPU)"
+
+# Available backends
+Dala.ML.Burn.available_backends()
+# [:metal] | [:cuda] | [:vulkan]
+
+# Quick smoke test
+Dala.ML.Burn.smoke_test()
+# :ok
+
+# Full environment summary
+IO.puts(Dala.ML.Burn.summary())
 ```
 
 ### 2. Configure
@@ -77,10 +96,31 @@ Nx.add(t, t) |> Nx.to_list()
 # Direct Burn tensor creation (bypasses Nx for performance)
 bt = Dala.ML.Burn.zeros([3, 3], :f32)
 bt = Dala.ML.Burn.ones([2, 4], :f32)
+bt = Dala.ML.Burn.rand([2, 4], :f32, 0.0, 1.0)
 
 # Convert between Nx and Burn
 {:ok, bt} = Dala.ML.Burn.from_nx(tensor)
 {:ok, tensor} = Dala.ML.Burn.to_nx(bt)
+
+# Batch convert
+{:ok, bts} = Dala.ML.Burn.from_nx_batch([t1, t2, t3])
+{:ok, tensors} = Dala.ML.Burn.to_nx_batch(bts)
+
+# Tensor inspection
+Dala.ML.Burn.tensor_shape(bt)   # [3, 3]
+Dala.ML.Burn.tensor_type(bt)    # :f32
+Dala.ML.Burn.tensor_numel(bt)   # 9
+Dala.ML.Burn.tensor_rank(bt)    # 2
+
+# Direct Burn tensor operations (no Nx overhead)
+bt2 = Dala.ML.Burn.add(bt, bt)
+bt2 = Dala.ML.Burn.matmul(bt, bt)
+bt2 = Dala.ML.Burn.relu(bt)
+bt2 = Dala.ML.Burn.softmax(bt)
+
+# Device transfer
+bt_gpu = Dala.ML.Burn.to_gpu(bt)
+bt_cpu = Dala.ML.Burn.to_cpu(bt_gpu)
 ```
 
 ### 4. Define and Compile a Model
@@ -164,12 +204,39 @@ callbacks = [
   # Save checkpoint every 10 epochs
   Dala.ML.Burn.Training.checkpoint_callback(10, "checkpoints/"),
 
+  # Learning rate warmup over 3 epochs
+  Dala.ML.Burn.Training.warmup_callback(3, 1.0e-5, 0.001),
+
+  # Reduce LR on plateau
+  Dala.ML.Burn.Training.reduce_on_plateau_callback(patience: 3, factor: 0.5),
+
   # Report progress to a LiveView screen via handle_info
   Dala.ML.Burn.Training.screen_callback(self())
 ]
 
 trained = Dala.ML.Burn.fit(model, {train_x, train_y},
   epochs: 100,
+  batch_size: 32,
+  validation_data: {val_x, val_y},
+  callbacks: callbacks,
+  accuracy: true
+)
+```
+
+### Standard Callbacks Helper
+
+```elixir
+# Quick setup with sensible defaults
+callbacks = Dala.ML.Burn.Training.standard_callbacks(
+  early_stopping_patience: 5,
+  checkpoint_interval: 10,
+  checkpoint_dir: "checkpoints",
+  warmup_epochs: 3,
+  learning_rate: 0.001
+)
+
+trained = Dala.ML.Burn.fit(model, {train_x, train_y},
+  epochs: 50,
   batch_size: 32,
   validation_data: {val_x, val_y},
   callbacks: callbacks
@@ -268,6 +335,99 @@ IO.puts(Dala.ML.Burn.summary(model))
 # ╠══════════════════════════════════════════════════════════╣
 ```
 
+## Model Management
+
+### Quantization
+
+Reduce model size and speed up inference by quantizing to lower precision:
+
+```elixir
+# Quantize to f16 (half precision)
+quantized = Dala.ML.Burn.quantize(model, :f16)
+
+# Quantize to bf16 (brain float 16)
+quantized = Dala.ML.Burn.quantize(model, :bf16)
+```
+
+### Export / Import
+
+Export models to portable formats:
+
+```elixir
+# Compressed Erlang term format (default, portable)
+Dala.ML.Burn.export(model, "model.etf")
+{:ok, model} = Dala.ML.Burn.import_params(model, "model.etf")
+
+# JSON format (human-readable, larger)
+Dala.ML.Burn.export(model, "model.json", format: :json)
+{:ok, model} = Dala.ML.Burn.import_params(model, "model.json", format: :json)
+```
+
+### Layer Freezing
+
+Freeze layers for fine-tuning:
+
+```elixir
+# Freeze specific layers
+frozen = Dala.ML.Burn.freeze(model, ["dense_0", "dense_1"])
+
+# Check if a layer is frozen
+Dala.ML.Burn.frozen?(frozen, "dense_0")  # true
+
+# Unfreeze layers
+unfrozen = Dala.ML.Burn.unfreeze(frozen, ["dense_0"])
+```
+
+### Model Info & Benchmarking
+
+```elixir
+# Detailed model information
+info = Dala.ML.Burn.info(model)
+# %{total_params: 235146, layer_count: 4, device: :gpu, estimated_memory_mb: 0.89, ...}
+
+# Benchmark forward pass
+result = Dala.ML.Burn.benchmark(model, input, warmup: 5, runs: 20)
+# %{avg_ms: 1.234, min_ms: 1.100, max_ms: 1.500, median_ms: 1.200, std_ms: 0.089}
+
+# Clone a model
+snapshot = Dala.ML.Burn.clone(model)
+```
+
+### GPU-Accelerated Defn
+Enable the ExBurn defn compiler for custom GPU kernels via `Nx.Defn`:
+
+```elixir
+Dala.ML.Burn.enable_defn_compiler!()
+
+defmodule MyKernels do
+  import Nx.Defn
+
+  defn add_and_scale(x, y, scale) do
+    x |> Nx.add(y) |> Nx.multiply(scale)
+  end
+end
+
+# Runs on GPU via Burn
+MyKernels.add_and_scale(Nx.tensor([1.0]), Nx.tensor([2.0]), Nx.tensor(3.0))
+```
+
+### Error Handling
+
+```elixir
+# Create error structs
+err = Dala.ML.Burn.error(op: :forward, reason: "shape mismatch")
+
+# Wrap error tuples
+err = Dala.ML.Burn.error_from_tuple({:error, "failed"}, op: :predict)
+
+# Format for logging
+Dala.ML.Burn.format_error(err)
+# "ExBurn.forward: shape mismatch"
+
+Dala.ML.Burn.error_to_log_string(err)
+# "[ExBurn:forward] shape mismatch"
+```
+
 ## Serving (Production Inference)
 
 For production use, wrap your model in an `Nx.Serving` for batched, concurrent inference:
@@ -347,7 +507,7 @@ Dala.ML.benchmark(size: 100, iterations: 10)
 ### Desktop (Development)
 
 - Uses **Metal** (macOS) or **Vulkan** (Linux)
-- **CUDA** support planned
+- **CUDA** support available on NVIDIA hardware
 
 ## Training on Mobile — Caveats
 
