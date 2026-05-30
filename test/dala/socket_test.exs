@@ -297,5 +297,65 @@ defmodule Dala.SocketTest do
 
       assert Socket.changed?(socket, [:x, :y])
     end
+
+    test "assign with empty keyword list" do
+      socket =
+        Socket.new(MyScreen)
+        |> Socket.assign([])
+
+      assert socket.assigns == %{}
+      assert Socket.changed?(socket, []) == true
+    end
+
+    test "assign with empty map" do
+      socket =
+        Socket.new(MyScreen)
+        |> Socket.assign(%{})
+
+      assert socket.assigns == %{}
+    end
+
+    test "changed? with single atom" do
+      socket =
+        Socket.new(MyScreen)
+        |> Socket.assign(:foo, :bar)
+
+      assert Socket.changed?(socket, :foo)
+      refute Socket.changed?(socket, :baz)
+    end
+
+    test "get_dala with default for missing key" do
+      socket = Socket.new(MyScreen)
+      assert Socket.get_dala(socket, :nonexistent, :fallback) == :fallback
+    end
+
+    test "put_dala does not affect assigns" do
+      socket =
+        Socket.new(MyScreen)
+        |> Socket.assign(:count, 1)
+        |> Socket.put_dala(:root_view, :view)
+
+      assert socket.assigns == %{count: 1}
+      assert socket.__dala__.root_view == :view
+    end
+
+    test "navigation does not clear changed tracking" do
+      socket =
+        Socket.new(MyScreen)
+        |> Socket.assign(:count, 1)
+        |> Socket.push_screen(OtherScreen)
+
+      # Navigation should not clear the changed set
+      assert Socket.changed?(socket, :count)
+    end
+
+    test "assign with keyword list containing non-atom keys" do
+      # This should work since Map.new handles string keys
+      socket =
+        Socket.new(MyScreen)
+        |> Socket.assign([{"string_key", "value"}])
+
+      assert socket.assigns["string_key"] == "value"
+    end
   end
 end

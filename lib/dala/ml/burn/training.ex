@@ -77,7 +77,7 @@ defmodule Dala.ML.Burn.Training do
   Creates a learning rate warmup callback.
 
   Gradually increases the learning rate from `start_lr` to `target_lr`
-  over `warmup_epochs` epochs.
+  over `warmup_epochs` epochs. Helps stabilize early training.
 
   ## Parameters
 

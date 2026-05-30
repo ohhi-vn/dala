@@ -33,15 +33,18 @@ defmodule Dala.ML.Preprocess do
   def load_image(path) do
     case File.read(path) do
       {:ok, binary} ->
-        # Decode image binary to RGB tensor
-        # Uses built-in Erlang image decoding
-        case :erlang.binary_to_term(binary) do
-          # If it's already a stored tensor
-          tensor when is_struct(tensor, Nx.Tensor) ->
-            {:ok, tensor}
+        # Try to interpret as a stored tensor first
+        try do
+          case :erlang.binary_to_term(binary) do
+            tensor when is_struct(tensor, Nx.Tensor) ->
+              {:ok, tensor}
 
+            _ ->
+              {:ok, Nx.from_binary(binary, :u8)}
+          end
+        rescue
           _ ->
-            # Raw binary: assume RGB pixel data and create tensor
+            # Raw binary (PNG, JPEG, etc.): assume flat pixel data
             # In production, use a proper image decoder
             {:ok, Nx.from_binary(binary, :u8)}
         end
@@ -58,18 +61,42 @@ defmodule Dala.ML.Preprocess do
   """
   @spec resize(Nx.Tensor.t(), {pos_integer(), pos_integer()}) :: Nx.Tensor.t()
   def resize(tensor, {h, w}) do
-    # Use Nx broadcasting for resize
-    # In production, use proper bilinear/bicubic interpolation
     case Nx.shape(tensor) do
       {^h, ^w, 3} ->
         tensor
 
-      _ ->
-        # Simple resize via Nx operations
+      {orig_h, orig_w, 3} ->
+        # Simple nearest-neighbor resize via indexing
         # Real implementation would use Dala.Native for GPU resize
-        tensor
-        |> Nx.reshape({:auto, 3})
-        |> Nx.slice([0, 0], [h, w])
+        row_indices =
+          Nx.iota({h}, axis: 0)
+          |> Nx.divide(h)
+          |> Nx.multiply(orig_h)
+          |> Nx.floor()
+          |> Nx.as_type(:s64)
+          |> Nx.clip(0, orig_h - 1)
+
+        col_indices =
+          Nx.iota({w}, axis: 0)
+          |> Nx.divide(w)
+          |> Nx.multiply(orig_w)
+          |> Nx.floor()
+          |> Nx.as_type(:s64)
+          |> Nx.clip(0, orig_w - 1)
+
+        # Gather pixels using advanced indexing
+        for r <- 0..(h - 1), into: [] do
+          for c <- 0..(w - 1), into: [] do
+            ri = Nx.to_number(Nx.slice(row_indices, r, 1))
+            ci = Nx.to_number(Nx.slice(col_indices, c, 1))
+            Nx.slice(tensor, [ri, ci, 0], [1, 1, 3])
+          end
+        end
+        |> Enum.reduce(fn slice, acc -> Nx.concatenate([acc, slice], axis: 0) end)
+        |> Nx.reshape({h, w, 3})
+
+      _ ->
+        raise ArgumentError, "resize/2 expects a {height, width, 3} tensor, got: #{inspect(Nx.shape(tensor))}"
     end
   end
 
@@ -97,13 +124,20 @@ defmodule Dala.ML.Preprocess do
   def normalize(tensor, :minmax) do
     min = Nx.reduce_min(tensor)
     max = Nx.reduce_max(tensor)
-    Nx.subtract(tensor, min) |> Nx.divide(Nx.subtract(max, min))
+    range = Nx.subtract(max, min)
+
+    # Avoid division by zero on constant tensors
+    safe_range = Nx.select(Nx.equal(range, 0), Nx.tensor(1.0, type: :f32), range)
+    Nx.subtract(tensor, min) |> Nx.divide(safe_range)
   end
 
   def normalize(tensor, :standard) do
     mean = Nx.mean(tensor)
     std = Nx.subtract(tensor, mean) |> Nx.pow(2) |> Nx.mean() |> Nx.sqrt()
-    Nx.subtract(tensor, mean) |> Nx.divide(std)
+
+    # Avoid division by zero on zero-variance tensors
+    safe_std = Nx.select(Nx.equal(std, 0), Nx.tensor(1.0, type: :f32), std)
+    Nx.subtract(tensor, mean) |> Nx.divide(safe_std)
   end
 
   def normalize(tensor, {mean, std}) do
@@ -189,7 +223,8 @@ defmodule Dala.ML.Preprocess do
   # ---------------------------------------------------------------------------
 
   defp format_error(reason) when is_atom(reason), do: Atom.to_string(reason)
-  defp format_error(reason), do: Exception.message(reason)
+  defp format_error(reason) when is_binary(reason), do: reason
+  defp format_error(reason), do: inspect(reason)
 
   defp stft(samples, n_fft, _hop_length) do
     # Simplified STFT — real implementation would use NxSignal

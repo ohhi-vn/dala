@@ -506,9 +506,13 @@ Dala supports machine learning via three paths:
   - GPU acceleration via Burn's CubeCL backend (Metal/Vulkan/CUDA)
   - Training loop with Adam/SGD/RMSprop, LR scheduling, gradient clipping, callbacks
   - Nx.Serving integration for batched concurrent inference
-  - Model management: compile, save/load, serialize, summary
+  - Model management: compile, save/load, serialize, summary, quantize, benchmark, clone
+  - Layer freeze/unfreeze for fine-tuning workflows
+  - Glorot/Xavier weight initialization
+  - Autodiff gradients (with numerical fallback)
+  - Profile step for timing forward/backward/optimizer phases
   - Access via `Dala.ML.Burn`, `Dala.ML.Burn.Training`, `Dala.ML.Burn.Serving`
-  - **Status**: Early alpha — basic ops and inference work, training uses numerical gradients
+  - **Status**: v0.4.0 — Full Nx backend, defn compiler, training loop, serving, model management
 
 **Not supported on iOS:** Emily (macOS-only), NxIREE, EXLA/XLA, Torchx.
 

@@ -130,8 +130,12 @@ defmodule Dala.Spark.Dsl do
   defmacro screen(_opts, do: block) do
     entity_imports = generate_entity_imports()
     opts_module = Dala.Spark.Dsl.Screen.Options
+    caller = __CALLER__
 
     quote do
+      # Ensure @extensions is set so entity macros can look it up via
+      # Spark.Dsl.Extension.get_attribute/2 at compile time
+      Dala.Spark.Dsl.ensure_extensions(unquote(caller.module))
       # Import all entity modules so components are available inside the block
       unquote_splicing(entity_imports)
       # Import the opts module for schema fields (name, etc.)
@@ -143,7 +147,9 @@ defmodule Dala.Spark.Dsl do
 
   # Generate attributes/2 that imports attribute entity module
   defmacro attributes(do: block) do
+    caller = __CALLER__
     quote do
+      Dala.Spark.Dsl.ensure_extensions(unquote(caller.module))
       import Dala.Spark.Dsl.Attributes.Attribute
       unquote(block)
     end
@@ -170,12 +176,19 @@ defmodule Dala.Spark.Dsl do
       use Spark.Dsl,
         many_extension_kinds: [:extensions],
         default_extensions: [extensions: [Dala.Spark.Dsl]]
+    end
+  end
 
-      # Ensure @extensions is set for the top-level module so that
-      # generated entity macros (e.g. attribute/3) can look it up via
-      # Spark.Dsl.Extension.get_attribute/2 at compile time.
-      Module.register_attribute(__MODULE__, :extensions, persist: true)
-      @extensions [Dala.Spark.Dsl]
+  # Public helper to ensure @extensions is set on a module.
+  # This is needed because Spark.Dsl's inner __using__ macro only sets
+  # @extensions when :elixir_module.mode == :all, which may not always
+  # be the case during macro expansion.
+  def ensure_extensions(module) do
+    case Module.get_attribute(module, :extensions) do
+      nil ->
+        Module.put_attribute(module, :extensions, [__MODULE__])
+      _ ->
+        :ok
     end
   end
 

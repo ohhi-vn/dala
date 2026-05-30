@@ -4,7 +4,7 @@ defmodule Dala.MixProject do
   def project do
     [
       app: :dala,
-      version: "0.7.0",
+      version: "0.7.1",
       elixir: "~> 1.18",
       erlang: ">= 27.0",
       start_permanent: Mix.env() == :prod,
@@ -224,7 +224,7 @@ defmodule Dala.MixProject do
       # {:ex_cubecl, path: "../ex_cubecl"}
 
       # Burn deep learning framework (Nx backend via Rust NIF)
-      {:ex_burn, "~> 0.3"}
+      {:ex_burn, "~> 0.4"}
       # {:ex_burn, path: "../ex_burn"}
     ]
   end

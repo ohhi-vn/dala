@@ -169,6 +169,73 @@ defmodule Dala.ML.Test do
     end
   end
 
+  describe "Dala.ML.Preprocess.normalize/2 edge cases" do
+    test "minmax normalization handles constant tensor without NaN" do
+      # A tensor where all values are the same
+      tensor = Nx.broadcast(Nx.tensor(5.0, type: :f32), {3, 3})
+      result = Dala.ML.Preprocess.normalize(tensor, :minmax)
+      # Should not produce NaN or Inf
+      flat = Nx.to_flat_list(result)
+      Enum.each(flat, fn v ->
+        refute is_float(v) and (v != v), "NaN detected in minmax result"
+      end)
+    end
+
+    test "standard normalization handles zero-variance tensor without NaN" do
+      tensor = Nx.broadcast(Nx.tensor(3.0, type: :f32), {2, 2})
+      result = Dala.ML.Preprocess.normalize(tensor, :standard)
+      flat = Nx.to_flat_list(result)
+      Enum.each(flat, fn v ->
+        refute is_float(v) and (v != v), "NaN detected in standard result"
+      end)
+    end
+
+    test "minmax normalization scales to [0, 1] for varied tensor" do
+      tensor = Nx.tensor([1.0, 2.0, 3.0, 4.0, 5.0], type: :f32)
+      result = Dala.ML.Preprocess.normalize(tensor, :minmax)
+      flat = Nx.to_flat_list(result)
+      assert_in_delta Enum.min(flat), 0.0, 0.001
+      assert_in_delta Enum.max(flat), 1.0, 0.001
+    end
+
+    test "imagenet normalization produces reasonable values" do
+      tensor = Nx.broadcast(Nx.tensor(128.0, type: :f32), {224, 224, 3})
+      result = Dala.ML.Preprocess.normalize(tensor, :imagenet)
+      assert Nx.shape(result) == {224, 224, 3}
+    end
+
+    test "custom normalization with mean and std" do
+      tensor = Nx.tensor([10.0, 20.0, 30.0], type: :f32)
+      result = Dala.ML.Preprocess.normalize(tensor, {[0.0, 0.0, 0.0], [10.0, 10.0, 10.0]})
+      flat = Nx.to_flat_list(result)
+      assert_in_delta Enum.at(flat, 0), 1.0, 0.001
+      assert_in_delta Enum.at(flat, 1), 2.0, 0.001
+      assert_in_delta Enum.at(flat, 2), 3.0, 0.001
+    end
+  end
+
+  describe "Dala.ML.Preprocess.to_batch/1" do
+    test "adds batch dimension" do
+      tensor = Nx.iota({3, 4}, type: :f32)
+      batched = Dala.ML.Preprocess.to_batch(tensor)
+      assert Nx.shape(batched) == {1, 3, 4}
+    end
+
+    test "works with 1D tensor" do
+      tensor = Nx.iota({5}, type: :f32)
+      batched = Dala.ML.Preprocess.to_batch(tensor)
+      assert Nx.shape(batched) == {1, 5}
+    end
+  end
+
+  describe "Dala.ML.Preprocess.to_f32_binary/1" do
+    test "produces binary of correct size" do
+      tensor = Nx.iota({10}, type: :f32)
+      binary = Dala.ML.Preprocess.to_f32_binary(tensor)
+      assert byte_size(binary) == 40
+    end
+  end
+
   describe "predict/2" do
     test "returns error for unsupported model type" do
       result = Dala.ML.predict(:unsupported, %{})

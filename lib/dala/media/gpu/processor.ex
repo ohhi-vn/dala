@@ -591,18 +591,22 @@ defmodule Dala.Media.Gpu.Processor do
   # Private: execute a chain of filters
   defp execute_filters(input_buf, _output_buf, temp_buf, filters) do
     {final_output, _final_temp} =
-      Enum.reduce(filters, {input_buf, temp_buf}, fn {filter, params},
-                                                     {current_input, current_temp} ->
+      Enum.reduce_while(filters, {input_buf, temp_buf}, fn {filter, params},
+                                                          {current_input, current_temp} ->
         case Compute.run_kernel(filter, [current_input], current_temp, params) do
-          :ok -> :ok
-          {:error, _} = err -> err
-        end
+          :ok ->
+            # Swap: temp becomes input for next stage, output becomes temp
+            {:cont, {current_temp, current_input}}
 
-        # Swap: temp becomes input for next stage, output becomes temp
-        {current_temp, current_input}
+          {:error, _} = err ->
+            {:halt, err}
+        end
       end)
 
-    {final_output, temp_buf}
+    case final_output do
+      {:error, _} = err -> err
+      _ -> {final_output, temp_buf}
+    end
   end
 
   # Private: build a pipeline from filter specs

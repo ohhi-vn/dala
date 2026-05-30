@@ -117,8 +117,10 @@ defmodule Dala.Gpu.Compute do
   @doc "Return GPU device information."
   @spec device_info() :: map()
   def device_info do
-    {:ok, info} = ExCubecl.device_info()
-    info
+    case ExCubecl.device_info() do
+      {:ok, info} -> info
+      {:error, _} -> %{gpu: false, name: "unknown", backend: :cpu_fallback}
+    end
   end
 
   @doc "Return the EXCubeCL version string."

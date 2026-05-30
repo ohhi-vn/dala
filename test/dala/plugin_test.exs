@@ -1080,4 +1080,156 @@ defmodule Dala.PluginTest do
       end
     end
   end
+
+  describe "Protocol decode_event/1 round-trip" do
+    test "round-trips a single-field event" do
+      encoded = Protocol.encode_event(:button_tap, %{x: 42})
+      assert is_binary(encoded)
+      {event, payload} = Protocol.decode_event(encoded)
+      assert event == :button_tap
+      assert payload.x == 42
+    end
+
+    test "round-trips a multi-field event" do
+      encoded = Protocol.encode_event(:touch, %{x: 100, y: 200, pressure: 0.5})
+      assert is_binary(encoded)
+      {event, payload} = Protocol.decode_event(encoded)
+      assert event == :touch
+      assert payload.x == 100
+      assert payload.y == 200
+    end
+
+    test "round-trips event with string payload" do
+      encoded = Protocol.encode_event(:message, %{text: "hello world"})
+      {event, payload} = Protocol.decode_event(encoded)
+      assert event == :message
+      assert payload.text == "hello world"
+    end
+
+    test "round-trips event with boolean payload" do
+      encoded = Protocol.encode_event(:toggle, %{enabled: true})
+      {event, payload} = Protocol.decode_event(encoded)
+      assert event == :toggle
+      assert payload.enabled == true
+    end
+
+    test "round-trips event with float payload" do
+      encoded = Protocol.encode_event(:slider, %{value: 3.14})
+      {event, payload} = Protocol.decode_event(encoded)
+      assert event == :slider
+      assert_in_delta payload.value, 3.14, 0.01
+    end
+  end
+
+  describe "Protocol decode_value/2 edge cases" do
+    # NOTE: encode_value returns <<opcode, ...data>>, but decode_value expects
+    # only the data portion (without the opcode byte). Each test strips it with
+    # <<_::8, data::binary>>.
+
+    test "decodes string value" do
+      <<_::8, data::binary>> = Protocol.encode_value(0x01, "test")
+      {value, <<>>} = Protocol.decode_value(0x01, data)
+      assert value == "test"
+    end
+
+    test "decodes empty string" do
+      <<_::8, data::binary>> = Protocol.encode_value(0x01, "")
+      {value, <<>>} = Protocol.decode_value(0x01, data)
+      assert value == ""
+    end
+
+    test "decodes bool true" do
+      <<_::8, data::binary>> = Protocol.encode_value(0x02, true)
+      {value, <<>>} = Protocol.decode_value(0x02, data)
+      assert value == true
+    end
+
+    test "decodes bool false" do
+      <<_::8, data::binary>> = Protocol.encode_value(0x02, false)
+      {value, <<>>} = Protocol.decode_value(0x02, data)
+      assert value == false
+    end
+
+    test "decodes integer" do
+      <<_::8, data::binary>> = Protocol.encode_value(0x03, -42)
+      {value, <<>>} = Protocol.decode_value(0x03, data)
+      assert value == -42
+    end
+
+    test "decodes f32 float" do
+      <<_::8, data::binary>> = Protocol.encode_value(0x05, 1.5)
+      {value, <<>>} = Protocol.decode_value(0x05, data)
+      assert_in_delta value, 1.5, 0.01
+    end
+
+    test "decodes color as integer" do
+      <<_::8, data::binary>> = Protocol.encode_value(0x07, 0xFF0000FF)
+      {value, <<>>} = Protocol.decode_value(0x07, data)
+      assert value == 0xFF0000FF
+    end
+
+    test "decodes binary data" do
+      <<_::8, data::binary>> = Protocol.encode_value(0x08, <<1, 2, 3, 4>>)
+      {value, <<>>} = Protocol.decode_value(0x08, data)
+      assert value == <<1, 2, 3, 4>>
+    end
+
+    test "decodes list of strings" do
+      <<_::8, data::binary>> = Protocol.encode_value(0x09, ["a", "b", "c"])
+      {value, <<>>} = Protocol.decode_value(0x09, data)
+      assert value == ["a", "b", "c"]
+    end
+
+    test "decodes empty list" do
+      <<_::8, data::binary>> = Protocol.encode_value(0x09, [])
+      {value, <<>>} = Protocol.decode_value(0x09, data)
+      assert value == []
+    end
+
+    test "decodes map of string to string" do
+      <<_::8, data::binary>> = Protocol.encode_value(0x0A, %{"key" => "val"})
+      {value, <<>>} = Protocol.decode_value(0x0A, data)
+      assert value["key"] == "val"
+    end
+
+    test "decodes empty map" do
+      <<_::8, data::binary>> = Protocol.encode_value(0x0A, %{})
+      {value, <<>>} = Protocol.decode_value(0x0A, data)
+      assert value == %{}
+    end
+  end
+
+  describe "Protocol encode_value/2 error handling" do
+    test "raises on unknown type tag for encode" do
+      assert_raise FunctionClauseError, fn ->
+        Protocol.encode_value(0xFF, "unknown")
+      end
+    end
+
+    test "raises on mismatched type for encode" do
+      assert_raise FunctionClauseError, fn ->
+        Protocol.encode_value(0x01, 123)
+      end
+    end
+
+    test "raises on unknown type tag for decode" do
+      assert_raise FunctionClauseError, fn ->
+        Protocol.decode_value(0xFF, <<1>>)
+      end
+    end
+  end
+
+  describe "Protocol encode_event/2 with guess_type" do
+    test "encodes map event" do
+      encoded = Protocol.encode_event(:custom, %{data: %{nested: "value"}})
+      assert is_binary(encoded)
+      assert :binary.first(encoded) == 0xF2
+    end
+
+    test "raises on unsupported type" do
+      assert_raise FunctionClauseError, fn ->
+        Protocol.encode_event(:bad, %{fn: fn -> :ok end})
+      end
+    end
+  end
 end

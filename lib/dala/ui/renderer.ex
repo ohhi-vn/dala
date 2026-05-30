@@ -281,9 +281,11 @@ defmodule Dala.Ui.Renderer do
       rescue
         e ->
           Dala.Platform.Native.log("Dala.Ui.Renderer: apply_patches failed: #{inspect(e)}")
+          {:error, e}
       end
     else
       Dala.Platform.Native.log("Dala.Ui.Renderer: apply_patches not available")
+      {:error, :not_available}
     end
   end
 

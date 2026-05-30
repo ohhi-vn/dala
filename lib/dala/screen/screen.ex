@@ -339,8 +339,8 @@ defmodule Dala.Screen.Screen do
         {:dala_file_result, event, sub, json_binary},
         {module, socket, nav_history, render_mode, screen_id}
       ) do
-    event_atom = String.to_existing_atom(event)
-    sub_atom = String.to_existing_atom(sub)
+    event_atom = to_atom_safe(event)
+    sub_atom = to_atom_safe(sub)
 
     items =
       case :json.decode(json_binary) do
@@ -474,7 +474,7 @@ defmodule Dala.Screen.Screen do
     {:noreply, {module, new_socket, nav_history, render_mode, screen_id}}
   end
 
-  defp to_atom_safe(nil), do: :qr
+  defp to_atom_safe(nil), do: :unknown
 
   defp to_atom_safe(s) when is_binary(s) do
     String.to_existing_atom(s)
@@ -600,7 +600,7 @@ defmodule Dala.Screen.Screen do
         data =
           case Map.get(map, "data") do
             d when is_map(d) ->
-              Map.new(d, fn {k, v} -> {String.to_existing_atom(k), v} end)
+              Map.new(d, fn {k, v} -> {to_atom_safe(k), v} end)
 
             _ ->
               %{}

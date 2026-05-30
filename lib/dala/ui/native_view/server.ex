@@ -71,7 +71,10 @@ defmodule Dala.Ui.NativeView.Server do
   def handle_cast({:update, new_props}, %{module: module, socket: socket} = state) do
     case module.update(new_props, socket) do
       {:ok, new_socket} -> {:noreply, %{state | socket: new_socket}}
-      _ -> {:noreply, state}
+      {:error, reason} ->
+        require Logger
+        Logger.warning("Dala.Ui.NativeView.Server: update failed for #{inspect(module)}: #{inspect(reason)}")
+        {:noreply, state}
     end
   end
 
@@ -79,7 +82,12 @@ defmodule Dala.Ui.NativeView.Server do
         {:event, event, payload},
         %{module: module, socket: socket, screen_pid: screen_pid, id: id} = state
       ) do
-    {:noreply, new_socket} = module.handle_event(event, payload, socket)
+    new_socket =
+      case module.handle_event(event, payload, socket) do
+        {:noreply, ns} -> ns
+        {:reply, _response, ns} -> ns
+      end
+
     send(screen_pid, {:component_changed, id, module})
     {:noreply, %{state | socket: new_socket}}
   end
@@ -95,7 +103,12 @@ defmodule Dala.Ui.NativeView.Server do
         _ -> %{}
       end
 
-    {:noreply, new_socket} = module.handle_event(event, payload, socket)
+    new_socket =
+      case module.handle_event(event, payload, socket) do
+        {:noreply, ns} -> ns
+        {:reply, _response, ns} -> ns
+      end
+
     send(screen_pid, {:component_changed, id, module})
     {:noreply, %{state | socket: new_socket}}
   end
@@ -104,7 +117,12 @@ defmodule Dala.Ui.NativeView.Server do
         message,
         %{module: module, socket: socket, screen_pid: screen_pid, id: id} = state
       ) do
-    {:noreply, new_socket} = module.handle_info(message, socket)
+    new_socket =
+      case module.handle_info(message, socket) do
+        {:noreply, ns} -> ns
+        {:reply, _response, ns} -> ns
+      end
+
     send(screen_pid, {:component_changed, id, module})
     {:noreply, %{state | socket: new_socket}}
   end

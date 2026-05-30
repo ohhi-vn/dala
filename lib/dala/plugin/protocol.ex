@@ -235,7 +235,9 @@ defmodule Dala.Plugin.Protocol do
   def encode_value(0x0A, value) when is_map(value) do
     encoded =
       Enum.map(value, fn {k, v} ->
-        [encode_value(0x01, to_string(k)), encode_value(0x01, to_string(v))]
+        key_str = to_string(k)
+        val_enc = encode_value(0x01, to_string(v))
+        <<byte_size(key_str)::16, key_str::binary, val_enc::binary>>
       end)
       |> IO.iodata_to_binary()
 
@@ -310,12 +312,17 @@ defmodule Dala.Plugin.Protocol do
       Enum.flat_map(payload, fn {key, value} ->
         key_str = Atom.to_string(key)
         type_tag = type_to_tag(guess_type(value))
-        value_data = encode_value(type_tag, value)
+        # encode_value includes the type tag as the first byte, but the event
+        # format stores the type tag separately in the field header, so we
+        # strip it here to avoid duplication.
+        <<_type_tag::8, value_data::binary>> = encode_value(type_tag, value)
         [<<byte_size(key_str)::16, key_str::binary, type_tag>>, value_data]
       end)
 
-    <<@event_opcode, byte_size(event_name)::16, event_name::binary, length(payload)::16,
-      fields::binary>>
+    fields_bin = IO.iodata_to_binary(fields)
+
+    <<@event_opcode, byte_size(event_name)::16, event_name::binary, map_size(payload)::16,
+      fields_bin::binary>>
   end
 
   @doc """
@@ -330,8 +337,8 @@ defmodule Dala.Plugin.Protocol do
       Enum.reduce(1..field_count, {%{}, rest}, fn _, {acc, data} ->
         <<key_len::16, key::binary-size(key_len), type_tag, value_data::binary>> = data
         key_atom = String.to_atom(key)
-        {value, _} = decode_value(type_tag, value_data)
-        {Map.put(acc, key_atom, value), value_data}
+        {value, remaining} = decode_value(type_tag, value_data)
+        {Map.put(acc, key_atom, value), remaining}
       end)
 
     {String.to_atom(name), fields}
@@ -370,30 +377,28 @@ defmodule Dala.Plugin.Protocol do
   def decode_value(0x08, <<len::32, value::binary-size(len), rest::binary>>),
     do: {value, rest}
 
-  def decode_value(0x09, <<_len::32, _rest::binary>> = data) do
-    <<0x09, len::32, items::binary-size(len), rest::binary>> = data
+  def decode_value(0x09, <<len::32, items::binary-size(len), rest::binary>>) do
     values = decode_list_items(items)
     {values, rest}
   end
 
-  def decode_value(0x0A, <<_len::32, _rest::binary>> = data) do
-    <<0x0A, len::32, items::binary-size(len), rest::binary>> = data
-
-    map =
-      Enum.reduce(1..div(len, 2), %{}, fn _, acc ->
-        <<klen::16, key::binary-size(klen), vlen::16, val::binary-size(vlen), _remaining::binary>> =
-          items
-
-        Map.put(acc, key, val)
-      end)
-
+  def decode_value(0x0A, <<len::32, items::binary-size(len), rest::binary>>) do
+    map = decode_map_items(items)
     {map, rest}
+  end
+
+  defp decode_map_items(<<>>), do: %{}
+
+  defp decode_map_items(<<klen::16, key::binary-size(klen), type_tag, vrest::binary>>) do
+    {val, rest} = decode_value(type_tag, vrest)
+    Map.put(decode_map_items(rest), key, val)
   end
 
   defp decode_list_items(<<>>), do: []
 
-  defp decode_list_items(<<slen::16, item::binary-size(slen), rest::binary>>) do
-    [item | decode_list_items(rest)]
+  defp decode_list_items(<<type_tag, rest::binary>>) do
+    {value, remaining} = decode_value(type_tag, rest)
+    [value | decode_list_items(remaining)]
   end
 
   @doc """

@@ -4,7 +4,20 @@ Dala integrates [ExBurn](https://github.com/ohhi-vn/ex_burn), a bridge between N
 
 ## Status
 
-**v0.3.0** — Full Nx backend, defn compiler, training loop, serving, model management. Training uses numerical gradients (central and batch modes). Burn's autodiff integration planned for a future release.
+**v0.4.0** — Full Nx backend, defn compiler, training loop, serving, model management. Key improvements:
+
+- **Autodiff gradients**: Burn Autodiff backward pass for exact gradient computation (with numerical fallback)
+- **GPU forward pass**: `Nx.Defn.jit_apply` + `ExBurn.Defn.Compiler` for GPU-accelerated inference
+- **Glorot/Xavier initialization**: Proper weight initialization for all model parameters
+- **Model summary**: Keras/PyTorch-style layer-by-layer summary
+- **Layer freeze/unfreeze**: For fine-tuning workflows
+- **Weight decay**: L2 regularization support
+- **Gradient accumulation**: Effective larger batch sizes
+- **Nesterov momentum**: For SGD optimizer
+- **Accuracy tracking**: Classification accuracy during training
+- **Profile step**: Detailed timing for forward/backward/optimizer phases
+- **New callbacks**: Warmup, ReduceLROnPlateau, History
+- **Improved numerical gradients**: `:numerical_batch` method (~2x faster)
 
 ## Architecture
 
@@ -518,7 +531,7 @@ Burn's Autodiff backend is memory-intensive. On iOS/Android with limited RAM:
 - **Inference** is the primary use case for mobile deployment
 - Minimum recommended: 4GB RAM, A12+ chip (iOS) / Snapdragon 700+ (Android)
 
-The training loop in ExBurn currently uses **numerical gradients**. Burn's autodiff integration is planned for a future release.
+The training loop in ExBurn uses **autodiff gradients** (Burn Autodiff backward pass) with numerical fallback. The autodiff path provides exact gradient computation and is significantly faster than numerical methods.
 
 ## Comparison with Other Dala ML Backends
 
@@ -544,7 +557,7 @@ raise ExBurn.Error,
 ## Troubleshooting
 
 ### `available?()` returns `false`
-- Ensure `ex_burn` is in your deps: `{:ex_burn, "~> 0.3"}`
+- Ensure `ex_burn` is in your deps: `{:ex_burn, "~> 0.4"}`
 - Run `mix deps.get && mix compile`
 - The Rust NIF will be compiled automatically via Rustler
 
@@ -554,9 +567,11 @@ raise ExBurn.Error,
 - On desktop, GPU may not be available — falls back to CPU
 
 ### Training is slow
-- Current training uses numerical gradients (finite differences)
+- Training uses autodiff gradients by default (fast, exact)
+- If autodiff falls back to numerical gradients, performance will be slower
 - For faster training, use EMLX or cloud training and deploy to device
 - Reduce batch size and model size for mobile
+- Use `profile_step/3` to identify bottlenecks (forward/backward/optimizer timing)
 
 ### Out of memory during training
 - Reduce batch size

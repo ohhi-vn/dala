@@ -1,4 +1,4 @@
-defmodule Dala.Platform.LiveUview do
+defmodule Dala.Platform.LiveView do
   @compile {:nowarn_undefined, [:Nx]}
   @moduledoc """
   Bridge between Phoenix LiveView and the Dala native WebView.

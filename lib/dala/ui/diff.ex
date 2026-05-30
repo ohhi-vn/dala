@@ -126,6 +126,8 @@ defmodule Dala.Ui.Diff do
   # Props diff - use field-mask based patching when few fields changed,
   # full update when many fields changed
   defp diff_props(%Dala.Node{id: id, props: old_props}, %Dala.Node{props: new_props}) do
+    old_props = if is_map(old_props), do: old_props, else: %{}
+    new_props = if is_map(new_props), do: new_props, else: %{}
     if old_props == new_props do
       []
     else

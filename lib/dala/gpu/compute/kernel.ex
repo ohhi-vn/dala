@@ -75,11 +75,12 @@ defmodule Dala.Gpu.Compute.Kernel do
 
   @doc "Run a kernel asynchronously. Returns a command ID."
   @spec async_run(atom(), [Buffer.t()], Buffer.t(), map()) :: non_neg_integer()
-  def async_run(kernel, _inputs, _output, _params \\ %{}) do
+  def async_run(kernel, inputs, output, params \\ %{}) do
+    input_refs = Enum.map(inputs, & &1.ref)
     kernel_string = kernel_to_string(kernel)
 
     {:ok, cmd_id} =
-      ExCubecl.submit("run_kernel #{kernel_string}")
+      ExCubecl.submit("run_kernel #{kernel_string} #{inspect(input_refs)} #{inspect(output.ref)} #{inspect(params)}")
 
     cmd_id
   end

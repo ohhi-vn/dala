@@ -336,6 +336,51 @@ defmodule Dala.DiffTest do
     end
   end
 
+  describe "Dala.Node.from_map/2 edge cases" do
+    test "raises on map without :type key" do
+      assert_raise FunctionClauseError, fn ->
+        Dala.Node.from_map(%{props: %{}}, "root")
+      end
+    end
+
+    test "preserves :id from map when present" do
+      node = Dala.Node.from_map(%{type: :text, id: "custom_id", props: %{}}, "default")
+      assert node.id == "custom_id"
+    end
+
+    test "uses default_id when map has no :id" do
+      node = Dala.Node.from_map(%{type: :text, props: %{}}, "fallback")
+      assert node.id == "fallback"
+    end
+
+    test "handles map with :id inside props sub-map" do
+      node = Dala.Node.from_map(%{type: :text, props: %{id: "inner"}}, "root")
+      # When no top-level :id, falls back to props[:id]
+      assert node.id == "inner"
+    end
+
+    test "top-level :id takes precedence over props :id" do
+      node = Dala.Node.from_map(%{type: :text, id: "top", props: %{id: "inner"}}, "root")
+      assert node.id == "top"
+    end
+  end
+
+  describe "Dala.Node.to_map/1" do
+    test "round-trip from_map -> to_map preserves type" do
+      original = %{type: :text, props: %{text: "Hello"}, children: []}
+      node = Dala.Node.from_map(original, "root")
+      result = Dala.Node.to_map(node)
+      assert result.type == :text
+    end
+
+    test "to_map includes children" do
+      node = %Dala.Node{id: "root", type: :column, props: %{},
+        children: [%Dala.Node{id: "child", type: :text, props: %{}, children: []}]}
+      result = Dala.Node.to_map(node)
+      assert length(result.children) == 1
+    end
+  end
+
   describe "Dala.Node.compute_layout_hash/1" do
     test "computes a stable hash based on type and layout props" do
       node = %Dala.Node{
@@ -768,6 +813,185 @@ defmodule Dala.DiffTest do
 
       <<_header::binary-size(7), patch_opcode::8, _rest::binary>> = binary
       assert patch_opcode == 0x04
+    end
+  end
+
+  describe "diff/2 edge cases" do
+    test "handles both arguments as raw maps" do
+      old = %{type: :text, props: %{text: "Old"}, children: []}
+      new = %{type: :text, props: %{text: "New"}, children: []}
+      patches = Dala.Ui.Diff.diff(old, new)
+      assert length(patches) > 0
+    end
+
+    test "handles mixed map and Node struct" do
+      old = %Dala.Node{id: "root", type: :text, props: %{text: "Old"}, children: []}
+      new = %{type: :text, props: %{text: "New"}, children: []}
+      patches = Dala.Ui.Diff.diff(old, new)
+      assert length(patches) > 0
+    end
+
+    test "handles bulk child removal" do
+      old = %Dala.Node{
+        id: "root",
+        type: :column,
+        props: %{
+          children: [
+            %Dala.Node{id: "c1", type: :text, props: %{text: "A"}, children: []},
+            %Dala.Node{id: "c2", type: :text, props: %{text: "B"}, children: []},
+            %Dala.Node{id: "c3", type: :text, props: %{text: "C"}, children: []}
+          ]
+        },
+        children: [
+          %Dala.Node{id: "c1", type: :text, props: %{text: "A"}, children: []},
+          %Dala.Node{id: "c2", type: :text, props: %{text: "B"}, children: []},
+          %Dala.Node{id: "c3", type: :text, props: %{text: "C"}, children: []}
+        ]
+      }
+
+      new = %Dala.Node{
+        id: "root",
+        type: :column,
+        props: %{
+          children: []
+        },
+        children: []
+      }
+
+      patches = Dala.Ui.Diff.diff(old, new)
+      # Should produce patches reflecting the removal of all 3 children.
+      # Patch tuples vary in arity (:remove is 2-tuple, :patch_node is 4-tuple, etc.)
+      # so we match on the first element regardless of tuple size.
+      removes = Enum.filter(patches, fn
+        {:remove, _} -> true
+        _ -> false
+      end)
+      assert length(removes) == 3
+    end
+
+    test "handles child reordering (same IDs, different order)" do
+      old = %Dala.Node{
+        id: "root",
+        type: :column,
+        props: %{},
+        children: [
+          %Dala.Node{id: "a", type: :text, props: %{text: "A"}, children: []},
+          %Dala.Node{id: "b", type: :text, props: %{text: "B"}, children: []}
+        ]
+      }
+
+      new = %Dala.Node{
+        id: "root",
+        type: :column,
+        props: %{},
+        children: [
+          %Dala.Node{id: "b", type: :text, props: %{text: "B"}, children: []},
+          %Dala.Node{id: "a", type: :text, props: %{text: "A"}, children: []}
+        ]
+      }
+
+      # Reordering should not produce patches if content is identical
+      patches = Dala.Ui.Diff.diff(old, new)
+      # The diff may produce patches for reordering; at minimum it shouldn't crash
+      assert is_list(patches)
+    end
+
+    test "handles deeply nested trees" do
+      old = %Dala.Node{
+        id: "root",
+        type: :column,
+        props: %{},
+        children: [
+          %Dala.Node{
+            id: "level1",
+            type: :row,
+            props: %{},
+            children: [
+              %Dala.Node{
+                id: "level2",
+                type: :column,
+                props: %{},
+                children: [
+                  %Dala.Node{id: "level3", type: :text, props: %{text: "Deep"}, children: []}
+                ]
+              }
+            ]
+          }
+        ]
+      }
+
+      new = %Dala.Node{
+        id: "root",
+        type: :column,
+        props: %{},
+        children: [
+          %Dala.Node{
+            id: "level1",
+            type: :row,
+            props: %{},
+            children: [
+              %Dala.Node{
+                id: "level2",
+                type: :column,
+                props: %{},
+                children: [
+                  %Dala.Node{id: "level3", type: :text, props: %{text: "Deeper"}, children: []}
+                ]
+              }
+            ]
+          }
+        ]
+      }
+
+      patches = Dala.Ui.Diff.diff(old, new)
+      assert length(patches) > 0
+    end
+
+    test "handles nil props on a node" do
+      old = %Dala.Node{id: "root", type: :text, props: nil, children: []}
+      new = %Dala.Node{id: "root", type: :text, props: %{text: "Hello"}, children: []}
+      patches = Dala.Ui.Diff.diff(old, new)
+      assert length(patches) > 0
+    end
+
+    test "handles empty old props and non-empty new props" do
+      old = %Dala.Node{id: "root", type: :text, props: %{}, children: []}
+      new = %Dala.Node{id: "root", type: :text, props: %{text: "New", title: "T"}, children: []}
+      patches = Dala.Ui.Diff.diff(old, new)
+      assert length(patches) > 0
+    end
+
+    test "handles non-empty old props and empty new props" do
+      old = %Dala.Node{id: "root", type: :text, props: %{text: "Old", title: "T"}, children: []}
+      new = %Dala.Node{id: "root", type: :text, props: %{}, children: []}
+      patches = Dala.Ui.Diff.diff(old, new)
+      assert length(patches) > 0
+    end
+  end
+
+  describe "compute_field_mask/2 edge cases" do
+    test "threshold: exactly half known fields changed" do
+      old = %{text: "Same", title: "Same", color: "red"}
+      new = %{text: "Changed", title: "Changed", color: "red"}
+      {mask, changed} = Dala.Ui.Diff.compute_field_mask(old, new)
+      assert mask != 0
+      assert map_size(changed) > 0
+    end
+
+    test "all known fields changed" do
+      old = %{text: "A", title: "B", color: "C", background: "D"}
+      new = %{text: "W", title: "X", color: "Y", background: "Z"}
+      {mask, changed} = Dala.Ui.Diff.compute_field_mask(old, new)
+      assert mask != 0
+      assert map_size(changed) > 0
+    end
+
+    test "only unknown fields changed" do
+      old = %{custom_field: "A"}
+      new = %{custom_field: "B"}
+      {mask, changed} = Dala.Ui.Diff.compute_field_mask(old, new)
+      assert mask == 0
+      assert map_size(changed) == 1
     end
   end
 end
