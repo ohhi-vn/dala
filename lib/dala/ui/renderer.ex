@@ -407,7 +407,7 @@ defmodule Dala.Ui.Renderer do
 
   @doc "Encode patches to binary frame format for the native side (v3)"
   def encode_frame(patches) when is_list(patches) do
-    body = Enum.map(patches, &encode_patch/1)
+    body = Enum.flat_map(patches, &encode_patch/1)
 
     IO.iodata_to_binary([
       <<@magic_byte_0::8, @magic_byte_1::8, @protocol_version::little-16,
@@ -432,7 +432,7 @@ defmodule Dala.Ui.Renderer do
   end
 
   defp encode_patch({:remove, id}) do
-    <<@op_remove::8, hash_id(id)::little-64>>
+    [<<@op_remove::8, hash_id(id)::little-64>>]
   end
 
   defp encode_patch({:update_props, id, props}) do

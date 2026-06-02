@@ -129,7 +129,6 @@ defmodule Dala.Spark.Dsl do
   # Generate screen/2 that imports entity modules and executes the block
   defmacro screen(_opts, do: block) do
     entity_imports = generate_entity_imports()
-    opts_module = Dala.Spark.Dsl.Screen.Options
     caller = __CALLER__
 
     quote do
@@ -138,8 +137,6 @@ defmodule Dala.Spark.Dsl do
       Dala.Spark.Dsl.ensure_extensions(unquote(caller.module))
       # Import all entity modules so components are available inside the block
       unquote_splicing(entity_imports)
-      # Import the opts module for schema fields (name, etc.)
-      import unquote(opts_module)
       # Execute the block
       unquote(block)
     end
@@ -148,6 +145,7 @@ defmodule Dala.Spark.Dsl do
   # Generate attributes/2 that imports attribute entity module
   defmacro attributes(do: block) do
     caller = __CALLER__
+
     quote do
       Dala.Spark.Dsl.ensure_extensions(unquote(caller.module))
       import Dala.Spark.Dsl.Attributes.Attribute
@@ -187,6 +185,7 @@ defmodule Dala.Spark.Dsl do
     case Module.get_attribute(module, :extensions) do
       nil ->
         Module.put_attribute(module, :extensions, [__MODULE__])
+
       _ ->
         :ok
     end

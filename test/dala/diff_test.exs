@@ -1,5 +1,6 @@
 defmodule Dala.DiffTest do
   use ExUnit.Case, async: true
+  import Bitwise
   doctest Dala.Diff
 
   describe "diff/2" do

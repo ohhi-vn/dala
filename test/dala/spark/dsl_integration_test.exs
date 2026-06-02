@@ -7,19 +7,17 @@ defmodule Dala.Spark.DslIntegrationTest do
         use Dala.Screen
 
         screen name: :test_screen do
-          column do
-            padding(:space_md)
-            gap(:space_sm)
+          column padding: :space_md, gap: :space_sm do
             text("Hello World")
 
-            row do
-              gap(:space_sm)
+            row gap: :space_sm do
               button("Button 1", on_tap: :increment)
               button("Button 2", on_tap: :decrement)
             end
           end
         end
 
+        def mount(_params, _session, socket), do: {:ok, socket}
         def handle_event(:increment, _params, socket), do: {:noreply, socket}
         def handle_event(:decrement, _params, socket), do: {:noreply, socket}
       end
@@ -53,6 +51,8 @@ defmodule Dala.Spark.DslIntegrationTest do
             text("Hello")
           end
         end
+
+        def mount(_params, _session, socket), do: {:ok, socket}
       end
 
       assert Code.ensure_loaded?(TestSimpleDslScreen)
@@ -77,12 +77,13 @@ defmodule Dala.Spark.DslIntegrationTest do
           end
 
           screen name: :ref_test do
-            column do
-              gap(:space_sm)
+            column gap: :space_sm do
               text("Count: @count")
               button("Increment", on_tap: :increment)
             end
           end
+
+          def mount(_params, _session, socket), do: {:ok, socket}
 
           def handle_event(:increment, _params, socket) do
             {:noreply, Dala.Socket.assign(socket, :count, socket.assigns.count + 1)}
@@ -118,6 +119,8 @@ defmodule Dala.Spark.DslIntegrationTest do
           screen name: :attr_test do
             text("@label")
           end
+
+          def mount(_params, _session, socket), do: {:ok, socket}
         end
       end
 
@@ -134,8 +137,7 @@ defmodule Dala.Spark.DslIntegrationTest do
 
         dala do
           screen name: :leaves do
-            column do
-              gap(:space_sm)
+            column gap: :space_sm do
               text("Hello")
               button("Press", on_tap: :pressed)
               icon("settings")
@@ -172,24 +174,18 @@ defmodule Dala.Spark.DslIntegrationTest do
 
         dala do
           screen name: :nested do
-            column do
-              padding(:space_md)
-
-              row do
-                gap(:space_sm)
-
+            column padding: :space_md do
+              row gap: :space_sm do
                 box do
                   text("Overlapping")
                 end
               end
 
-              scroll do
-                padding(:space_sm)
+              scroll padding: :space_sm do
                 text("Scrollable")
               end
 
-              pressable do
-                on_press(:pressed)
+              pressable on_press: :pressed do
                 text("Pressable")
               end
 
@@ -197,9 +193,7 @@ defmodule Dala.Spark.DslIntegrationTest do
                 text("Safe")
               end
 
-              modal do
-                visible(true)
-                on_dismiss(:dismissed)
+              modal visible: true, on_dismiss: :dismissed do
                 text("Modal")
               end
             end
