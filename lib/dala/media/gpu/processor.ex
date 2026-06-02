@@ -13,7 +13,7 @@ defmodule Dala.Media.Gpu.Processor do
 
   ## EXCubeCL Compatibility
 
-  This module is compatible with EXCubeCL 0.3.0+ and 0.4.0+ APIs:
+  This module is compatible with EXCubeCL 0.4+ APIs:
 
   - All EXCubeCL functions return `{:ok, result}` tuples (not bare values)
   - `ExCubecl.read/1` returns `{:ok, binary()}` (not a list)
@@ -592,7 +592,7 @@ defmodule Dala.Media.Gpu.Processor do
   defp execute_filters(input_buf, _output_buf, temp_buf, filters) do
     {final_output, _final_temp} =
       Enum.reduce_while(filters, {input_buf, temp_buf}, fn {filter, params},
-                                                          {current_input, current_temp} ->
+                                                           {current_input, current_temp} ->
         case Compute.run_kernel(filter, [current_input], current_temp, params) do
           :ok ->
             # Swap: temp becomes input for next stage, output becomes temp

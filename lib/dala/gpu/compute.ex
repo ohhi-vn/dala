@@ -26,7 +26,7 @@ defmodule Dala.Gpu.Compute do
 
       # Check GPU availability
       Dala.Gpu.Compute.device_info()
-      # %{name: "ExCubecl CPU (Rust NIF)", gpu: false, version: "0.3.0"}
+      # %{name: "ExCubecl CPU (Rust NIF)", gpu: false, version: "0.4.1"}
 
       # Create buffers
       a = Dala.Gpu.Compute.buffer([1.0, 2.0, 3.0], {3}, :f32)
@@ -198,7 +198,7 @@ defmodule Dala.Gpu.Compute do
   @doc """
   Read data from a GPU buffer back to an Elixir binary.
 
-  EXCubeCL 0.3+ returns `{:ok, binary()}` from `read/1`.
+  EXCubeCL 0.4+ returns `{:ok, binary()}` from `read/1`.
   This function returns the binary directly for a clean Dala API.
 
   ## Example
@@ -262,7 +262,7 @@ defmodule Dala.Gpu.Compute do
   @doc """
   Submit a compute command asynchronously. Returns a command ID for polling.
 
-  The spec map is encoded as a string for EXCubeCL 0.3+.
+  The spec map is encoded as a string for EXCubeCL 0.4+.
 
   ## Example
 

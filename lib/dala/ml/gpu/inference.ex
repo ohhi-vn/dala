@@ -350,7 +350,7 @@ defmodule Dala.ML.Gpu.Inference do
   # ── Private: pipeline building ─────────────────────────────────────────────
 
   # Build an EXCubeCL pipeline from stage specs.
-  # EXCubeCL 0.3.0+ uses string kernel names and integer pipeline IDs.
+  # EXCubeCL 0.4+ uses string kernel names and integer pipeline IDs.
   defp build_pipeline(stages) when is_list(stages) do
     # EXCubeCL.pipeline/0 returns {:ok, pipeline_id}
     case ExCubecl.pipeline() do
@@ -371,7 +371,7 @@ defmodule Dala.ML.Gpu.Inference do
     end)
   end
 
-  # Add a single stage to the pipeline using EXCubeCL 0.3.0+ API:
+  # Add a single stage to the pipeline using EXCubeCL 0.4+ API:
   # pipeline_add(pipeline_id, kernel_string, inputs, output, params_binary)
   defp add_stage(pipeline_id, %{op: :run_kernel, kernel: kernel, params: params}) do
     # EXCubeCL expects string kernel names

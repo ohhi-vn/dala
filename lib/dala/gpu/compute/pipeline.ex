@@ -71,7 +71,7 @@ defmodule Dala.Gpu.Compute.Pipeline do
 
   ## EXCubeCL Backend
 
-  Under the hood, stages are compiled into an EXCubeCL native pipeline
+  Under the hood, stages are compiled into an EXCubeCL 0.4+ native pipeline
   (`ExCubecl.pipeline/0` + `ExCubecl.pipeline_add/5` + `ExCubecl.pipeline_run/1`)
   for efficient batch submission. The pipeline is freed after execution.
   """

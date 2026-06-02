@@ -44,7 +44,7 @@ defmodule Dala.Gpu.Compute.Kernel do
   On iOS, kernels compile to Metal shaders. On Android, to OpenGL ES
   compute shaders. On desktop (dev), a CPU fallback is used.
 
-  ## EXCubeCL 0.3+ Compatibility
+  ## EXCubeCL 0.4+ Compatibility
 
   Dala uses atom kernel names (`:elementwise_add`) internally and
   translates to EXCubeCL string names (`"elementwise_add"`) at the
@@ -80,7 +80,9 @@ defmodule Dala.Gpu.Compute.Kernel do
     kernel_string = kernel_to_string(kernel)
 
     {:ok, cmd_id} =
-      ExCubecl.submit("run_kernel #{kernel_string} #{inspect(input_refs)} #{inspect(output.ref)} #{inspect(params)}")
+      ExCubecl.submit(
+        "run_kernel #{kernel_string} #{inspect(input_refs)} #{inspect(output.ref)} #{inspect(params)}"
+      )
 
     cmd_id
   end
