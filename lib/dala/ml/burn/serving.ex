@@ -52,6 +52,24 @@ defmodule Dala.ML.Burn.Serving do
   end
 
   @doc """
+  Returns the `ExBurn.Serving.Server` module.
+  This is the `Nx.Serving` behaviour implementation that handles
+  batching and dispatching inference requests to the ExBurn backend.
+
+  ## Implementation details
+
+  The server:
+  - Receives batched inputs via `Nx.Serving`
+  - Pads batches to full size
+  - Calls `ExBurn.Model.predict/2` for inference
+  - Returns `{output, model}` tuple
+
+  You typically don't need to use this directly — use `build/2` instead.
+  """
+  @spec server() :: module()
+  def server, do: ExBurn.Serving.Server
+
+  @doc """
   Runs inference on a single input tensor using the serving.
 
   This is a convenience wrapper around `Nx.Serving.run/2`.

@@ -817,4 +817,47 @@ defmodule Dala.ML.Burn do
   """
   @spec error_to_log_string(ExBurn.Error.t()) :: String.t()
   def error_to_log_string(%ExBurn.Error{} = error), do: ExBurn.Error.to_log_string(error)
+
+  # ── NifHelper (safe NIF wrappers) ────────────────────────────────
+
+  @doc """
+  Returns the number of available GPU devices via ExCubecl.
+  Delegates to `ExBurn.NifHelper.gpu_available/0`.
+  """
+  @spec nif_helper_gpu_available?() :: boolean()
+  def nif_helper_gpu_available?, do: ExBurn.NifHelper.gpu_available()
+
+  @doc """
+  Returns the device name string via ExCubecl.
+  Delegates to `ExBurn.NifHelper.device_name/0`.
+  """
+  @spec nif_helper_device_name() :: String.t()
+  def nif_helper_device_name, do: ExBurn.NifHelper.device_name()
+
+  # ── Serving.Server (Nx.Serving behaviour) ────────────────────────
+
+  @doc """
+  Returns the `ExBurn.Serving.Server` module reference.
+  This is the `Nx.Serving` behaviour implementation for ExBurn models.
+
+  Used internally by `Dala.ML.Burn.Serving.build/2`.
+  """
+  @spec serving_server() :: module()
+  def serving_server, do: ExBurn.Serving.Server
+
+  # ── Application (OTP) ────────────────────────────────────────────
+
+  @doc """
+  Returns the `ExBurn.Application` module reference.
+  Use this to add ExBurn to your application's supervision tree:
+
+      children = [
+        ExBurn.Application,
+        # ... other children
+      ]
+
+  The application callback loads the Rust NIF shared library on startup.
+  """
+  @spec application() :: module()
+  def application, do: ExBurn.Application
 end

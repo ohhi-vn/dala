@@ -131,6 +131,32 @@ defmodule Dala.Gpu.Compute do
   @spec gpu?() :: boolean()
   def gpu?, do: Map.get(device_info(), :gpu, false)
 
+  @doc "Return the number of available GPU devices."
+  @spec device_count() :: non_neg_integer()
+  def device_count do
+    case ExCubecl.device_count() do
+      {:ok, count} -> count
+      {:error, _} -> 0
+    end
+  end
+
+  @doc "Return the list of available kernel names."
+  @spec kernels() :: [String.t()]
+  def kernels do
+    case ExCubecl.kernels() do
+      {:ok, names} -> names
+      {:error, _} -> []
+    end
+  end
+
+  @doc "Return the list of supported dtype atoms."
+  @spec supported_dtypes() :: [atom()]
+  def supported_dtypes, do: ExCubecl.supported_dtypes()
+
+  @doc "Check if the EXCubeCL NIF is loaded and available."
+  @spec available?() :: boolean()
+  def available?, do: ExCubecl.available?()
+
   # ── Buffer management ─────────────────────────────────────────────────────
 
   @doc """

@@ -433,13 +433,9 @@ defmodule Dala.Setup.Android do
 
   defp bridge_init_present?(file_path) when is_binary(file_path) do
     case File.read(file_path) do
-      {:ok, content} -> bridge_init_present?(content)
+      {:ok, content} -> String.contains?(content, "DalaBridge.init()")
       _ -> false
     end
-  end
-
-  defp bridge_init_present?(content) when is_binary(content) do
-    String.contains?(content, "DalaBridge.init()")
   end
 
   defp find_manifest_in_dir(dir) do

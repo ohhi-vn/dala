@@ -162,11 +162,8 @@ defmodule Dala.Device.Device do
       :ok ->
         :ok
 
-      {:error, :nif_not_loaded} ->
-        # Expected when running on the host (tests, IEx without device).
-        :ok
-
       {:error, reason} ->
+        # Expected when running on the host (tests, IEx without device).
         Logger.warning("Dala.Device: NIF dispatcher not set: #{inspect(reason)}")
     end
 

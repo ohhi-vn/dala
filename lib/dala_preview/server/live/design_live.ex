@@ -180,7 +180,10 @@ defmodule DalaPreview.Server.DesignLive do
   defp default_props(:row), do: %{"gap" => "space_md"}
   defp default_props(:text), do: %{"text" => "Sample"}
   defp default_props(:button), do: %{"text" => "Button"}
-  defp default_props(_), do: %{}
+  # Suppress dialyzer warning: catch-all is needed for unknown component atoms
+  # at runtime even though dialyzer infers the four clauses above are exhaustive.
+  @dialyzer {:nowarn_function, default_props: 1}
+  defp default_props(_component), do: %{}
 
   defp generate_code(design, format) do
     nodes = Map.get(design, :nodes, [])

@@ -94,7 +94,7 @@ defmodule Dala.ML.Gpu.Inference do
         # Build the EXCubeCL pipeline (returns {:ok, pipeline_id})
         case build_pipeline(config[:stages] || []) do
           {:ok, pipeline_id} ->
-            {:ok, struct!(__MODULE__, Keyword.put(config, :pipeline_id, pipeline_id))}
+            {:ok, struct!(__MODULE__, Map.put(config, :pipeline_id, pipeline_id))}
 
           {:error, reason} ->
             {:error, {:pipeline_build_failed, reason}}

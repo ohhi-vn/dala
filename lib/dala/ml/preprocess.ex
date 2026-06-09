@@ -60,6 +60,9 @@ defmodule Dala.ML.Preprocess do
   `size` is a tuple `{height, width}`.
   """
   @spec resize(Nx.Tensor.t(), {pos_integer(), pos_integer()}) :: Nx.Tensor.t()
+  # Dialyzer flags Nx.slice/3 arg types in the for comprehension because
+  # comprehension variables are typed as dynamic(). The code is correct at runtime.
+  @dialyzer {:nowarn_function, resize: 2}
   def resize(tensor, {h, w}) do
     case Nx.shape(tensor) do
       {^h, ^w, 3} ->
@@ -85,10 +88,13 @@ defmodule Dala.ML.Preprocess do
           |> Nx.clip(0, orig_w - 1)
 
         # Gather pixels using advanced indexing
-        for r <- 0..(h - 1), into: [] do
-          for c <- 0..(w - 1), into: [] do
-            ri = Nx.to_number(Nx.slice(row_indices, r, 1))
-            ci = Nx.to_number(Nx.slice(col_indices, c, 1))
+        # Use Enum.to_list to ensure proper list types for Nx.slice
+        row_range = Enum.to_list(0..(h - 1))
+        col_range = Enum.to_list(0..(w - 1))
+        for r <- row_range, into: [] do
+          for c <- col_range, into: [] do
+            ri = Nx.to_number(Nx.slice(row_indices, [r], 1))
+            ci = Nx.to_number(Nx.slice(col_indices, [c], 1))
             Nx.slice(tensor, [ri, ci, 0], [1, 1, 3])
           end
         end
@@ -96,7 +102,8 @@ defmodule Dala.ML.Preprocess do
         |> Nx.reshape({h, w, 3})
 
       _ ->
-        raise ArgumentError, "resize/2 expects a {height, width, 3} tensor, got: #{inspect(Nx.shape(tensor))}"
+        raise ArgumentError,
+              "resize/2 expects a {height, width, 3} tensor, got: #{inspect(Nx.shape(tensor))}"
     end
   end
 

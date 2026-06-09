@@ -220,12 +220,15 @@ defmodule Dala.MixProject do
       {:axon, "~> 0.8"},
 
       # GPU compute runtime (CubeCL via Rust NIFs)
-      {:ex_cubecl, "~> 0.4"},
+      {:ex_cubecl, "~> 0.5"},
       # {:ex_cubecl, path: "../ex_cubecl"}
 
       # Burn deep learning framework (Nx backend via Rust NIF)
-      {:ex_burn, "~> 0.4"}
+      {:ex_burn, "~> 0.4"},
       # {:ex_burn, path: "../ex_burn"}
+
+      # JSON encoding (required by ex_cubecl v0.5+ for kernel params)
+      {:jason, "~> 1.4"}
     ]
   end
 end

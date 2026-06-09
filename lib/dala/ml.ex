@@ -141,9 +141,14 @@ defmodule Dala.ML do
         ios?() and Code.ensure_loaded?(Dala.Native) and
           function_exported?(Dala.Native, :coreml_load_model, 2),
       onnx_available: Dala.ML.ONNX.available?(),
-      gpu_compute_available: Code.ensure_loaded?(ExCubecl),
+      gpu_compute_available: Code.ensure_loaded?(ExCubecl) and Dala.Gpu.Compute.available?(),
+      gpu_compute_version:
+        if(Code.ensure_loaded?(ExCubecl), do: Dala.Gpu.Compute.version(), else: nil),
       gpu_device:
         if(Code.ensure_loaded?(ExCubecl), do: Dala.Gpu.Compute.device_info(), else: nil),
+      gpu_device_count:
+        if(Code.ensure_loaded?(ExCubecl), do: Dala.Gpu.Compute.device_count(), else: 0),
+      gpu_kernels: if(Code.ensure_loaded?(ExCubecl), do: Dala.Gpu.Compute.kernels(), else: []),
       burn_available: Dala.ML.Burn.available?(),
       burn_nif_loaded: Dala.ML.Burn.nif_loaded?(),
       burn_gpu: Dala.ML.Burn.gpu?(),

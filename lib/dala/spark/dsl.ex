@@ -60,13 +60,9 @@ defmodule Dala.Spark.Dsl do
   }
 
   # ── Component entities (auto-generated from Dala.Ui.Component) ──────────
-  # All UI component structs, @leaf_entities, @all_entities, and individual
-  # @component_name module attributes are injected here at compile time.
   use Dala.Spark.Dsl.Entities
 
   # ── Screen section ──────────────────────────────────────────────────────
-  # Holds all entities — both leaf and container.
-  # Container entities use `recursive_as: :children` so they nest.
 
   @screen %Spark.Dsl.Section{
     name: :screen,
@@ -126,43 +122,289 @@ defmodule Dala.Spark.Dsl do
   # sections (top_level?: true). We define them here manually to support
   # the standard Elixir calling convention: `screen name: :foo do ... end`.
 
-  # Generate screen/2 that imports entity modules and executes the block
-  defmacro screen(_opts, do: block) do
-    entity_imports = generate_entity_imports()
-    caller = __CALLER__
+  # Build a lookup map of component name → struct module at compile time
+  @component_structs (for {name, _comp} <- Dala.Ui.Component.components(), into: %{} do
+                        {name,
+                         Module.concat(Dala.Spark.Dsl, Macro.camelize(Atom.to_string(name)))}
+                      end)
+
+  @container_components (for {name, comp} <- Dala.Ui.Component.components(),
+                             comp.category == :container,
+                             into: MapSet.new() do
+                           name
+                         end)
+
+  # Generate screen/2 that parses the block AST and builds entity structs directly.
+  # This bypasses the entity macro modules created by Spark's Module.create,
+  # which don't work correctly with require/import.
+  defmacro screen(opts, do: block) do
+    caller_module = __CALLER__.module
+    ensure_extensions(caller_module)
+
+    # Validate opts against the screen section schema
+    screen_schema = [name: [type: :atom, required: true, doc: "Screen identifier"]]
+
+    validated_opts =
+      case Spark.Options.validate(Keyword.new(opts), screen_schema) do
+        {:ok, vopts} ->
+          vopts
+
+        {:error, error} ->
+          raise Spark.Error.DslError,
+            module: caller_module,
+            message: error,
+            path: [:screen]
+      end
+
+    # Parse the block AST and build entity structs
+    entities = parse_entities(block, caller_module)
 
     quote do
-      # Ensure @extensions is set so entity macros can look it up via
-      # Spark.Dsl.Extension.get_attribute/2 at compile time
-      Dala.Spark.Dsl.ensure_extensions(unquote(caller.module))
-      # Import all entity modules so components are available inside the block
-      unquote_splicing(entity_imports)
-      # Execute the block
-      unquote(block)
+      # Register this section with Spark DSL state
+      current_sections = Process.get({__MODULE__, :spark_sections}, [])
+
+      unless {Dala.Spark.Dsl, [:screen]} in current_sections do
+        Process.put({__MODULE__, :spark_sections}, [
+          {Dala.Spark.Dsl, [:screen]} | current_sections
+        ])
+      end
+
+      # Store section opts and entities in DSL state
+      current_config =
+        Process.get(
+          {__MODULE__, :spark, [:screen]},
+          Spark.Dsl.Extension.default_section_config()
+        )
+
+      Process.put(
+        {__MODULE__, :spark, [:screen]},
+        %{
+          current_config
+          | section_anno: nil,
+            opts: unquote(Macro.escape(validated_opts)),
+            entities: unquote(Macro.escape(entities))
+        }
+      )
     end
   end
 
-  # Generate attributes/2 that imports attribute entity module
+  # Generate attributes/2 that parses the block AST and builds attribute structs.
   defmacro attributes(do: block) do
-    caller = __CALLER__
+    caller_module = __CALLER__.module
+    ensure_extensions(caller_module)
+
+    # Parse the block AST and build attribute structs
+    attributes = parse_attributes(block, caller_module)
 
     quote do
-      Dala.Spark.Dsl.ensure_extensions(unquote(caller.module))
-      import Dala.Spark.Dsl.Attributes.Attribute
-      unquote(block)
+      # Register this section with Spark DSL state
+      current_sections = Process.get({__MODULE__, :spark_sections}, [])
+
+      unless {Dala.Spark.Dsl, [:attributes]} in current_sections do
+        Process.put({__MODULE__, :spark_sections}, [
+          {Dala.Spark.Dsl, [:attributes]} | current_sections
+        ])
+      end
+
+      # Store attributes in DSL state
+      current_config =
+        Process.get(
+          {__MODULE__, :spark, [:attributes]},
+          Spark.Dsl.Extension.default_section_config()
+        )
+
+      Process.put(
+        {__MODULE__, :spark, [:attributes]},
+        %{
+          current_config
+          | section_anno: nil,
+            entities: unquote(Macro.escape(attributes))
+        }
+      )
     end
   end
 
-  # Helper to generate import statements for all entity modules
-  defp generate_entity_imports do
-    Dala.Ui.Component.components()
-    |> Enum.map(fn {_name, comp} ->
-      mod =
-        Module.concat(Dala.Spark.Dsl.Screen, comp.name |> Atom.to_string() |> Macro.camelize())
+  # ── AST parsing for entity blocks ───────────────────────────────────────
 
-      quote do: import(unquote(mod))
-    end)
+  defp parse_entities(block_ast, caller_module) do
+    calls = extract_calls_from_block(block_ast)
+    Enum.flat_map(calls, &parse_entity_call(&1, caller_module))
   end
+
+  defp extract_calls_from_block({:__block__, _, calls}), do: calls
+  defp extract_calls_from_block(call) when is_tuple(call), do: [call]
+  defp extract_calls_from_block(_), do: []
+
+  defp parse_entity_call({name, meta, args}, caller_module) when is_atom(name) do
+    component_name = name
+
+    if Map.has_key?(@component_structs, component_name) do
+      {children, opts, _block_ast} = extract_children_and_opts(args, component_name)
+      struct_module = Map.get(@component_structs, component_name)
+      is_container = MapSet.member?(@container_components, component_name)
+
+      parsed_children =
+        if is_container and children != [] do
+          Enum.flat_map(children, &parse_entity_call(&1, caller_module))
+        else
+          []
+        end
+
+      entity = build_entity_struct(struct_module, component_name, opts, parsed_children, meta)
+      [entity]
+    else
+      []
+    end
+  end
+
+  defp parse_entity_call(_, _), do: []
+
+  # Extract children (do block) and opts from the macro call arguments.
+  # The args AST depends on how the component was called:
+  #   text("Hello")               → args = ["Hello"]
+  #   text "Hello"                → args = ["Hello"]
+  #   text "Hello", text_size: :xl → args = ["Hello", text_size: :xl]
+  #   column padding: :md do ... end → args = [padding: :md, do: block]
+  #   divider()                   → args = []
+  defp extract_children_and_opts(args, component_name) do
+    comp = Dala.Ui.Component.get(component_name)
+    is_container = MapSet.member?(@container_components, component_name)
+
+    if is_container do
+      {opts, block_ast} = extract_container_args(args)
+      children = extract_children_from_block(block_ast)
+      {children, opts, block_ast}
+    else
+      # Leaf components are called with positional args + optional keyword opts
+      # e.g., text("Hello") or text "Hello", text_size: :xl
+      {positional, opts} = extract_leaf_args(args, comp)
+      {[], positional ++ opts, nil}
+    end
+  end
+
+  defp extract_leaf_args(args, comp) do
+    # For leaf components, the first prop is the primary content (e.g., text for text component)
+    # If the first arg is a string/binary, it goes to the first prop
+    case args do
+      [first | rest] when is_binary(first) ->
+        # First arg is a string (the content), rest are keyword opts
+        # Keyword args may be wrapped in an extra list: [on_tap: :increment]
+        opts = List.flatten(rest)
+        {[{hd(comp.props), first}], opts}
+
+      list when is_list(list) ->
+        # All args are keyword opts, flatten in case they're nested
+        {[], List.flatten(list)}
+
+      _ ->
+        {[], []}
+    end
+  end
+
+  # Extract opts and block from container component args.
+  # Container components are called as:
+  #   column padding: :md, gap: :sm do ... end
+  # Which produces AST args like:
+  #   [[padding: :md, gap: :sm], [do: block_ast]]
+  # Or with explicit parentheses:
+  #   column(padding: :md) do ... end
+  #   args = [padding: :md, do: block_ast]
+  defp extract_container_args(args) when is_list(args) do
+    # Check if the last element is a [do: block] keyword list
+    case List.last(args) do
+      [do: block_ast] ->
+        # Args are like [[opts...], [do: block]]
+        # The first element is the opts list
+        opts =
+          case List.first(args) do
+            opts_list when is_list(opts_list) -> opts_list
+            _ -> []
+          end
+
+        {opts, block_ast}
+
+      _ ->
+        # Args might be like [opts..., do: block] (single flat list)
+        case Keyword.pop(args, :do) do
+          {nil, _} -> {args, nil}
+          {block_ast, opts} -> {opts, block_ast}
+        end
+    end
+  end
+
+  defp extract_container_args(_), do: {[], nil}
+
+  defp extract_children_from_block(nil), do: []
+  defp extract_children_from_block({:__block__, _, children}) when is_list(children), do: children
+  defp extract_children_from_block(call) when is_tuple(call), do: [call]
+  defp extract_children_from_block(_), do: []
+
+  defp build_entity_struct(struct_module, component_name, opts, children, meta) do
+    comp = Dala.Ui.Component.get(component_name)
+    opts = List.wrap(opts)
+
+    # Build a map of field values from opts
+    # For leaf components, opts may contain positional values (strings, etc.)
+    # that need to be mapped to the correct struct fields
+    field_values =
+      Enum.reduce(opts, %{}, fn
+        {key, value}, acc when is_atom(key) ->
+          Map.put(acc, key, value)
+
+        value, acc when is_binary(value) ->
+          # String positional arg goes to the first field
+          first_field = hd(comp.props)
+          Map.put(acc, first_field, value)
+
+        value, acc when is_atom(value) ->
+          # Atom value (e.g., list(:my_list)) — treat as positional
+          first_field = hd(comp.props)
+          Map.put(acc, first_field, value)
+
+        _, acc ->
+          acc
+      end)
+
+    # Add children if present
+    field_values =
+      if children != [] do
+        Map.put(field_values, :children, children)
+      else
+        field_values
+      end
+
+    # Add spark metadata
+    field_values =
+      Map.put(field_values, :__spark_metadata__, %Spark.Dsl.Entity.Meta{
+        anno: meta,
+        properties_anno: %{}
+      })
+
+    struct(struct_module, field_values)
+  end
+
+  # ── AST parsing for attribute blocks ────────────────────────────────────
+
+  defp parse_attributes(block_ast, caller_module) do
+    calls = extract_calls_from_block(block_ast)
+    Enum.flat_map(calls, &parse_attribute_call(&1, caller_module))
+  end
+
+  defp parse_attribute_call({:attribute, meta, args}, _caller_module) when length(args) >= 2 do
+    [name, type] = Enum.take(args, 2)
+    default = if length(args) >= 3, do: Enum.at(args, 2), else: nil
+
+    [
+      %Attribute{
+        name: name,
+        type: type,
+        default: default,
+        __spark_metadata__: %Spark.Dsl.Entity.Meta{anno: meta, properties_anno: %{}}
+      }
+    ]
+  end
+
+  defp parse_attribute_call(_, _), do: []
 
   # ── __using__ macro for external consumers ──────────────────────────────
 
@@ -174,13 +416,18 @@ defmodule Dala.Spark.Dsl do
       use Spark.Dsl,
         many_extension_kinds: [:extensions],
         default_extensions: [extensions: [Dala.Spark.Dsl]]
+
+      @extensions [Dala.Spark.Dsl]
+      @before_compile Spark.Dsl
+      @spark_parent Dala.Spark.Dsl
+      Module.register_attribute(__MODULE__, :persist, accumulate: true)
+      @persist {:module, __MODULE__}
+      @persist {:file, __ENV__.file}
+      @persist {:extensions, [Dala.Spark.Dsl]}
     end
   end
 
   # Public helper to ensure @extensions is set on a module.
-  # This is needed because Spark.Dsl's inner __using__ macro only sets
-  # @extensions when :elixir_module.mode == :all, which may not always
-  # be the case during macro expansion.
   def ensure_extensions(module) do
     case Module.get_attribute(module, :extensions) do
       nil ->
@@ -190,11 +437,6 @@ defmodule Dala.Spark.Dsl do
         :ok
     end
   end
-
-  # ── Custom screen macro for top-level section ──────────────────────────
-  # Spark's build_section skips defining the section macro for top-level
-  # sections. We define it here manually to support the
-  # `screen name: :foo do ... end` calling convention.
 
   # ── Verifier ────────────────────────────────────────────────────────────
 

@@ -48,6 +48,13 @@ defmodule Dala.Spark.Dsl.Entities do
     Enum.map(components, fn {_name, comp} ->
       struct_name = struct_module_name(comp.name)
       fields = comp.props ++ [__spark_metadata__: nil]
+      # Add children field for container components
+      fields =
+        if comp.category == :container do
+          fields ++ [children: nil]
+        else
+          fields
+        end
 
       quote do
         defmodule unquote(struct_name) do

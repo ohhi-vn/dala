@@ -29,7 +29,6 @@ defmodule Dala.Media.Animation do
 
   use GenServer
 
-  require Logger
 
   @type anim_ref :: pid()
   @type easing :: :linear | :ease_in | :ease_out | :ease_in_out | :spring | :bounce

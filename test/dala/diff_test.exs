@@ -375,8 +375,13 @@ defmodule Dala.DiffTest do
     end
 
     test "to_map includes children" do
-      node = %Dala.Node{id: "root", type: :column, props: %{},
-        children: [%Dala.Node{id: "child", type: :text, props: %{}, children: []}]}
+      node = %Dala.Node{
+        id: "root",
+        type: :column,
+        props: %{},
+        children: [%Dala.Node{id: "child", type: :text, props: %{}, children: []}]
+      }
+
       result = Dala.Node.to_map(node)
       assert length(result.children) == 1
     end
@@ -863,10 +868,12 @@ defmodule Dala.DiffTest do
       # Should produce patches reflecting the removal of all 3 children.
       # Patch tuples vary in arity (:remove is 2-tuple, :patch_node is 4-tuple, etc.)
       # so we match on the first element regardless of tuple size.
-      removes = Enum.filter(patches, fn
-        {:remove, _} -> true
-        _ -> false
-      end)
+      removes =
+        Enum.filter(patches, fn
+          {:remove, _} -> true
+          _ -> false
+        end)
+
       assert length(removes) == 3
     end
 

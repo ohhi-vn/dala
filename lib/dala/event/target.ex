@@ -97,7 +97,6 @@ defmodule Dala.Event.Target do
     case GenServer.whereis(via) do
       nil -> {:error, {:via_not_resolvable, mod, key}}
       pid when is_pid(pid) -> {:ok, pid}
-      {_name, _node} = remote -> {:error, {:remote_not_supported, remote}}
     end
   end
 

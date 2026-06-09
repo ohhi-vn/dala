@@ -105,6 +105,9 @@ defmodule Dala.ML.CoreML do
   """
   @spec predict_with_loaded_model(String.t(), map()) ::
           {:ok, String.t()} | {:error, term()} | :not_supported
+  # loaded?/1 returns false when NIF is not loaded (host/tests); true on-device.
+  # Dialyzer infers false from the NIF stub, so it flags the if-branch as unreachable.
+  @dialyzer {:nowarn_function, predict_with_loaded_model: 2}
   def predict_with_loaded_model(identifier, inputs)
       when is_binary(identifier) and is_map(inputs) do
     if loaded?(identifier) do

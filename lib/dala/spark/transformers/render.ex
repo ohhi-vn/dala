@@ -31,7 +31,9 @@ defmodule Dala.Spark.Transformers.Render do
 
   @impl true
   def transform(dsl_state) do
-    case Spark.Dsl.Transformer.get_entities(dsl_state, [:screen]) do
+    entities = Spark.Dsl.Transformer.get_entities(dsl_state, [:screen])
+
+    case entities do
       [] ->
         {:ok, dsl_state}
 

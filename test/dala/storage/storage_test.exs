@@ -4,7 +4,9 @@ defmodule Dala.Storage.StorageTest do
   alias Dala.Storage.Storage
 
   setup do
-    tmp_dir = Path.join(System.tmp_dir!(), "dala_storage_test_#{System.unique_integer([:positive])}")
+    tmp_dir =
+      Path.join(System.tmp_dir!(), "dala_storage_test_#{System.unique_integer([:positive])}")
+
     File.mkdir_p!(tmp_dir)
     on_exit(fn -> File.rm_rf!(tmp_dir) end)
     %{tmp_dir: tmp_dir}
@@ -140,7 +142,8 @@ defmodule Dala.Storage.StorageTest do
     end
 
     test "returns error for missing source", %{tmp_dir: dir} do
-      assert {:error, _} = Storage.export(Path.join(dir, "missing.txt"), Path.join(dir, "dest.txt"))
+      assert {:error, _} =
+               Storage.export(Path.join(dir, "missing.txt"), Path.join(dir, "dest.txt"))
     end
   end
 

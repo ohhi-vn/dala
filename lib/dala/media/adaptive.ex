@@ -35,7 +35,6 @@ defmodule Dala.Media.Adaptive do
 
   use GenServer
 
-  require Logger
 
   @type adapter_ref :: pid()
 

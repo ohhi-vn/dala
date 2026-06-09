@@ -176,8 +176,9 @@ defmodule Dala.ML.Test do
       result = Dala.ML.Preprocess.normalize(tensor, :minmax)
       # Should not produce NaN or Inf
       flat = Nx.to_flat_list(result)
+
       Enum.each(flat, fn v ->
-        refute is_float(v) and (v != v), "NaN detected in minmax result"
+        refute is_float(v) and v != v, "NaN detected in minmax result"
       end)
     end
 
@@ -185,8 +186,9 @@ defmodule Dala.ML.Test do
       tensor = Nx.broadcast(Nx.tensor(3.0, type: :f32), {2, 2})
       result = Dala.ML.Preprocess.normalize(tensor, :standard)
       flat = Nx.to_flat_list(result)
+
       Enum.each(flat, fn v ->
-        refute is_float(v) and (v != v), "NaN detected in standard result"
+        refute is_float(v) and v != v, "NaN detected in standard result"
       end)
     end
 

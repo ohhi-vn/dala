@@ -772,10 +772,6 @@ defmodule Dala.Ui.Widgets do
     %{type: :safe_area, props: %{}, children: children}
   end
 
-  def safe_area(props) when is_list(props) do
-    safe_area(Map.new(props), [])
-  end
-
   def safe_area(%{} = props) do
     safe_area(props, [])
   end

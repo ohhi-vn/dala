@@ -12,8 +12,6 @@ defmodule Dala.Gpu.Surface do
 
   use GenServer
 
-  require Logger
-
   @type t :: %__MODULE__{
           ref: reference(),
           width: non_neg_integer(),

@@ -70,10 +70,16 @@ defmodule Dala.Ui.NativeView.Server do
   @impl GenServer
   def handle_cast({:update, new_props}, %{module: module, socket: socket} = state) do
     case module.update(new_props, socket) do
-      {:ok, new_socket} -> {:noreply, %{state | socket: new_socket}}
+      {:ok, new_socket} ->
+        {:noreply, %{state | socket: new_socket}}
+
       {:error, reason} ->
         require Logger
-        Logger.warning("Dala.Ui.NativeView.Server: update failed for #{inspect(module)}: #{inspect(reason)}")
+
+        Logger.warning(
+          "Dala.Ui.NativeView.Server: update failed for #{inspect(module)}: #{inspect(reason)}"
+        )
+
         {:noreply, state}
     end
   end
