@@ -1,4 +1,4 @@
-defmodule Dala.Preview do
+defmodule Dala.Designer do
   @moduledoc """
   Interactive HTML preview and design tool for Dala UI components.
 
@@ -13,18 +13,18 @@ defmodule Dala.Preview do
 
   ## Static preview
 
-      Dala.Preview.preview(MyApp.HomeScreen)
-      Dala.Preview.preview_to_file(MyApp.HomeScreen, "preview.html")
-      Dala.Preview.preview_and_open(MyApp.HomeScreen)
+      Dala.Designer.preview(MyApp.HomeScreen)
+      Dala.Designer.preview_to_file(MyApp.HomeScreen, "preview.html")
+      Dala.Designer.preview_and_open(MyApp.HomeScreen)
 
   ## Live designer
 
-      Dala.Preview.start_designer()
-      Dala.Preview.start_designer(port: 4200, module_name: "MyApp.HomeScreen")
+      Dala.Designer.start_designer()
+      Dala.Designer.start_designer(port: 4200, module_name: "MyApp.HomeScreen")
 
   ## Code generation
 
-      Dala.Preview.generate_code(ui_tree, "MyApp.HomeScreen")
+      Dala.Designer.generate_code(ui_tree, "MyApp.HomeScreen")
 
   ## Options (static preview)
 
@@ -79,7 +79,7 @@ defmodule Dala.Preview do
     - `:open` - Open browser after start (default: true)
   """
   def start_designer(opts \\ []) do
-    Dala.Preview.Live.start_server(opts)
+    Dala.Designer.Live.start_server(opts)
   end
 
   @doc """
@@ -89,11 +89,11 @@ defmodule Dala.Preview do
 
   ## Examples
 
-      iex> Dala.Preview.generate_code(tree, "MyApp.HomeScreen")
+      iex> Dala.Designer.generate_code(tree, "MyApp.HomeScreen")
       "defmodule MyApp.HomeScreen do\n  use Dala.Spark.Dsl\n  ..."
   """
   def generate_code(ui_tree, module_name) do
-    Dala.Preview.Codegen.generate_dsl(module_name, ui_tree)
+    Dala.Designer.Codegen.generate_dsl(module_name, ui_tree)
   end
 
   alias Dala.Ui.Component

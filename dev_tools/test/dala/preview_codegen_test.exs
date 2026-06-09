@@ -1,13 +1,13 @@
-defmodule Dala.Preview.CodegenEdgeCaseTest do
+defmodule Dala.Designer.CodegenEdgeCaseTest do
   @moduledoc """
-  Edge-case and comprehensive tests for Dala.Preview.Codegen.
+  Edge-case and comprehensive tests for Dala.Designer.Codegen.
   """
   use ExUnit.Case, async: true
 
   describe "generate_dsl/3 edge cases" do
     test "generates code for a single leaf node" do
       tree = %{type: :text, props: %{text: "Hello"}, children: []}
-      code = Dala.Preview.Codegen.generate_dsl("MyApp.Screen", tree)
+      code = Dala.Designer.Codegen.generate_dsl("MyApp.Screen", tree)
       assert code =~ "defmodule MyApp.Screen do"
       assert code =~ ~s(text "Hello")
     end
@@ -33,7 +33,7 @@ defmodule Dala.Preview.CodegenEdgeCaseTest do
         ]
       }
 
-      code = Dala.Preview.Codegen.generate_dsl("MyApp.DeepScreen", tree)
+      code = Dala.Designer.Codegen.generate_dsl("MyApp.DeepScreen", tree)
       assert code =~ "column"
       assert code =~ "row"
       assert code =~ "box"
@@ -42,7 +42,7 @@ defmodule Dala.Preview.CodegenEdgeCaseTest do
 
     test "handles empty children list" do
       tree = %{type: :column, props: %{}, children: []}
-      code = Dala.Preview.Codegen.generate_dsl("MyApp.Empty", tree)
+      code = Dala.Designer.Codegen.generate_dsl("MyApp.Empty", tree)
       assert code =~ "defmodule MyApp.Empty do"
       assert code =~ "column"
     end
@@ -50,7 +50,7 @@ defmodule Dala.Preview.CodegenEdgeCaseTest do
     test "handles nil props gracefully" do
       tree = %{type: :text, props: nil, children: []}
       # normalize_tree should handle this
-      code = Dala.Preview.Codegen.generate_dsl("MyApp.NilProps", tree)
+      code = Dala.Designer.Codegen.generate_dsl("MyApp.NilProps", tree)
       assert code =~ "defmodule MyApp.NilProps do"
     end
 
@@ -63,7 +63,7 @@ defmodule Dala.Preview.CodegenEdgeCaseTest do
         ]
       }
 
-      code = Dala.Preview.Codegen.generate_dsl("MyApp.JsonTree", tree)
+      code = Dala.Designer.Codegen.generate_dsl("MyApp.JsonTree", tree)
       assert code =~ "defmodule MyApp.JsonTree do"
       assert code =~ ~s(text "JSON")
     end
@@ -75,7 +75,7 @@ defmodule Dala.Preview.CodegenEdgeCaseTest do
         children: []
       }
 
-      code = Dala.Preview.Codegen.generate_dsl("MyApp.Screen", tree)
+      code = Dala.Designer.Codegen.generate_dsl("MyApp.Screen", tree)
       assert code =~ "handle_event(:long_press_handler"
     end
 
@@ -86,7 +86,7 @@ defmodule Dala.Preview.CodegenEdgeCaseTest do
         children: []
       }
 
-      code = Dala.Preview.Codegen.generate_dsl("MyApp.Screen", tree)
+      code = Dala.Designer.Codegen.generate_dsl("MyApp.Screen", tree)
       assert code =~ "handle_event(:name_changed"
     end
 
@@ -97,7 +97,7 @@ defmodule Dala.Preview.CodegenEdgeCaseTest do
         children: []
       }
 
-      code = Dala.Preview.Codegen.generate_dsl("MyApp.Screen", tree)
+      code = Dala.Designer.Codegen.generate_dsl("MyApp.Screen", tree)
       assert code =~ "handle_event(:focused"
       assert code =~ "handle_event(:blurred"
     end
@@ -109,7 +109,7 @@ defmodule Dala.Preview.CodegenEdgeCaseTest do
         children: []
       }
 
-      code = Dala.Preview.Codegen.generate_dsl("MyApp.Screen", tree)
+      code = Dala.Designer.Codegen.generate_dsl("MyApp.Screen", tree)
       assert code =~ "handle_event(:submitted"
     end
 
@@ -120,7 +120,7 @@ defmodule Dala.Preview.CodegenEdgeCaseTest do
         children: []
       }
 
-      code = Dala.Preview.Codegen.generate_dsl("MyApp.Screen", tree)
+      code = Dala.Designer.Codegen.generate_dsl("MyApp.Screen", tree)
       assert code =~ "handle_event(:reload"
     end
 
@@ -131,7 +131,7 @@ defmodule Dala.Preview.CodegenEdgeCaseTest do
         children: []
       }
 
-      code = Dala.Preview.Codegen.generate_dsl("MyApp.Screen", tree)
+      code = Dala.Designer.Codegen.generate_dsl("MyApp.Screen", tree)
       assert code =~ "handle_event(:dismissed"
     end
 
@@ -142,7 +142,7 @@ defmodule Dala.Preview.CodegenEdgeCaseTest do
         children: []
       }
 
-      code = Dala.Preview.Codegen.generate_dsl("MyApp.Screen", tree)
+      code = Dala.Designer.Codegen.generate_dsl("MyApp.Screen", tree)
       assert code =~ "handle_event(:tab_changed"
     end
 
@@ -153,7 +153,7 @@ defmodule Dala.Preview.CodegenEdgeCaseTest do
         children: []
       }
 
-      code = Dala.Preview.Codegen.generate_dsl("MyApp.Screen", tree)
+      code = Dala.Designer.Codegen.generate_dsl("MyApp.Screen", tree)
       assert code =~ "handle_event(:load_more"
     end
 
@@ -164,7 +164,7 @@ defmodule Dala.Preview.CodegenEdgeCaseTest do
         children: []
       }
 
-      code = Dala.Preview.Codegen.generate_dsl("MyApp.Screen", tree)
+      code = Dala.Designer.Codegen.generate_dsl("MyApp.Screen", tree)
       assert code =~ "handle_event(:scrolled"
     end
 
@@ -175,7 +175,7 @@ defmodule Dala.Preview.CodegenEdgeCaseTest do
         children: []
       }
 
-      code = Dala.Preview.Codegen.generate_dsl("MyApp.Screen", tree)
+      code = Dala.Designer.Codegen.generate_dsl("MyApp.Screen", tree)
       assert code =~ "handle_event(:toggled"
     end
 
@@ -186,7 +186,7 @@ defmodule Dala.Preview.CodegenEdgeCaseTest do
         children: []
       }
 
-      code = Dala.Preview.Codegen.generate_dsl("MyApp.Screen", tree)
+      code = Dala.Designer.Codegen.generate_dsl("MyApp.Screen", tree)
       assert code =~ "handle_event(:pressed"
     end
 
@@ -197,7 +197,7 @@ defmodule Dala.Preview.CodegenEdgeCaseTest do
         children: []
       }
 
-      code = Dala.Preview.Codegen.generate_dsl("MyApp.Screen", tree)
+      code = Dala.Designer.Codegen.generate_dsl("MyApp.Screen", tree)
       assert code =~ "handle_event(:double_tapped"
     end
 
@@ -212,7 +212,7 @@ defmodule Dala.Preview.CodegenEdgeCaseTest do
         ]
       }
 
-      code = Dala.Preview.Codegen.generate_dsl("MyApp.Screen", tree)
+      code = Dala.Designer.Codegen.generate_dsl("MyApp.Screen", tree)
       alpha_pos = :binary.match(code, "handle_event(:alpha") |> elem(0)
       middle_pos = :binary.match(code, "handle_event(:middle") |> elem(0)
       zebra_pos = :binary.match(code, "handle_event(:zebra") |> elem(0)
@@ -222,13 +222,13 @@ defmodule Dala.Preview.CodegenEdgeCaseTest do
 
     test "handles module name as atom" do
       tree = %{type: :text, props: %{text: "Hi"}, children: []}
-      code = Dala.Preview.Codegen.generate_dsl(MyApp.AtomName, tree)
+      code = Dala.Designer.Codegen.generate_dsl(MyApp.AtomName, tree)
       assert code =~ "defmodule Elixir.MyApp.AtomName do"
     end
 
     test "handles module name with nested namespace" do
       tree = %{type: :text, props: %{text: "Hi"}, children: []}
-      code = Dala.Preview.Codegen.generate_dsl("MyApp.Admin.Dashboard.Header", tree)
+      code = Dala.Designer.Codegen.generate_dsl("MyApp.Admin.Dashboard.Header", tree)
       assert code =~ "defmodule MyApp.Admin.Dashboard.Header do"
       assert code =~ "screen name: :header"
     end
@@ -240,7 +240,7 @@ defmodule Dala.Preview.CodegenEdgeCaseTest do
         children: []
       }
 
-      code = Dala.Preview.Codegen.generate_dsl("MyApp.Screen", tree)
+      code = Dala.Designer.Codegen.generate_dsl("MyApp.Screen", tree)
       assert code =~ "fill_width: true"
       refute code =~ "disabled: false"
     end
@@ -252,7 +252,7 @@ defmodule Dala.Preview.CodegenEdgeCaseTest do
         children: []
       }
 
-      code = Dala.Preview.Codegen.generate_dsl("MyApp.Screen", tree)
+      code = Dala.Designer.Codegen.generate_dsl("MyApp.Screen", tree)
       refute code =~ "text_color"
       refute code =~ "text_size"
     end
@@ -264,7 +264,7 @@ defmodule Dala.Preview.CodegenEdgeCaseTest do
         children: []
       }
 
-      code = Dala.Preview.Codegen.generate_dsl("MyApp.Screen", tree)
+      code = Dala.Designer.Codegen.generate_dsl("MyApp.Screen", tree)
       assert code =~ "value: 75"
     end
 
@@ -275,7 +275,7 @@ defmodule Dala.Preview.CodegenEdgeCaseTest do
         children: []
       }
 
-      code = Dala.Preview.Codegen.generate_dsl("MyApp.Screen", tree)
+      code = Dala.Designer.Codegen.generate_dsl("MyApp.Screen", tree)
       assert code =~ "text_color: :primary"
       assert code =~ "text_size: :xl"
     end
@@ -287,7 +287,7 @@ defmodule Dala.Preview.CodegenEdgeCaseTest do
         children: []
       }
 
-      code = Dala.Preview.Codegen.generate_dsl("MyApp.Screen", tree)
+      code = Dala.Designer.Codegen.generate_dsl("MyApp.Screen", tree)
       assert code =~ ~s(placeholder: "Enter your name...")
     end
 
@@ -298,7 +298,7 @@ defmodule Dala.Preview.CodegenEdgeCaseTest do
         children: []
       }
 
-      code = Dala.Preview.Codegen.generate_dsl("MyApp.Screen", tree)
+      code = Dala.Designer.Codegen.generate_dsl("MyApp.Screen", tree)
       assert code =~ "on_tap: :go_pressed"
     end
 
@@ -309,14 +309,14 @@ defmodule Dala.Preview.CodegenEdgeCaseTest do
         children: []
       }
 
-      code = Dala.Preview.Codegen.generate_dsl("MyApp.Screen", tree)
+      code = Dala.Designer.Codegen.generate_dsl("MyApp.Screen", tree)
       assert code =~ "on_tap: :submit"
     end
 
     test "generates attributes block when provided" do
       tree = %{type: :text, props: %{text: "Hi"}, children: []}
 
-      code = Dala.Preview.Codegen.generate_dsl("MyApp.Screen", tree,
+      code = Dala.Designer.Codegen.generate_dsl("MyApp.Screen", tree,
         attributes: [
           {:count, :integer, 0},
           {:name, :string, nil},
@@ -332,7 +332,7 @@ defmodule Dala.Preview.CodegenEdgeCaseTest do
 
     test "omits attributes block when empty" do
       tree = %{type: :text, props: %{text: "Hi"}, children: []}
-      code = Dala.Preview.Codegen.generate_dsl("MyApp.Screen", tree)
+      code = Dala.Designer.Codegen.generate_dsl("MyApp.Screen", tree)
       refute code =~ "attributes do"
     end
 
@@ -343,7 +343,7 @@ defmodule Dala.Preview.CodegenEdgeCaseTest do
         children: []
       }
 
-      code = Dala.Preview.Codegen.generate_dsl("MyApp.Screen", tree)
+      code = Dala.Designer.Codegen.generate_dsl("MyApp.Screen", tree)
       assert code =~ "def handle_event(:go, _params, socket) do"
       assert code =~ "  {:noreply, socket}"
     end
@@ -354,24 +354,24 @@ defmodule Dala.Preview.CodegenEdgeCaseTest do
         %{type: :text, props: %{text: "Second"}, children: []}
       ]
 
-      code = Dala.Preview.Codegen.generate_dsl("MyApp.Screen", trees)
+      code = Dala.Designer.Codegen.generate_dsl("MyApp.Screen", trees)
       assert code =~ ~s(text "First")
       assert code =~ ~s(text "Second")
     end
 
     test "single-element list is unwrapped" do
       trees = [%{type: :text, props: %{text: "Only"}, children: []}]
-      code = Dala.Preview.Codegen.generate_dsl("MyApp.Screen", trees)
+      code = Dala.Designer.Codegen.generate_dsl("MyApp.Screen", trees)
       assert code =~ ~s(text "Only")
     end
 
     test "screen name is derived from last module segment" do
       tree = %{type: :text, props: %{text: "Hi"}, children: []}
 
-      code1 = Dala.Preview.Codegen.generate_dsl("MyApp.HomeScreen", tree)
+      code1 = Dala.Designer.Codegen.generate_dsl("MyApp.HomeScreen", tree)
       assert code1 =~ "screen name: :home_screen"
 
-      code2 = Dala.Preview.Codegen.generate_dsl("MyApp.Settings.DarkMode", tree)
+      code2 = Dala.Designer.Codegen.generate_dsl("MyApp.Settings.DarkMode", tree)
       assert code2 =~ "screen name: :dark_mode"
     end
   end
@@ -386,7 +386,7 @@ defmodule Dala.Preview.CodegenEdgeCaseTest do
         ]
       }
 
-      assert Dala.Preview.Codegen.extract_handlers(tree) == []
+      assert Dala.Designer.Codegen.extract_handlers(tree) == []
     end
 
     test "extracts handlers from deeply nested tree" do
@@ -410,7 +410,7 @@ defmodule Dala.Preview.CodegenEdgeCaseTest do
         ]
       }
 
-      handlers = Dala.Preview.Codegen.extract_handlers(tree)
+      handlers = Dala.Designer.Codegen.extract_handlers(tree)
       assert :deep_tap in handlers
     end
 
@@ -432,7 +432,7 @@ defmodule Dala.Preview.CodegenEdgeCaseTest do
         ]
       }
 
-      handlers = Dala.Preview.Codegen.extract_handlers(tree)
+      handlers = Dala.Designer.Codegen.extract_handlers(tree)
       assert length(handlers) == 15
       assert :tapped in handlers
       assert :long_pressed in handlers
@@ -454,24 +454,24 @@ defmodule Dala.Preview.CodegenEdgeCaseTest do
     test "handles nil children gracefully" do
       tree = %{type: :text, props: %{text: "Hi"}, children: nil}
       # collect_handlers should handle nil children
-      handlers = Dala.Preview.Codegen.extract_handlers(tree)
+      handlers = Dala.Designer.Codegen.extract_handlers(tree)
       assert handlers == []
     end
 
     test "handles node without children key" do
       tree = %{type: :text, props: %{text: "Hi"}}
-      handlers = Dala.Preview.Codegen.extract_handlers(tree)
+      handlers = Dala.Designer.Codegen.extract_handlers(tree)
       assert handlers == []
     end
 
     test "extracts bare atom handler" do
       tree = %{type: :button, props: %{on_tap: :my_handler}, children: []}
-      assert :my_handler in Dala.Preview.Codegen.extract_handlers(tree)
+      assert :my_handler in Dala.Designer.Codegen.extract_handlers(tree)
     end
 
     test "extracts tuple handler with self()" do
       tree = %{type: :button, props: %{on_tap: {self(), :submit}}, children: []}
-      assert :submit in Dala.Preview.Codegen.extract_handlers(tree)
+      assert :submit in Dala.Designer.Codegen.extract_handlers(tree)
     end
 
     test "sorts handlers alphabetically" do
@@ -485,7 +485,7 @@ defmodule Dala.Preview.CodegenEdgeCaseTest do
         ]
       }
 
-      handlers = Dala.Preview.Codegen.extract_handlers(tree)
+      handlers = Dala.Designer.Codegen.extract_handlers(tree)
       assert handlers == [:alpha, :mango, :zebra]
     end
   end
@@ -493,13 +493,13 @@ defmodule Dala.Preview.CodegenEdgeCaseTest do
   describe "normalize_tree/1" do
     test "normalizes node missing props" do
       tree = %{type: :text}
-      code = Dala.Preview.Codegen.generate_dsl("MyApp.Screen", tree)
+      code = Dala.Designer.Codegen.generate_dsl("MyApp.Screen", tree)
       assert code =~ "defmodule MyApp.Screen do"
     end
 
     test "normalizes node missing children" do
       tree = %{type: :column, props: %{}}
-      code = Dala.Preview.Codegen.generate_dsl("MyApp.Screen", tree)
+      code = Dala.Designer.Codegen.generate_dsl("MyApp.Screen", tree)
       assert code =~ "defmodule MyApp.Screen do"
     end
 
@@ -509,7 +509,7 @@ defmodule Dala.Preview.CodegenEdgeCaseTest do
         %{type: :text, props: %{text: "B"}}
       ]
 
-      code = Dala.Preview.Codegen.generate_dsl("MyApp.Screen", trees)
+      code = Dala.Designer.Codegen.generate_dsl("MyApp.Screen", trees)
       assert code =~ ~s(text "A")
       assert code =~ ~s(text "B")
     end

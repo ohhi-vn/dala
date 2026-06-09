@@ -1,6 +1,6 @@
-defmodule Mix.Tasks.Dala.Preview do
+defmodule Mix.Tasks.Dala.Designer do
   @moduledoc """
-  Preview Dala UI designs in a browser without a simulator/emulator.
+  Design and preview Dala UI in a browser without a simulator/emulator.
 
   Two modes:
 
@@ -14,22 +14,22 @@ defmodule Mix.Tasks.Dala.Preview do
   ## Usage
 
       # Static preview of a screen module
-      mix dala.preview MyApp.HomeScreen
+      mix dala.designer MyApp.HomeScreen
 
       # Static preview with custom output file
-      mix dala.preview MyApp.HomeScreen --output preview.html
+      mix dala.designer MyApp.HomeScreen --output preview.html
 
       # Don't open in browser (just generate the file)
-      mix dala.preview MyApp.HomeScreen --no-open
+      mix dala.designer MyApp.HomeScreen --no-open
 
       # Hide the component tree in the preview
-      mix dala.preview MyApp.HomeScreen --no-tree
+      mix dala.designer MyApp.HomeScreen --no-tree
 
       # Start the live designer
-      mix dala.preview --live
+      mix dala.designer --live
 
       # Live designer with custom port and module name
-      mix dala.preview --live --port 4200 --module MyApp.SettingsScreen
+      mix dala.designer --live --port 4200 --module MyApp.SettingsScreen
 
   ## Options
 
@@ -43,16 +43,16 @@ defmodule Mix.Tasks.Dala.Preview do
 
   ## Examples
 
-      mix dala.preview MyApp.CounterScreen
-      mix dala.preview MyApp.LoginScreen --output login_preview.html
-      mix dala.preview MyApp.HomeScreen --title "Home Screen Preview" --no-open
-      mix dala.preview --live
-      mix dala.preview --live --port 4000 --module MyApp.SettingsScreen
+      mix dala.designer MyApp.CounterScreen
+      mix dala.designer MyApp.LoginScreen --output login_preview.html
+      mix dala.designer MyApp.HomeScreen --title "Home Screen Preview" --no-open
+      mix dala.designer --live
+      mix dala.designer --live --port 4000 --module MyApp.SettingsScreen
   """
 
   use Mix.Task
 
-  @shortdoc "Preview Dala UI designs in browser"
+  @shortdoc "Design and preview Dala UI in browser"
 
   @impl Mix.Task
   def run(args) do
@@ -81,9 +81,9 @@ defmodule Mix.Tasks.Dala.Preview do
     port = Keyword.get(opts, :port, 4200)
     module_name = Keyword.get(opts, :module, "MyApp.HomeScreen")
 
-    Mix.shell().info("Starting Dala Preview Designer on http://localhost:#{port}/")
+    Mix.shell().info("Starting Dala Designer on http://localhost:#{port}/")
 
-    Dala.Preview.start_designer(
+    Dala.Designer.start_designer(
       port: port,
       module_name: module_name,
       open: Keyword.get(opts, :open, true)
@@ -99,8 +99,8 @@ defmodule Mix.Tasks.Dala.Preview do
     case rest do
       [] ->
         Mix.shell().error("Please provide a module name to preview.")
-        Mix.shell().info("Usage: mix dala.preview ModuleName [options]")
-        Mix.shell().info("       mix dala.preview --live [options]")
+        Mix.shell().info("Usage: mix dala.designer ModuleName [options]")
+        Mix.shell().info("       mix dala.designer --live [options]")
         exit({:shutdown, 1})
 
       [module_name | _] ->
@@ -118,11 +118,11 @@ defmodule Mix.Tasks.Dala.Preview do
 
         Mix.shell().info("Generating preview for #{module_name}...")
 
-        path = Dala.Preview.preview_to_file(module, output, preview_opts)
+        path = Dala.Designer.preview_to_file(module, output, preview_opts)
 
         if open? do
           Mix.shell().info("Opening preview in browser...")
-          Dala.Preview.open_in_browser(path)
+          Dala.Designer.open_in_browser(path)
         else
           Mix.shell().info("Preview saved to: #{path}")
           Mix.shell().info("Open this file in your browser to view the preview.")

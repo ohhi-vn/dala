@@ -22,7 +22,7 @@ Dala is three coordinated repos. **Know which one to edit before you change anyt
 
 | Repo | Path | What lives here | Edit when |
 |---|---|---|---|
-| **dala** | `~/code/dala` | Runtime library: `Dala.Screen`, `Dala.App`, `Dala.Renderer`, `Dala.Dist`, `Dala.Test`, **`Dala.Preview` dev tool**, the iOS Swift / Android Kotlin native bridges, the NIF | UI behavior, on-device runtime, native bridge changes, **dev tooling** |
+| **dala** | `~/code/dala` | Runtime library: `Dala.Screen`, `Dala.App`, `Dala.Renderer`, `Dala.Dist`, `Dala.Test`, **`Dala.Designer` dev tool**, the iOS Swift / Android Kotlin native bridges, the NIF | UI behavior, on-device runtime, native bridge changes, **dev tooling** |
 | **dala_dev** | `~/code/dala_dev` | Mix tasks: `dala.deploy`, `dala.connect`, `dala.devices`, `dala.emulators`, `dala.provision`, `dala.doctor`, `dala.battery_bench_*`. Device discovery (`DalaDev.Discovery.{Android,IOS}`). Native build orchestration (`DalaDev.NativeBuild`). OTP tarball download/cache (`DalaDev.OtpDownloader`). | Build/deploy mechanics, device handling, dev tooling |
 | **dala_new** | `~/code/dala_new` | Project generator. Hex archive (`mix archive.install hex dala_new`). Templates in `priv/templates/dala.new/`. Generates both native Dala UI projects and Phoenix LiveView wrappers. | Generator output for new projects |
 
@@ -547,7 +547,7 @@ Full guide: `guides/ios_ml_support.md`
 Summary: `dala/ML_INTEGRATION_SUMMARY.md`
 
 ## 22. **Dev-only UI preview and design tool.**
-    `Dala.Preview` module (in `dev_tools/` directory) provides two modes:
+    `Dala.Designer` module (in `dev_tools/` directory) provides two modes:
 
     1. **Static preview** — generates standalone HTML with CSS that mimics Dala's styling.
     2. **Live designer** — Phoenix LiveView server with drag-and-drop component palette,
@@ -562,25 +562,25 @@ Summary: `dala/ML_INTEGRATION_SUMMARY.md`
 
     **Static preview:**
     ```elixir
-    Dala.Preview.preview(MyApp.HomeScreen)
-    Dala.Preview.preview_to_file(MyApp.HomeScreen, "preview.html")
-    Dala.Preview.preview_and_open(MyApp.HomeScreen)
+    Dala.Designer.preview(MyApp.HomeScreen)
+    Dala.Designer.preview_to_file(MyApp.HomeScreen, "preview.html")
+    Dala.Designer.preview_and_open(MyApp.HomeScreen)
     ```
 
     **Live designer:**
     ```elixir
-    Dala.Preview.start_designer(port: 4200)
-    Dala.Preview.generate_code(tree, "MyApp.HomeScreen")
+    Dala.Designer.start_designer(port: 4200)
+    Dala.Designer.generate_code(tree, "MyApp.HomeScreen")
     ```
 
     ```bash
     # Static preview
-    mix dala.preview MyApp.HomeScreen
-    mix dala.preview MyApp.HomeScreen --output custom.html --no-open
+    mix dala.designer MyApp.HomeScreen
+    mix dala.designer MyApp.HomeScreen --output custom.html --no-open
 
     # Live designer
-    mix dala.preview --live
-    mix dala.preview --live --port 4200 --module MyApp.HomeScreen
+    mix dala.designer --live
+    mix dala.designer --live --port 4200 --module MyApp.HomeScreen
     ```
 
     **Implementation:**
@@ -593,8 +593,8 @@ Summary: `dala/ML_INTEGRATION_SUMMARY.md`
     - `dev_tools/mix/tasks/dala/preview.ex` — Mix task with `--live` flag
 
     **Code generation:**
-    - `Dala.Preview.Codegen.generate_dsl/3` — Spark DSL style with snake_case entities
-    - `Dala.Preview.Codegen.extract_handlers/1` — Extract event handler atoms from UI tree
+    - `Dala.Designer.Codegen.generate_dsl/3` — Spark DSL style with snake_case entities
+    - `Dala.Designer.Codegen.extract_handlers/1` — Extract event handler atoms from UI tree
     - Auto-generates `handle_event/3` stubs for all event handlers found in the tree
 
 ## 24. **GPU compute via EXCubeCL (v0.5.0).**

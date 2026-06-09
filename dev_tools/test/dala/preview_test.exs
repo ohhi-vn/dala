@@ -1,4 +1,4 @@
-defmodule Dala.PreviewTest do
+defmodule Dala.DesignerTest do
   use ExUnit.Case, async: true
 
   describe "preview/2" do
@@ -12,7 +12,7 @@ defmodule Dala.PreviewTest do
         ]
       }
 
-      html = Dala.Preview.preview(ui_tree)
+      html = Dala.Designer.preview(ui_tree)
       assert html =~ "Dala UI Preview"
       assert html =~ "Hello"
       assert html =~ "Click me"
@@ -27,7 +27,7 @@ defmodule Dala.PreviewTest do
         %{type: :text, props: %{text: "Second"}, children: []}
       ]
 
-      html = Dala.Preview.preview(ui_trees)
+      html = Dala.Designer.preview(ui_trees)
       assert html =~ "First"
       assert html =~ "Second"
     end
@@ -41,7 +41,7 @@ defmodule Dala.PreviewTest do
         children: []
       }
 
-      path = Dala.Preview.preview_to_file(ui_tree, "test_preview.html")
+      path = Dala.Designer.preview_to_file(ui_tree, "test_preview.html")
       assert File.exists?(path)
 
       content = File.read!(path)
@@ -63,7 +63,7 @@ defmodule Dala.PreviewTest do
         ]
       }
 
-      code = Dala.Preview.generate_code(ui_tree, "MyApp.HomeScreen")
+      code = Dala.Designer.generate_code(ui_tree, "MyApp.HomeScreen")
       assert code =~ "defmodule MyApp.HomeScreen do"
       assert code =~ "use Dala.Spark.Dsl"
       assert code =~ "column"
@@ -81,7 +81,7 @@ defmodule Dala.PreviewTest do
         children: []
       }
 
-      html = Dala.Preview.preview(ui_tree)
+      html = Dala.Designer.preview(ui_tree)
       assert html =~ "padding"
       assert html =~ "gap"
       assert html =~ ~s(class="dala-column")
@@ -97,7 +97,7 @@ defmodule Dala.PreviewTest do
         ]
       }
 
-      html = Dala.Preview.preview(ui_tree)
+      html = Dala.Designer.preview(ui_tree)
       assert html =~ ~s(class="dala-row")
       assert html =~ "Item 1"
       assert html =~ "Item 2"
@@ -110,7 +110,7 @@ defmodule Dala.PreviewTest do
         children: []
       }
 
-      html = Dala.Preview.preview(ui_tree)
+      html = Dala.Designer.preview(ui_tree)
       assert html =~ "Styled text"
       assert html =~ "font-size"
       assert html =~ "color"
@@ -123,7 +123,7 @@ defmodule Dala.PreviewTest do
         children: []
       }
 
-      html = Dala.Preview.preview(ui_tree)
+      html = Dala.Designer.preview(ui_tree)
       assert html =~ "<hr"
       assert html =~ "dala-divider"
     end
@@ -135,7 +135,7 @@ defmodule Dala.PreviewTest do
         children: []
       }
 
-      html = Dala.Preview.preview(ui_tree)
+      html = Dala.Designer.preview(ui_tree)
       assert html =~ "dala-spacer"
     end
 
@@ -146,7 +146,7 @@ defmodule Dala.PreviewTest do
         children: []
       }
 
-      html = Dala.Preview.preview(ui_tree)
+      html = Dala.Designer.preview(ui_tree)
       assert html =~ "Tap me"
       assert html =~ ~s(data-on-tap="my_tap")
       assert html =~ "cursor: pointer"
@@ -159,7 +159,7 @@ defmodule Dala.PreviewTest do
         children: []
       }
 
-      html = Dala.Preview.preview(ui_tree)
+      html = Dala.Designer.preview(ui_tree)
       assert html =~ "dala-toggle"
       assert html =~ ~s(data-toggle="toggle_handler")
       assert html =~ ~s(data-state="off")
@@ -172,7 +172,7 @@ defmodule Dala.PreviewTest do
         children: []
       }
 
-      html = Dala.Preview.preview(ui_tree)
+      html = Dala.Designer.preview(ui_tree)
       assert html =~ "dala-switch"
       assert html =~ ~s(data-toggle="switch_handler")
     end
@@ -184,7 +184,7 @@ defmodule Dala.PreviewTest do
         children: []
       }
 
-      html = Dala.Preview.preview(ui_tree)
+      html = Dala.Designer.preview(ui_tree)
       assert html =~ ~s(type="range")
       assert html =~ ~s(value="75")
       assert html =~ ~s(data-slider="slider_change")
@@ -199,7 +199,7 @@ defmodule Dala.PreviewTest do
         children: []
       }
 
-      html = Dala.Preview.preview(ui_tree)
+      html = Dala.Designer.preview(ui_tree)
       assert html =~ ~s(type="text")
       assert html =~ ~s(placeholder="Enter text...")
       assert html =~ ~s(value="test")
@@ -224,7 +224,7 @@ defmodule Dala.PreviewTest do
         ]
       }
 
-      html = Dala.Preview.preview(ui_tree)
+      html = Dala.Designer.preview(ui_tree)
       assert html =~ "dala-list"
       assert html =~ "dala-list-item"
       assert html =~ "Item 1"
@@ -239,7 +239,7 @@ defmodule Dala.PreviewTest do
         children: [%{type: :text, props: %{text: "Drag me"}, children: []}]
       }
 
-      html = Dala.Preview.preview(ui_tree)
+      html = Dala.Designer.preview(ui_tree)
       assert html =~ ~s(data-draggable="drag_item")
       assert html =~ "cursor: move"
     end
@@ -251,7 +251,7 @@ defmodule Dala.PreviewTest do
         children: [%{type: :text, props: %{text: "Drop here"}, children: []}]
       }
 
-      html = Dala.Preview.preview(ui_tree)
+      html = Dala.Designer.preview(ui_tree)
       assert html =~ ~s(data-droppable="drop_zone")
       assert html =~ "border: 2px dashed"
     end
@@ -263,7 +263,7 @@ defmodule Dala.PreviewTest do
         children: [%{type: :text, props: %{text: "Long press me"}, children: []}]
       }
 
-      html = Dala.Preview.preview(ui_tree)
+      html = Dala.Designer.preview(ui_tree)
       assert html =~ ~s(data-on-long-press="long_press_handler")
       assert html =~ "Long press me"
     end
@@ -275,7 +275,7 @@ defmodule Dala.PreviewTest do
         children: [%{type: :text, props: %{text: "Swipe me"}, children: []}]
       }
 
-      html = Dala.Preview.preview(ui_tree)
+      html = Dala.Designer.preview(ui_tree)
       assert html =~ ~s(data-on-swipe="swipe_handler")
       assert html =~ "Swipe me"
     end
@@ -287,7 +287,7 @@ defmodule Dala.PreviewTest do
         children: []
       }
 
-      html = Dala.Preview.preview(ui_tree)
+      html = Dala.Designer.preview(ui_tree)
       assert html =~ "Unknown:"
       assert html =~ "unknown_component"
     end
@@ -296,7 +296,7 @@ defmodule Dala.PreviewTest do
   describe "HTML structure" do
     test "includes interactive JavaScript" do
       ui_tree = %{type: :button, props: %{text: "Test", on_tap: :test}, children: []}
-      html = Dala.Preview.preview(ui_tree)
+      html = Dala.Designer.preview(ui_tree)
       assert html =~ "Dala UI Preview - Interactive Simulation Dev Tool"
       assert html =~ "addEventListener"
       assert html =~ "logEvent"
@@ -304,7 +304,7 @@ defmodule Dala.PreviewTest do
 
     test "includes event log panel" do
       ui_tree = %{type: :text, props: %{text: "Test"}, children: []}
-      html = Dala.Preview.preview(ui_tree)
+      html = Dala.Designer.preview(ui_tree)
       assert html =~ "event-log"
       assert html =~ "Event Log"
       assert html =~ "Interact with the preview"
@@ -312,7 +312,7 @@ defmodule Dala.PreviewTest do
 
     test "includes CSS for interactive elements" do
       ui_tree = %{type: :text, props: %{text: "Test"}, children: []}
-      html = Dala.Preview.preview(ui_tree)
+      html = Dala.Designer.preview(ui_tree)
       assert html =~ "cursor: pointer"
       assert html =~ "cursor: move"
       assert html =~ "user-select: none"
@@ -321,7 +321,7 @@ defmodule Dala.PreviewTest do
 
     test "includes Alpine.js for component tree toggle" do
       ui_tree = %{type: :text, props: %{text: "Test"}, children: []}
-      html = Dala.Preview.preview(ui_tree, show_tree: true)
+      html = Dala.Designer.preview(ui_tree, show_tree: true)
       assert html =~ "alpinejs"
       assert html =~ "x-data"
       assert html =~ "x-show"
@@ -329,7 +329,7 @@ defmodule Dala.PreviewTest do
 
     test "has proper page title" do
       ui_tree = %{type: :text, props: %{text: "Test"}, children: []}
-      html = Dala.Preview.preview(ui_tree, title: "My Custom Preview")
+      html = Dala.Designer.preview(ui_tree, title: "My Custom Preview")
       assert html =~ "<title>My Custom Preview</title>"
     end
   end
@@ -342,7 +342,7 @@ defmodule Dala.PreviewTest do
         children: []
       }
 
-      html = Dala.Preview.preview(ui_tree)
+      html = Dala.Designer.preview(ui_tree)
       refute html =~ "<script>alert('xss')</script>"
       assert html =~ "&lt;script&gt;"
     end
@@ -354,13 +354,13 @@ defmodule Dala.PreviewTest do
         children: []
       }
 
-      html = Dala.Preview.preview(ui_tree, show_tree: true)
+      html = Dala.Designer.preview(ui_tree, show_tree: true)
       assert html =~ "&lt;b&gt;bold&lt;/b&gt;"
     end
   end
 end
 
-defmodule Dala.Preview.CodegenTest do
+defmodule Dala.Designer.CodegenTest do
   use ExUnit.Case, async: true
 
   describe "generate_dsl/3" do
@@ -373,7 +373,7 @@ defmodule Dala.Preview.CodegenTest do
         ]
       }
 
-      code = Dala.Preview.Codegen.generate_dsl("MyApp.HomeScreen", tree)
+      code = Dala.Designer.Codegen.generate_dsl("MyApp.HomeScreen", tree)
 
       assert code =~ "defmodule MyApp.HomeScreen do"
       assert code =~ "use Dala.Spark.Dsl"
@@ -389,7 +389,7 @@ defmodule Dala.Preview.CodegenTest do
         children: []
       }
 
-      code = Dala.Preview.Codegen.generate_dsl("MyApp.Screen", tree)
+      code = Dala.Designer.Codegen.generate_dsl("MyApp.Screen", tree)
       assert code =~ "handle_event(:go_pressed"
     end
 
@@ -397,7 +397,7 @@ defmodule Dala.Preview.CodegenTest do
       tree = %{type: :text, props: %{text: "Hi"}, children: []}
 
       code =
-        Dala.Preview.Codegen.generate_dsl("MyApp.Screen", tree,
+        Dala.Designer.Codegen.generate_dsl("MyApp.Screen", tree,
           attributes: [{:count, :integer, 0}, {:name, :string, nil}]
         )
 
@@ -415,7 +415,7 @@ defmodule Dala.Preview.CodegenTest do
         ]
       }
 
-      code = Dala.Preview.Codegen.generate_dsl("MyApp.Screen", tree)
+      code = Dala.Designer.Codegen.generate_dsl("MyApp.Screen", tree)
       assert code =~ ~s(text "Title")
       assert code =~ ~s(button "Go")
     end
@@ -431,7 +431,7 @@ defmodule Dala.Preview.CodegenTest do
         ]
       }
 
-      assert :pressed in Dala.Preview.Codegen.extract_handlers(tree)
+      assert :pressed in Dala.Designer.Codegen.extract_handlers(tree)
     end
 
     test "extracts handlers from {self(), :tag} tuples" do
@@ -441,7 +441,7 @@ defmodule Dala.Preview.CodegenTest do
         children: []
       }
 
-      assert :submit in Dala.Preview.Codegen.extract_handlers(tree)
+      assert :submit in Dala.Designer.Codegen.extract_handlers(tree)
     end
 
     test "deduplicates handlers" do
@@ -454,7 +454,7 @@ defmodule Dala.Preview.CodegenTest do
         ]
       }
 
-      handlers = Dala.Preview.Codegen.extract_handlers(tree)
+      handlers = Dala.Designer.Codegen.extract_handlers(tree)
       assert Enum.count(handlers, &(&1 == :go)) == 1
     end
 
@@ -469,7 +469,7 @@ defmodule Dala.Preview.CodegenTest do
         ]
       }
 
-      handlers = Dala.Preview.Codegen.extract_handlers(tree)
+      handlers = Dala.Designer.Codegen.extract_handlers(tree)
       assert :tapped in handlers
       assert :held in handlers
       assert :changed in handlers

@@ -1,6 +1,6 @@
-defmodule Dala.Preview.Live.Layout do
+defmodule Dala.Designer.Live.Layout do
   @moduledoc """
-  Root layout for Dala Preview LiveView.
+  Root layout for Dala Designer LiveView.
 
   Provides the HTML shell with Phoenix LiveView client JS,
   the DesignCanvas drag-and-drop hook, and base styles.
@@ -18,7 +18,7 @@ defmodule Dala.Preview.Live.Layout do
       <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Dala Preview Designer</title>
+        <title>Dala Designer</title>
         <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>◆</text></svg>" />
         <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
         <.live_head />

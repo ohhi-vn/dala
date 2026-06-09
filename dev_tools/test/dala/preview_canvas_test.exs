@@ -1,19 +1,19 @@
-defmodule Dala.Preview.CanvasTest do
+defmodule Dala.Designer.CanvasTest do
   @moduledoc """
   Tests for the Canvas LiveView's internal tree manipulation,
   prop parsing, and preview rendering logic.
 
-  These exercise the private functions of Dala.Preview.Canvas
+  These exercise the private functions of Dala.Designer.Canvas
   via the public-facing render pipeline and handle_event callbacks.
   """
   use ExUnit.Case, async: true
 
   # ── Helpers to call private functions ───────────────────────────────────────
 
-  defp call_private(fun, args), do: Dala.Preview.Canvas.call_private(fun, args)
+  defp call_private(fun, args), do: Dala.Designer.Canvas.call_private(fun, args)
 
   defp pipe_call(private_fun, pipe_arg, extra_args) do
-    Dala.Preview.Canvas.call_private(private_fun, [pipe_arg | extra_args])
+    Dala.Designer.Canvas.call_private(private_fun, [pipe_arg | extra_args])
   end
 
   describe "empty_root/0" do

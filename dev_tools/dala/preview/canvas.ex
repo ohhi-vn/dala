@@ -1,4 +1,4 @@
-defmodule Dala.Preview.Canvas do
+defmodule Dala.Designer.Canvas do
   @moduledoc """
   Interactive drag-and-drop UI design canvas for Dala.
 
@@ -15,7 +15,7 @@ defmodule Dala.Preview.Canvas do
 
   use Phoenix.LiveView
   import Phoenix.HTML
-  alias Dala.Preview.Codegen
+  alias Dala.Designer.Codegen
 
   alias Dala.Ui.Component
 
@@ -41,7 +41,7 @@ defmodule Dala.Preview.Canvas do
     # Leaf - other
     fab: "➕", icon_button: "🔳", webview: "🌐", camera_preview: "📷",
     native_view: "🔌", status_bar: "📶", refresh_control: "🔄",
-    list: "📋", carousel: "🎠", date_picker: "📅", time_picker: "🕐"
+    list: "📋", list_item: "📄", carousel: "🎠", date_picker: "📅", time_picker: "🕐"
   }
 
   # Grouped palette categories
@@ -50,7 +50,7 @@ defmodule Dala.Preview.Canvas do
     {"Text & Input", [:text, :button, :text_field, :search_bar, :toggle, :switch, :slider, :checkbox, :radio, :chip]},
     {"Media", [:icon, :image, :video, :activity_indicator, :progress_bar, :webview, :camera_preview]},
     {"Navigation", [:app_bar, :nav_bar, :nav_drawer, :nav_rail, :tab_bar, :segmented_button, :fab, :icon_button]},
-    {"Data & Lists", [:list, :carousel, :snackbar, :menu, :date_picker, :time_picker, :native_view, :status_bar, :refresh_control]}
+    {"Data & Lists", [:list, :list_item, :carousel, :snackbar, :menu, :date_picker, :time_picker, :native_view, :status_bar, :refresh_control]}
   ]
 
   defp palette_groups, do: @palette_groups
@@ -94,9 +94,11 @@ defmodule Dala.Preview.Canvas do
     initial_tree = session["initial_tree"]
     initial_module = session["initial_module"] || "MyApp.HomeScreen"
 
+    initial = initial_tree || empty_root()
+
     {:ok,
      assign(socket,
-       tree: initial_tree || empty_root(),
+       tree: initial,
        selected_id: nil,
        code_style: :dsl,
        module_name: initial_module,
@@ -105,16 +107,18 @@ defmodule Dala.Preview.Canvas do
        id_counter: 1,
        collapsed_nodes: MapSet.new(),
        palette_search: "",
-      copied: false
+       copied: false,
+       history: [initial],
+       history_pos: 0
      )}
   end
 
   @impl true
   def render(assigns) do
     ~H"""
-    <div id="design-canvas" class="design-canvas-root" phx-hook="DesignCanvas">
+    <div id="design-canvas" class="design-canvas-root" phx-hook="DesignCanvas" phx-keydown="keyboard_shortcut" phx-target="#design-canvas">
       <style><%= raw(canvas_css()) %></style>
-      <.header_bar show_code={@show_code} module_name={@module_name} />
+      <.header_bar show_code={@show_code} module_name={@module_name} history_pos={@history_pos} history_size={length(@history)} />
       <div class="canvas-body">
         <.palette search={@palette_search} />
         <.design_canvas tree={@tree} selected_id={@selected_id} collapsed={@collapsed_nodes} />
@@ -131,6 +135,8 @@ defmodule Dala.Preview.Canvas do
 
   attr(:show_code, :boolean, required: true)
   attr(:module_name, :string, required: true)
+  attr(:history_pos, :integer, default: 0)
+  attr(:history_size, :integer, default: 1)
 
   def header_bar(assigns) do
     ~H"""
@@ -151,6 +157,12 @@ defmodule Dala.Preview.Canvas do
         </form>
       </div>
       <div class="canvas-header-right">
+        <button class="header-btn" phx-click="undo" title="Undo (Ctrl+Z)" disabled={@history_pos <= 0}>
+          ↩ Undo
+        </button>
+        <button class="header-btn" phx-click="redo" title="Redo (Ctrl+Shift+Z)" disabled={@history_pos >= @history_size - 1}>
+          ↪ Redo
+        </button>
         <span class="code-style-label">DSL</span>
         <button class="header-btn" phx-click="toggle_code">
           <%= if @show_code, do: "◉ Code", else: "○ Code" %>
@@ -191,6 +203,8 @@ defmodule Dala.Preview.Canvas do
               <%= for type <- items do %>
                 <% icon = Map.get(@component_icons, type, "•") %>
                 <% is_container = type in @container_types %>
+                <% comp = Dala.Ui.Component.get(type) %>
+                <% doc = if comp, do: comp.doc, else: "" %>
                 <div
                   class={"palette-item #{if is_container, do: "palette-item--container", else: "palette-item--leaf"}"}
                   draggable="true"
@@ -201,6 +215,9 @@ defmodule Dala.Preview.Canvas do
                 >
                   <span class="palette-icon"><%= icon %></span>
                   <span class="palette-label"><%= format_type(type) %></span>
+                  <%= if doc != "" do %>
+                    <span class="palette-doc-tooltip"><%= doc %></span>
+                  <% end %>
                 </div>
               <% end %>
             </div>
@@ -336,9 +353,14 @@ defmodule Dala.Preview.Canvas do
     <div class="prop-editor">
       <div class="prop-editor-type">
         <span class="prop-type-badge"><%= format_type(@node.type) %></span>
-        <button class="prop-delete-btn" phx-click="delete_node" phx-value-id={@node.id}>
-          ✕ Delete
-        </button>
+        <div class="prop-editor-actions">
+          <button class="prop-duplicate-btn" phx-click="duplicate_node" phx-value-id={@node.id} title="Duplicate (Ctrl+D)">
+            ⧉ Duplicate
+          </button>
+          <button class="prop-delete-btn" phx-click="delete_node" phx-value-id={@node.id}>
+            ✕ Delete
+          </button>
+        </div>
       </div>
 
       <div class="prop-editor-fields">
@@ -479,9 +501,14 @@ defmodule Dala.Preview.Canvas do
     <div class="code-panel">
       <div class="code-panel-header">
         <span>◇ Generated Code</span>
-        <button class="code-copy-btn" phx-click="copy_code">
-          <%= if @copied, do: "✓ Copied!", else: "⧉ Copy" %>
-        </button>
+        <div class="code-panel-actions">
+          <button class="code-copy-btn" phx-click="copy_code">
+            <%= if @copied, do: "✓ Copied!", else: "⧉ Copy" %>
+          </button>
+          <button class="code-download-btn" phx-click="download_code" title="Download as .ex file">
+            ↓ Download
+          </button>
+        </div>
       </div>
       <pre class="code-panel-content"><code><%= generate_code(@tree, @code_style, @module_name) %></code></pre>
     </div>
@@ -530,19 +557,23 @@ defmodule Dala.Preview.Canvas do
             %{n | props: Map.put(n.props, prop, parsed)}
           end)
 
-        {:noreply, assign(socket, tree: updated_tree)}
+        new_socket = assign(socket, tree: updated_tree)
+        {:noreply, push_history(new_socket, updated_tree)}
     end
   end
 
   def handle_event("delete_node", %{"id" => id}, socket) do
     tree = socket.assigns.tree
 
-    if tree.id == id do
-      {:noreply, assign(socket, tree: empty_root(), selected_id: nil)}
-    else
-      updated_tree = remove_node_from_tree(tree, id)
-      {:noreply, assign(socket, tree: updated_tree, selected_id: nil)}
-    end
+    updated_tree =
+      if tree.id == id do
+        empty_root()
+      else
+        remove_node_from_tree(tree, id)
+      end
+
+    new_socket = assign(socket, tree: updated_tree, selected_id: nil)
+    {:noreply, push_history(new_socket, updated_tree)}
   end
 
   def handle_event("add_node", %{"type" => type_str}, socket) do
@@ -550,7 +581,8 @@ defmodule Dala.Preview.Canvas do
     new_node = make_node(type, socket.assigns.id_counter)
     tree = socket.assigns.tree
     updated_tree = add_node_to_tree(tree, tree.id, new_node)
-    {:noreply, assign(socket, tree: updated_tree, id_counter: socket.assigns.id_counter + 1)}
+    new_socket = assign(socket, tree: updated_tree, id_counter: socket.assigns.id_counter + 1)
+    {:noreply, push_history(new_socket, updated_tree)}
   end
 
   def handle_event("drop_on_node", %{"target_id" => target_id, "type" => type_str}, socket) do
@@ -558,15 +590,17 @@ defmodule Dala.Preview.Canvas do
     new_node = make_node(type, socket.assigns.id_counter)
     tree = socket.assigns.tree
 
-    case find_node(tree, target_id) do
-      %{type: t} when t in @container_types ->
-        updated_tree = add_node_to_tree(tree, target_id, new_node)
-        {:noreply, assign(socket, tree: updated_tree, id_counter: socket.assigns.id_counter + 1)}
+    updated_tree =
+      case find_node(tree, target_id) do
+        %{type: t} when t in @container_types ->
+          add_node_to_tree(tree, target_id, new_node)
 
-      _ ->
-        updated_tree = add_node_to_tree(tree, tree.id, new_node)
-        {:noreply, assign(socket, tree: updated_tree, id_counter: socket.assigns.id_counter + 1)}
-    end
+        _ ->
+          add_node_to_tree(tree, tree.id, new_node)
+      end
+
+    new_socket = assign(socket, tree: updated_tree, id_counter: socket.assigns.id_counter + 1)
+    {:noreply, push_history(new_socket, updated_tree)}
   end
 
   def handle_event("move_node", %{"node_id" => node_id, "target_id" => target_id}, socket) do
@@ -579,7 +613,8 @@ defmodule Dala.Preview.Canvas do
       node ->
         tree_without = remove_node_from_tree(tree, node_id)
         updated_tree = add_node_to_tree(tree_without, target_id, node)
-        {:noreply, assign(socket, tree: updated_tree)}
+        new_socket = assign(socket, tree: updated_tree)
+        {:noreply, push_history(new_socket, updated_tree)}
     end
   end
 
@@ -598,7 +633,8 @@ defmodule Dala.Preview.Canvas do
   end
 
   def handle_event("clear_canvas", _params, socket) do
-    {:noreply, assign(socket, tree: empty_root(), selected_id: nil, id_counter: 1)}
+    new_socket = assign(socket, tree: empty_root(), selected_id: nil, id_counter: 1)
+    {:noreply, push_history(new_socket, new_socket.assigns.tree)}
   end
 
   def handle_event("toggle_node", %{"id" => id}, socket) do
@@ -613,6 +649,123 @@ defmodule Dala.Preview.Canvas do
 
   def handle_event("copy_code", _params, socket) do
     {:noreply, assign(socket, copied: true)}
+  end
+
+  def handle_event("download_code", _params, socket) do
+    code = generate_code(socket.assigns.tree, socket.assigns.code_style, socket.assigns.module_name)
+    filename = socket.assigns.module_name |> String.replace(".", "_") |> then(& &1 <> ".ex")
+    {:noreply, push_event(socket, "download", %{filename: filename, content: code})}
+  end
+
+  def handle_event("duplicate_node", %{"id" => id}, socket) do
+    tree = socket.assigns.tree
+
+    case find_node(tree, id) do
+      nil ->
+        {:noreply, socket}
+
+      node ->
+        counter = socket.assigns.id_counter
+        cloned = %{node | id: "node_#{counter}", children: []}
+        updated_tree = add_node_to_tree(tree, tree.id, cloned)
+        new_socket = assign(socket, tree: updated_tree, id_counter: counter + 1)
+        {:noreply, push_history(new_socket, updated_tree)}
+    end
+  end
+
+  def handle_event("undo", _params, socket) do
+    pos = socket.assigns.history_pos
+    history = socket.assigns.history
+
+    if pos > 0 do
+      new_pos = pos - 1
+      tree = Enum.at(history, new_pos)
+      {:noreply, assign(socket, tree: tree, history_pos: new_pos, selected_id: nil)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_event("redo", _params, socket) do
+    pos = socket.assigns.history_pos
+    history = socket.assigns.history
+
+    if pos < length(history) - 1 do
+      new_pos = pos + 1
+      tree = Enum.at(history, new_pos)
+      {:noreply, assign(socket, tree: tree, history_pos: new_pos, selected_id: nil)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_event("keyboard_shortcut", %{"key" => key, "ctrlKey" => ctrl, "metaKey" => meta, "shiftKey" => shift}, socket) do
+    cond do
+      # Delete or Backspace: delete selected node
+      key in ["Delete", "Backspace"] and socket.assigns.selected_id != nil ->
+        id = socket.assigns.selected_id
+        tree = socket.assigns.tree
+
+        updated_tree =
+          if tree.id == id do
+            empty_root()
+          else
+            remove_node_from_tree(tree, id)
+          end
+
+        new_socket = assign(socket, tree: updated_tree, selected_id: nil)
+        {:noreply, push_history(new_socket, updated_tree)}
+
+      # Ctrl+D or Cmd+D: duplicate selected node
+      key == "d" and (ctrl or meta) and not shift and socket.assigns.selected_id != nil ->
+        id = socket.assigns.selected_id
+        tree = socket.assigns.tree
+
+        case find_node(tree, id) do
+          nil ->
+            {:noreply, socket}
+
+          node ->
+            counter = socket.assigns.id_counter
+            cloned = %{node | id: "node_#{counter}", children: []}
+            updated_tree = add_node_to_tree(tree, tree.id, cloned)
+            new_socket = assign(socket, tree: updated_tree, id_counter: counter + 1)
+            {:noreply, push_history(new_socket, updated_tree)}
+        end
+
+      # Ctrl+Z or Cmd+Z: undo
+      key == "z" and (ctrl or meta) and not shift ->
+        pos = socket.assigns.history_pos
+        history = socket.assigns.history
+
+        if pos > 0 do
+          new_pos = pos - 1
+          tree = Enum.at(history, new_pos)
+          {:noreply, assign(socket, tree: tree, history_pos: new_pos, selected_id: nil)}
+        else
+          {:noreply, socket}
+        end
+
+      # Ctrl+Shift+Z or Cmd+Shift+Z: redo
+      key == "z" and (ctrl or meta) and shift ->
+        pos = socket.assigns.history_pos
+        history = socket.assigns.history
+
+        if pos < length(history) - 1 do
+          new_pos = pos + 1
+          tree = Enum.at(history, new_pos)
+          {:noreply, assign(socket, tree: tree, history_pos: new_pos, selected_id: nil)}
+        else
+          {:noreply, socket}
+        end
+
+      true ->
+        {:noreply, socket}
+    end
+  end
+
+  def handle_event("keyboard_shortcut", _params, socket) do
+    {:noreply, socket}
   end
 
   # ── Test helpers ────────────────────────────────────────────────────────────
@@ -699,43 +852,74 @@ defmodule Dala.Preview.Canvas do
     end)
   end
 
+  @max_history 50
+
+  defp push_history(socket, tree) do
+    history = socket.assigns.history
+    pos = socket.assigns.history_pos
+
+    # Trim any redo states
+    history = Enum.take(history, pos + 1)
+
+    # Append new state, cap at max
+    history =
+      if length(history) >= @max_history do
+        [_ | rest] = history
+        rest ++ [tree]
+      else
+        history ++ [tree]
+      end
+
+    new_pos = length(history) - 1
+    assign(socket, history: history, history_pos: new_pos)
+  end
+
   defp default_props(:text), do: %{text: "Text"}
   defp default_props(:button), do: %{text: "Button"}
-  defp default_props(:icon), do: %{name: :star}
-  defp default_props(:text_field), do: %{placeholder: "Type here..."}
-  defp default_props(:slider), do: %{value: 50}
-  defp default_props(:progress_bar), do: %{value: 0}
-  defp default_props(:image), do: %{src: "https://via.placeholder.com/150"}
-  defp default_props(:video), do: %{src: ""}
-  defp default_props(:column), do: %{padding: :sm, gap: :sm}
-  defp default_props(:row), do: %{gap: :sm}
-  defp default_props(:box), do: %{padding: :sm}
-  defp default_props(:scroll), do: %{}
-  defp default_props(:modal), do: %{}
+  defp default_props(:icon), do: %{name: ""}
+  defp default_props(:text_field), do: %{text: ""}
+  defp default_props(:slider), do: %{value: 0.5, min_value: 0, max_value: 1.0, step: 0.01}
+  defp default_props(:progress_bar), do: %{progress: 0.0}
+  defp default_props(:image), do: %{source: ""}
+  defp default_props(:video), do: %{source: ""}
+  defp default_props(:column), do: %{}
+  defp default_props(:row), do: %{}
+  defp default_props(:box), do: %{}
+  defp default_props(:scroll), do: %{direction: :vertical}
+  defp default_props(:modal), do: %{visible: false}
   defp default_props(:pressable), do: %{}
-  defp default_props(:safe_area), do: %{}
-  defp default_props(:tab_bar), do: %{}
-  defp default_props(:list), do: %{}
-  defp default_props(:card), do: %{variant: :elevated, elevation: 1.0, corner_radius: 12}
-  defp default_props(:badge), do: %{count: 3}
-  defp default_props(:bottom_sheet), do: %{}
-  defp default_props(:tooltip), do: %{text: "Tooltip"}
-  defp default_props(:checkbox), do: %{label: "Checkbox", value: false}
-  defp default_props(:radio), do: %{label: "Radio", selected: false}
-  defp default_props(:chip), do: %{label: "Chip", variant: :filter}
-  defp default_props(:snackbar), do: %{message: "Notification", visible: false}
-  defp default_props(:fab), do: %{icon: :add}
-  defp default_props(:icon_button), do: %{icon: :star}
-  defp default_props(:segmented_button), do: %{selected: ""}
-  defp default_props(:app_bar), do: %{title: "My App"}
-  defp default_props(:nav_bar), do: %{active: "home"}
-  defp default_props(:nav_drawer), do: %{}
-  defp default_props(:nav_rail), do: %{}
-  defp default_props(:menu), do: %{}
-  defp default_props(:date_picker), do: %{}
-  defp default_props(:time_picker), do: %{}
-  defp default_props(:search_bar), do: %{placeholder: "Search..."}
-  defp default_props(:carousel), do: %{}
+  defp default_props(:safe_area), do: %{edges: [:top, :bottom]}
+  defp default_props(:tab_bar), do: %{tabs: []}
+  defp default_props(:list), do: %{items: []}
+  defp default_props(:list_item), do: %{}
+  defp default_props(:card), do: %{variant: :elevated, elevation: 1.0}
+  defp default_props(:badge), do: %{count: 0, position: :top_end}
+  defp default_props(:bottom_sheet), do: %{visible: false, drag_indicator: true}
+  defp default_props(:tooltip), do: %{visible: false, position: :bottom, delay: 500}
+  defp default_props(:checkbox), do: %{value: false}
+  defp default_props(:radio), do: %{selected: false}
+  defp default_props(:chip), do: %{}
+  defp default_props(:snackbar), do: %{visible: false}
+  defp default_props(:fab), do: %{}
+  defp default_props(:icon_button), do: %{}
+  defp default_props(:segmented_button), do: %{segments: []}
+  defp default_props(:app_bar), do: %{title: ""}
+  defp default_props(:nav_bar), do: %{items: []}
+  defp default_props(:nav_drawer), do: %{visible: false, items: []}
+  defp default_props(:nav_rail), do: %{items: []}
+  defp default_props(:menu), do: %{visible: false, items: []}
+  defp default_props(:date_picker), do: %{visible: false}
+  defp default_props(:time_picker), do: %{visible: false}
+  defp default_props(:search_bar), do: %{value: ""}
+  defp default_props(:carousel), do: %{items: []}
+  defp default_props(:activity_indicator), do: %{}
+  defp default_props(:status_bar), do: %{}
+  defp default_props(:refresh_control), do: %{refreshing: false}
+  defp default_props(:webview), do: %{source: ""}
+  defp default_props(:camera_preview), do: %{facing: :back}
+  defp default_props(:native_view), do: %{}
+  defp default_props(:divider), do: %{thickness: 1.0, color: :border}
+  defp default_props(:spacer), do: %{}
   defp default_props(_), do: %{}
 
   defp container_type?(type), do: type in @container_types
@@ -1313,6 +1497,15 @@ defmodule Dala.Preview.Canvas do
       background: rgba(248, 113, 113, 0.15);
       border-color: var(--danger);
     }
+    .header-btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+    .header-btn:disabled:hover {
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+      border-color: var(--border-light);
+    }
 
     /* ── Body layout ─────────────────────────────────────────────────────────── */
     .canvas-body {
@@ -1428,6 +1621,39 @@ defmodule Dala.Preview.Canvas do
     }
     .palette-item:hover .palette-label {
       color: var(--text-primary);
+    }
+    .palette-doc-tooltip {
+      display: none;
+      position: absolute;
+      left: calc(100% + 8px);
+      top: 50%;
+      transform: translateY(-50%);
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-sm);
+      padding: 6px 10px;
+      font-size: 11px;
+      font-weight: 400;
+      white-space: nowrap;
+      z-index: 100;
+      box-shadow: var(--shadow-md);
+      pointer-events: none;
+      max-width: 220px;
+      white-space: normal;
+      line-height: 1.4;
+    }
+    .palette-doc-tooltip::before {
+      content: "";
+      position: absolute;
+      right: 100%;
+      top: 50%;
+      transform: translateY(-50%);
+      border: 5px solid transparent;
+      border-right-color: var(--border-light);
+    }
+    .palette-item:hover .palette-doc-tooltip {
+      display: block;
     }
 
     /* ── Design Canvas (center) ──────────────────────────────────────────────── */
@@ -1659,6 +1885,25 @@ defmodule Dala.Preview.Canvas do
       letter-spacing: 0.3px;
       border: 1px solid rgba(99, 102, 241, 0.2);
     }
+    .prop-editor-actions {
+      display: flex;
+      gap: 6px;
+    }
+    .prop-duplicate-btn {
+      background: transparent;
+      border: 1px solid rgba(99, 102, 241, 0.25);
+      color: var(--accent-hover);
+      padding: 3px 10px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 500;
+      transition: all var(--transition-normal);
+    }
+    .prop-duplicate-btn:hover {
+      background: rgba(99, 102, 241, 0.12);
+      border-color: var(--accent);
+    }
     .prop-delete-btn {
       background: transparent;
       border: 1px solid rgba(248, 113, 113, 0.25);
@@ -1752,6 +1997,10 @@ defmodule Dala.Preview.Canvas do
       letter-spacing: 1.2px;
       font-weight: 600;
     }
+    .code-panel-actions {
+      display: flex;
+      gap: 6px;
+    }
     .code-copy-btn {
       background: transparent;
       border: 1px solid var(--border-light);
@@ -1767,6 +2016,21 @@ defmodule Dala.Preview.Canvas do
       background: var(--bg-tertiary);
       color: var(--text-primary);
       border-color: var(--text-muted);
+    }
+    .code-download-btn {
+      background: transparent;
+      border: 1px solid rgba(52, 211, 153, 0.25);
+      color: var(--success);
+      padding: 3px 12px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 500;
+      transition: all var(--transition-normal);
+    }
+    .code-download-btn:hover {
+      background: rgba(52, 211, 153, 0.12);
+      border-color: var(--success);
     }
     .code-panel-content {
       flex: 1;
@@ -1937,6 +2201,7 @@ defmodule Dala.Preview.Canvas do
     const DesignCanvas = {
       mounted() {
         this.initDragDrop();
+        this.initDownload();
       },
       updated() {
         this.initDragDrop();
@@ -1967,6 +2232,19 @@ defmodule Dala.Preview.Canvas do
               this.pushEvent('drop_on_node', { type: type, target_id: targetId });
             }
           });
+        });
+      },
+      initDownload() {
+        this.handleEvent('download', ({filename, content}) => {
+          const blob = new Blob([content], {type: 'text/plain'});
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
         });
       }
     };

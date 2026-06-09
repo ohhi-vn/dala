@@ -163,7 +163,7 @@ defmodule Dala do
   - `Dala.Theme` — design token system
   - `Dala.Renderer` — component tree serialisation
   - `Dala.Test` — live device inspection and testing helpers
-  - `Dala.Preview` (dev only) — preview UI in browser without device
+  - `Dala.Designer` (dev only) — drag-and-drop UI designer and preview tool
   - `Dala.Plugin` — plugin system (schema, protocol, manifest)
   - `Dala.Plugin.Registry` — plugin lookup and capability negotiation
 

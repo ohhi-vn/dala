@@ -1,6 +1,6 @@
-defmodule Dala.Preview.Example do
+defmodule Dala.Designer.Example do
   @moduledoc """
-  Example UI trees for Dala Preview demonstration.
+  Example UI trees for Dala Designer demonstration.
 
   Each function returns a different sample UI tree showcasing
   various Dala components and layout patterns.
@@ -16,12 +16,12 @@ defmodule Dala.Preview.Example do
       children: [
         %{
           type: :text,
-          props: %{text: "Dala Preview Example", text_size: :xl, text_color: :primary},
+          props: %{text: "Dala Designer Example", text_size: :xl, text_color: :primary},
           children: []
         },
         %{
           type: :text,
-          props: %{text: "This is a demonstration of the preview system."},
+          props: %{text: "This is a demonstration of the designer system."},
           children: []
         },
         %{type: :divider, props: %{}, children: []},

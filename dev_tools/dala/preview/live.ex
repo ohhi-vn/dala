@@ -1,6 +1,6 @@
-defmodule Dala.Preview.Live do
+defmodule Dala.Designer.Live do
   @moduledoc """
-  Standalone Phoenix LiveView server for Dala Preview Designer.
+  Standalone Phoenix LiveView server for Dala Designer.
 
   Starts a complete Phoenix endpoint serving the interactive drag-and-drop
   design canvas at `http://localhost:<port>/`. The canvas lets you:
@@ -12,13 +12,13 @@ defmodule Dala.Preview.Live do
   ## Usage
 
       # Start with default settings
-      Dala.Preview.Live.start_server()
+      Dala.Designer.Live.start_server()
 
       # Start with a specific port
-      Dala.Preview.Live.start_server(port: 4200)
+      Dala.Designer.Live.start_server(port: 4200)
 
       # Start with an initial UI tree
-      Dala.Preview.Live.start_server(ui_tree: my_tree, port: 4000)
+      Dala.Designer.Live.start_server(ui_tree: my_tree, port: 4000)
   """
 
   @doc """
@@ -48,7 +48,7 @@ defmodule Dala.Preview.Live do
     IO.puts("""
 
     ┌─────────────────────────────────────────────────┐
-    │  Dala Preview Designer                          │
+    │  Dala Designer                                  │
     │  #{url}                    │
     │                                                 │
     │  Drag components from the palette to design     │
@@ -63,7 +63,7 @@ defmodule Dala.Preview.Live do
     {:ok, url}
   rescue
     e ->
-      IO.puts("Failed to start Dala Preview Designer: #{inspect(e)}")
+      IO.puts("Failed to start Dala Designer: #{inspect(e)}")
       {:error, e}
   end
 
@@ -81,10 +81,10 @@ defmodule Dala.Preview.Live do
   defp endpoint_module, do: Module.concat(__MODULE__, Endpoint)
 
   defp ensure_supervisor do
-    case Process.whereis(Dala.Preview.Supervisor) do
+    case Process.whereis(Dala.Designer.Supervisor) do
       nil ->
         {:ok, _} =
-          Supervisor.start_link([], name: Dala.Preview.Supervisor, strategy: :one_for_one)
+          Supervisor.start_link([], name: Dala.Designer.Supervisor, strategy: :one_for_one)
 
       _ ->
         :ok
@@ -92,11 +92,11 @@ defmodule Dala.Preview.Live do
   end
 
   defp ensure_pubsub do
-    case Process.whereis(Dala.Preview.PubSub) do
+    case Process.whereis(Dala.Designer.PubSub) do
       nil ->
         Supervisor.start_child(
-          Dala.Preview.Supervisor,
-          {Phoenix.PubSub, name: Dala.Preview.PubSub}
+          Dala.Designer.Supervisor,
+          {Phoenix.PubSub, name: Dala.Designer.PubSub}
         )
 
       _ ->
@@ -110,9 +110,9 @@ defmodule Dala.Preview.Live do
     config = [
       http: [port: port],
       server: true,
-      secret_key_base: String.duplicate("dala_preview_dev_secret_key_base_for_local_use_only", 4),
-      live_view: [signing_salt: "dala_preview_signing_salt"],
-      pubsub_server: Dala.Preview.PubSub,
+      secret_key_base: String.duplicate("dala_designer_dev_secret_key_base_for_local_use_only", 4),
+      live_view: [signing_salt: "dala_designer_signing_salt"],
+      pubsub_server: Dala.Designer.PubSub,
       debug_errors: true
     ]
 
@@ -124,7 +124,7 @@ defmodule Dala.Preview.Live do
 
     case Process.whereis(endpoint) do
       nil ->
-        Supervisor.start_child(Dala.Preview.Supervisor, {endpoint, []})
+        Supervisor.start_child(Dala.Designer.Supervisor, {endpoint, []})
 
       _ ->
         :ok
@@ -147,8 +147,8 @@ defmodule Dala.Preview.Live do
 
         plug(Plug.Session,
           store: :cookie,
-          key: "_dala_preview",
-          signing_salt: "dala_preview_dev"
+          key: "_dala_designer",
+          signing_salt: "dala_designer_dev"
         )
 
         plug(:fetch_session)
@@ -159,12 +159,12 @@ defmodule Dala.Preview.Live do
           case conn.method do
             "GET" ->
               conn
-              |> Phoenix.LiveView.Controller.live_render(Dala.Preview.Canvas,
+              |> Phoenix.LiveView.Controller.live_render(Dala.Designer.Canvas,
                 session: %{
-                  "initial_tree" => :persistent_term.get({Dala.Preview.Live, :initial_tree}, nil),
+                  "initial_tree" => :persistent_term.get({Dala.Designer.Live, :initial_tree}, nil),
                   "initial_module" =>
                     :persistent_term.get(
-                      {Dala.Preview.Live, :initial_module},
+                      {Dala.Designer.Live, :initial_module},
                       "MyApp.HomeScreen"
                     )
                 }
@@ -175,7 +175,7 @@ defmodule Dala.Preview.Live do
           end
         end
       end,
-      file: "dala_preview_endpoint"
+      file: "dala_designer_endpoint"
     )
 
     Code.compile_quoted(module)
