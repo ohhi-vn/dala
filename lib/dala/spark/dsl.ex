@@ -185,6 +185,15 @@ defmodule Dala.Spark.Dsl do
             entities: unquote(Macro.escape(entities))
         }
       )
+
+      # Store entities as module attribute for compile-time verification
+      Module.put_attribute(__MODULE__, :__dala_dsl__, true)
+      Module.put_attribute(__MODULE__, :__dala_dsl_entities__, unquote(Macro.escape(entities)))
+      Module.put_attribute(__MODULE__, :__dala_dsl_screen_name, unquote(Macro.escape(validated_opts))[:name])
+
+      # Persist DSL info for runtime access (used by Dala.Spark.Dsl.verify/1)
+      @persist {:dala_dsl_entities, unquote(Macro.escape(entities))}
+      @persist {:dala_dsl_screen_name, unquote(Macro.escape(validated_opts))[:name]}
     end
   end
 
@@ -221,6 +230,12 @@ defmodule Dala.Spark.Dsl do
             entities: unquote(Macro.escape(attributes))
         }
       )
+
+      # Store attributes as module attribute for compile-time verification
+      Module.put_attribute(__MODULE__, :__dala_dsl_attributes__, unquote(Macro.escape(attributes)))
+
+      # Persist DSL info for runtime access (used by Dala.Spark.Dsl.verify/1)
+      @persist {:dala_dsl_attributes, unquote(Macro.escape(attributes))}
     end
   end
 
@@ -234,6 +249,72 @@ defmodule Dala.Spark.Dsl do
   defp extract_calls_from_block({:__block__, _, calls}), do: calls
   defp extract_calls_from_block(call) when is_tuple(call), do: [call]
   defp extract_calls_from_block(_), do: []
+
+  defp parse_entity_call(
+         {:if, meta, [condition, [do: then_block, else: else_block]]},
+         caller_module
+       ) do
+    then_children =
+      Enum.flat_map(extract_calls_from_block(then_block), &parse_entity_call(&1, caller_module))
+
+    else_children =
+      Enum.flat_map(extract_calls_from_block(else_block), &parse_entity_call(&1, caller_module))
+
+    [
+      %{
+        type: :conditional,
+        props: %{condition: condition},
+        children: [],
+        then_children: then_children,
+        else_children: else_children,
+        __spark_metadata__: %Spark.Dsl.Entity.Meta{anno: meta, properties_anno: %{}}
+      }
+    ]
+  end
+
+  defp parse_entity_call({:if, meta, [condition, [do: then_block]]}, caller_module) do
+    then_children =
+      Enum.flat_map(extract_calls_from_block(then_block), &parse_entity_call(&1, caller_module))
+
+    [
+      %{
+        type: :conditional,
+        props: %{condition: condition},
+        children: [],
+        then_children: then_children,
+        else_children: [],
+        __spark_metadata__: %Spark.Dsl.Entity.Meta{anno: meta, properties_anno: %{}}
+      }
+    ]
+  end
+
+  defp parse_entity_call({:unless, meta, [condition, [do: then_block]]}, caller_module) do
+    then_children =
+      Enum.flat_map(extract_calls_from_block(then_block), &parse_entity_call(&1, caller_module))
+
+    [
+      %{
+        type: :conditional,
+        props: %{condition: {:!, [context: Elixir, imports: [{1, Kernel}]], [condition]}},
+        children: [],
+        then_children: then_children,
+        else_children: [],
+        __spark_metadata__: %Spark.Dsl.Entity.Meta{anno: meta, properties_anno: %{}}
+      }
+    ]
+  end
+
+  defp parse_entity_call({:for, meta, args}, _caller_module) do
+    [
+      %{
+        type: :list_render,
+        props: %{__spark_metadata__: %Spark.Dsl.Entity.Meta{anno: meta, properties_anno: %{}}},
+        children: [],
+        for_args: args,
+        __spark_metadata__: %Spark.Dsl.Entity.Meta{anno: meta, properties_anno: %{}}
+      }
+    ]
+  end
 
   defp parse_entity_call({name, meta, args}, caller_module) when is_atom(name) do
     component_name = name
@@ -419,11 +500,43 @@ defmodule Dala.Spark.Dsl do
 
       @extensions [Dala.Spark.Dsl]
       @before_compile Spark.Dsl
+      @before_compile Dala.Spark.DslCompileHook
       @spark_parent Dala.Spark.Dsl
       Module.register_attribute(__MODULE__, :persist, accumulate: true)
       @persist {:module, __MODULE__}
       @persist {:file, __ENV__.file}
       @persist {:extensions, [Dala.Spark.Dsl]}
+      Module.register_attribute(__MODULE__, :__dala_dsl_entities__, accumulate: false, persist: true)
+      Module.register_attribute(__MODULE__, :__dala_dsl_attributes__, accumulate: false, persist: true)
+      Module.register_attribute(__MODULE__, :__dala_dsl__, accumulate: false, persist: true)
+      Module.register_attribute(__MODULE__, :__dala_dsl_screen_name, accumulate: false, persist: true)
+
+      @doc false
+      def __spark_dsl__ do
+        persisted = persisted() || %{}
+        entities = Map.get(persisted, :dala_dsl_entities, [])
+        attributes = Map.get(persisted, :dala_dsl_attributes, [])
+        screen_name = Map.get(persisted, :dala_dsl_screen_name)
+
+        # Gather defined handle_event handlers
+        handlers =
+          case __MODULE__.__info__(:functions)[:handle_event] do
+            nil ->
+              []
+
+            arity when arity == 3 ->
+              # We can't easily get clause patterns, so return empty
+              # The mix task will do deeper analysis
+              []
+          end
+
+        %{
+          screen_name: screen_name,
+          entities: entities,
+          attributes: attributes,
+          handlers: handlers
+        }
+      end
     end
   end
 
@@ -436,6 +549,21 @@ defmodule Dala.Spark.Dsl do
       _ ->
         :ok
     end
+  end
+
+  @doc """
+  Verify the DSL definitions of a screen module.
+
+  Returns a list of warnings and errors found in the module's DSL.
+
+      Dala.Spark.Dsl.verify(MyApp.HomeScreen)
+      # => [%{type: :warning, module: MyApp.HomeScreen, line: 12, message: "..."}]
+
+  See `Dala.Spark.DslVerifier` for detailed verification logic.
+  """
+  @spec verify(module()) :: [Dala.Spark.DslVerifier.warning()]
+  def verify(module) do
+    Dala.Spark.DslVerifier.verify_module(module)
   end
 
   # ── Verifier ────────────────────────────────────────────────────────────
@@ -511,6 +639,17 @@ defmodule Dala.Spark.Dsl do
     defp verify_entities(dsl_state) do
       screen_entities = Spark.Dsl.Transformer.get_entities(dsl_state, [:screen])
       Enum.flat_map(screen_entities, &verify_entity/1)
+    end
+
+    defp verify_entity(%{type: :conditional} = entity) do
+      then_children = Map.get(entity, :then_children, [])
+      else_children = Map.get(entity, :else_children, [])
+      Enum.flat_map(then_children ++ else_children, &verify_entity/1)
+    end
+
+    defp verify_entity(%{type: :list_render} = entity) do
+      children = Map.get(entity, :children, [])
+      Enum.flat_map(children, &verify_entity/1)
     end
 
     defp verify_entity(entity) do

@@ -149,12 +149,12 @@ The default is a no-op. Most screens don't need to implement this.
 
 ## Starting screens
 
-### `Dala.Screen.Screen.start_root/3`
+### `Dala.Screen.start_root/3`
 
 Called by `Dala.App` to start the root screen of the navigation stack. This is the entry point for your app's UI. If it returns `{:error, reason}`, the app crashes loudly (see AGENTS.md rule #2).
 
 ```elixir
-{:ok, pid} = Dala.Screen.Screen.start_root(MyApp.HomeScreen, %{}, nil)
+{:ok, pid} = Dala.Screen.start_root(MyApp.HomeScreen, %{}, [])
 ```
 
 `Dala.Screen.start_link/3` is for testing — it starts the screen in `:no_render` mode, skipping NIF calls but running all Elixir callbacks:

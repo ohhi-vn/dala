@@ -125,5 +125,5 @@ The setup uses:
 ## See Also
 
 - `Dala.Bluetooth` module documentation
-- `Dala.Setup.IOS` module for programmatic access
+- `Dala.Setup.Ios` module for programmatic access
 - `ios/DalaAppDelegate.swift.template` for AppDelegate integration

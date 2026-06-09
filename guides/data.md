@@ -101,7 +101,7 @@ def on_start do
   Application.ensure_all_started(:ecto_sqlite3)
   {:ok, _} = MyApp.Repo.start_link()
   Ecto.Migrator.with_repo(MyApp.Repo, &Ecto.Migrator.run(&1, :up, all: true))
-  Dala.Screen.Screen.start_root(MyApp.HomeScreen)
+  Dala.Screen.start_root(MyApp.HomeScreen)
 end
 ```
 

@@ -29,4 +29,36 @@ defmodule Dala.Theme.Adaptive do
       _ -> Dala.Theme.Light.theme()
     end
   end
+
+  defmodule Custom do
+    @moduledoc """
+    Adaptive theme that switches between a custom dark/light pair.
+
+        defmodule MyApp do
+          use Dala.App, theme: Dala.Theme.Adaptive.new(
+            dark: Dala.Theme.Obsidian,
+            light: Dala.Theme.Light
+          )
+        end
+    """
+    defstruct [:dark, :light]
+
+    @doc "Create a new adaptive theme with a dark/light pair."
+    @spec new(keyword()) :: %__MODULE__{}
+    def new(opts) do
+      %__MODULE__{
+        dark: Keyword.get(opts, :dark, Dala.Theme.Dark),
+        light: Keyword.get(opts, :light, Dala.Theme.Light)
+      }
+    end
+
+    @doc "Returns the appropriate theme based on current OS appearance."
+    @spec theme(%__MODULE__{}) :: Dala.Theme.t()
+    def theme(%__MODULE__{dark: dark, light: light}) do
+      case Dala.Theme.Theme.color_scheme() do
+        :dark -> dark.theme()
+        _ -> light.theme()
+      end
+    end
+  end
 end

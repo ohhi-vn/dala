@@ -132,14 +132,6 @@ def handle_event("tap", %{"tag" => "logged_in"}, socket) do
 end
 ```
 
-### `switch_tab/2`
-
-Switch to a named tab in a tab bar or drawer layout:
-
-```elixir
-Dala.Socket.switch_tab(socket, :settings)
-```
-
 ## Navigation animations
 
 The framework automatically picks the right animation based on the navigation action:

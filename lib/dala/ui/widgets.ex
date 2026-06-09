@@ -27,7 +27,9 @@ defmodule Dala.Ui.Widgets do
     :text_align,
     :italic,
     :line_height,
-    :letter_spacing
+    :letter_spacing,
+    :variant,
+    :selectable
   ]
 
   @layout_props [
@@ -57,7 +59,14 @@ defmodule Dala.Ui.Widgets do
     :on_swipe_down
   ]
 
-  @accessibility_props [:accessibility_id]
+  @accessibility_props [
+    :accessibility_id,
+    :accessibility_label,
+    :accessibility_hint,
+    :accessibility_role,
+    :accessibility_value,
+    :accessibility_hidden
+  ]
 
   # ── Layout containers ─────────────────────────────────────────────────────
 
@@ -172,12 +181,27 @@ defmodule Dala.Ui.Widgets do
     * `:italic` — boolean
     * `:line_height` — multiplier (e.g. `1.5` for 150% line height)
     * `:letter_spacing` — extra spacing in pt
+    * `:variant` — text style preset. One of:
+      - `:display`   — text_size: :"4xl", font_weight: "bold"
+      - `:heading`   — text_size: :"2xl", font_weight: "semibold"
+      - `:title`     — text_size: :xl, font_weight: "medium"
+      - `:body`      — text_size: :base, font_weight: "regular"
+      - `:caption`   — text_size: :sm, text_color: :muted
+      - `:label`     — text_size: :xs, font_weight: "medium", text_color: :muted
+      - `:overline`  — text_size: :xs, font_weight: "medium"
+      When provided, variant sets defaults that individual props override.
+    * `:selectable` — boolean, whether the user can select/copy the text (default: false)
     * `:padding`, `:padding_top`, `:padding_right`, `:padding_bottom`, `:padding_left`
     * `:background` — background color
     * `:corner_radius` — rounded corners
     * `:fill_width` — boolean, stretch to fill parent width
     * `:on_tap`, `:on_long_press`, `:on_double_tap` — gesture handlers
     * `:accessibility_id` — test identifier
+    * `:accessibility_label` — accessibility label
+    * `:accessibility_hint` — accessibility hint
+    * `:accessibility_role` — accessibility role
+    * `:accessibility_value` — accessibility value
+    * `:accessibility_hidden` — hide from accessibility tree
 
   ## Examples
 
@@ -188,6 +212,7 @@ defmodule Dala.Ui.Widgets do
   def text(props) when is_list(props), do: text(Map.new(props))
 
   def text(%{} = props) do
+    props = apply_variant_defaults(props)
     allowed = @typography_props ++ @layout_props ++ @gesture_props ++ @accessibility_props
 
     %{
@@ -196,6 +221,26 @@ defmodule Dala.Ui.Widgets do
       children: []
     }
   end
+
+  @variant_defaults %{
+    display: [text_size: :"4xl", font_weight: "bold"],
+    heading: [text_size: :"2xl", font_weight: "semibold"],
+    title: [text_size: :xl, font_weight: "medium"],
+    body: [text_size: :base, font_weight: "regular"],
+    caption: [text_size: :sm, text_color: :muted],
+    label: [text_size: :xs, font_weight: "medium", text_color: :muted],
+    overline: [text_size: :xs, font_weight: "medium"]
+  }
+
+  defp apply_variant_defaults(%{variant: variant} = props) when is_atom(variant) do
+    defaults = Map.get(@variant_defaults, variant, [])
+
+    Keyword.merge(defaults, Map.to_list(props))
+    |> Map.new()
+    |> Map.put(:variant, variant)
+  end
+
+  defp apply_variant_defaults(props), do: props
 
   @doc """
   Returns a `:button` leaf node.
@@ -213,6 +258,11 @@ defmodule Dala.Ui.Widgets do
     * `:corner_radius` — rounded corners
     * `:fill_width` — boolean, stretch to fill parent width (default: true from component defaults)
     * `:accessibility_id` — test identifier
+    * `:accessibility_label` — accessibility label
+    * `:accessibility_hint` — accessibility hint
+    * `:accessibility_role` — accessibility role
+    * `:accessibility_value` — accessibility value
+    * `:accessibility_hidden` — hide from accessibility tree
 
   ## Examples
 
@@ -256,13 +306,30 @@ defmodule Dala.Ui.Widgets do
     * `:padding`, `:background` — layout props
     * `:on_tap`, `:on_long_press` — gesture handlers
     * `:accessibility_id` — test identifier (also used as accessibility label)
+    * `:accessibility_label` — accessibility label
+    * `:accessibility_hint` — accessibility hint
+    * `:accessibility_role` — accessibility role
+    * `:accessibility_value` — accessibility value
+    * `:accessibility_hidden` — hide from accessibility tree
 
   ## Logical icon names
 
   `settings`, `back`, `forward`, `close`, `add`, `remove`, `edit`, `check`,
   `chevron_right`, `chevron_left`, `chevron_up`, `chevron_down`, `info`,
   `warning`, `error`, `search`, `trash`, `share`, `more`, `menu`, `refresh`,
-  `favorite`, `favorite_filled`, `star`, `star_filled`, `user`, `home`
+  `favorite`, `favorite_filled`, `star`, `star_filled`, `user`, `home`,
+  `bookmark`, `bookmark_filled`, `download`, `upload`, `attach`, `camera`,
+  `photo`, `notification`, `notification_filled`, `calendar`, `clock`,
+  `filter`, `sort`, `grid`, `list`, `lock`, `unlock`, `eye`, `eye_off`,
+  `link`, `copy`, `send`, `play`, `pause`, `stop`, `volume`, `volume_off`,
+  `mic`, `mic_off`, `call`, `mail`, `location`, `map`, `compass`,
+  `flashlight`, `flashlight_off`, `qr_code`, `barcode`, `print`, `cloud`,
+  `cloud_off`, `wifi`, `wifi_off`, `bluetooth`, `battery`, `thermometer`,
+  `brightness`, `contrast`, `saturation`, `crop`, `rotate`, `flip`, `undo`,
+  `redo`, `save`, `folder`, `file`, `document`, `clipboard`, `key`, `shield`,
+  `flag`, `tag`, `label`, `bookmark_add`, `bookmark_remove`, `pin`, `unpin`,
+  `zoom_in`, `zoom_out`, `fullscreen`, `fullscreen_exit`, `expand`, `collapse`,
+  `maximize`, `minimize`
 
   ## Examples
 
@@ -315,6 +382,47 @@ defmodule Dala.Ui.Widgets do
     %{
       type: :divider,
       props: Map.take(props, [:thickness, :color, :padding]),
+      children: []
+    }
+  end
+
+  @doc """
+  Returns an `:empty_state` leaf node. Placeholder for empty content.
+
+  ## Props
+
+    * `:icon` — string, icon name
+    * `:title` — string, heading text
+    * `:message` — string, description text
+    * `:action_label` — string, CTA button label
+    * `:on_action` — {pid, tag} tuple for the CTA
+    * `:accessibility_id` — test identifier
+
+  ## Examples
+
+      Dala.Ui.Widgets.empty_state(icon: "inbox", title: "Nothing here yet", message: "Your items will appear here.", action_label: "Get started", on_action: :start)
+  """
+  @spec empty_state(keyword() | map()) :: map()
+  def empty_state(props \\ [])
+  def empty_state(props) when is_list(props), do: empty_state(Map.new(props))
+
+  def empty_state(%{} = props) do
+    %{
+      type: :empty_state,
+      props:
+        Map.take(props, [
+          :icon,
+          :title,
+          :message,
+          :action_label,
+          :on_action,
+          :accessibility_id,
+          :accessibility_label,
+          :accessibility_hint,
+          :accessibility_role,
+          :accessibility_value,
+          :accessibility_hidden
+        ]),
       children: []
     }
   end
@@ -578,6 +686,52 @@ defmodule Dala.Ui.Widgets do
   end
 
   @doc """
+  Returns an `:avatar` leaf node. Profile image with fallback initials.
+
+  ## Props
+
+    * `:src` — string, image URL (nil shows fallback)
+    * `:fallback` — string, 1-2 character initials shown when src is nil/fails
+    * `:size` — number, diameter in dp/pt (default: 40)
+    * `:shape` — :circle or :rounded_square (default: :circle)
+    * `:background` — background color for fallback state
+    * `:text_color` — text color for fallback initials
+    * `:on_tap` — {pid, tag} tuple
+    * `:accessibility_id` — test identifier
+
+  ## Examples
+
+      Dala.Ui.Widgets.avatar(src: @user.photo_url, fallback: "JS", size: 48, shape: :circle)
+      Dala.Ui.Widgets.avatar(fallback: "AB", background: :primary, text_color: :on_primary, size: 40)
+  """
+  @spec avatar(keyword() | map()) :: map()
+  def avatar(props \\ [])
+  def avatar(props) when is_list(props), do: avatar(Map.new(props))
+
+  def avatar(%{} = props) do
+    %{
+      type: :avatar,
+      props:
+        Map.take(props, [
+          :src,
+          :fallback,
+          :size,
+          :shape,
+          :background,
+          :text_color,
+          :on_tap,
+          :accessibility_id,
+          :accessibility_label,
+          :accessibility_hint,
+          :accessibility_role,
+          :accessibility_value,
+          :accessibility_hidden
+        ]),
+      children: []
+    }
+  end
+
+  @doc """
   Returns a `:switch` leaf node. A boolean toggle switch.
 
   Prefer `toggle/1` for new code — it uses `:on_change` consistent with other
@@ -613,6 +767,47 @@ defmodule Dala.Ui.Widgets do
   end
 
   @doc """
+  Returns a `:stepper` leaf node. Multi-step indicator for forms and onboarding.
+
+  ## Props
+
+    * `:steps` — list of label strings (required)
+    * `:current` — 0-based index of the current step
+    * `:color` — active step color
+    * `:connector_color` — color of the line connecting steps
+    * `:completed_icon` — icon name for completed steps (default: "check")
+    * `:accessibility_id` — test identifier
+
+  ## Examples
+
+      Dala.Ui.Widgets.stepper(steps: ["Account", "Profile", "Done"], current: @step)
+  """
+  @spec stepper(keyword() | map()) :: map()
+  def stepper(props \\ [])
+  def stepper(props) when is_list(props), do: stepper(Map.new(props))
+
+  def stepper(%{} = props) do
+    %{
+      type: :stepper,
+      props:
+        Map.take(props, [
+          :steps,
+          :current,
+          :color,
+          :connector_color,
+          :completed_icon,
+          :accessibility_id,
+          :accessibility_label,
+          :accessibility_hint,
+          :accessibility_role,
+          :accessibility_value,
+          :accessibility_hidden
+        ]),
+      children: []
+    }
+  end
+
+  @doc """
   Returns an `:activity_indicator` leaf node. Displays a circular loading spinner.
 
   ## Props
@@ -629,6 +824,48 @@ defmodule Dala.Ui.Widgets do
     %{
       type: :activity_indicator,
       props: Map.take(props, [:size, :color, :animating, :accessibility_id]),
+      children: []
+    }
+  end
+
+  @doc """
+  Returns a `:skeleton` leaf node. Animated shimmer placeholder for loading content.
+
+  ## Props
+
+    * `:width` — number or `:fill`, placeholder width
+    * `:height` — number, placeholder height
+    * `:corner_radius` — rounded corners
+    * `:color` — base color for the shimmer
+    * `:animate` — boolean, enable shimmer animation (default: true)
+    * `:accessibility_id` — test identifier
+
+  ## Examples
+
+      Dala.Ui.Widgets.skeleton(width: 200, height: 16, corner_radius: :radius_sm)
+      Dala.Ui.Widgets.skeleton(width: :fill, height: 120, corner_radius: :radius_md)
+  """
+  @spec skeleton(keyword() | map()) :: map()
+  def skeleton(props \\ [])
+  def skeleton(props) when is_list(props), do: skeleton(Map.new(props))
+
+  def skeleton(%{} = props) do
+    %{
+      type: :skeleton,
+      props:
+        Map.take(props, [
+          :width,
+          :height,
+          :corner_radius,
+          :color,
+          :animate,
+          :accessibility_id,
+          :accessibility_label,
+          :accessibility_hint,
+          :accessibility_role,
+          :accessibility_value,
+          :accessibility_hidden
+        ]),
       children: []
     }
   end
@@ -722,6 +959,63 @@ defmodule Dala.Ui.Widgets do
 
     %{
       type: :scroll,
+      props: Map.take(props, allowed),
+      children: children
+    }
+  end
+
+  @doc """
+  Returns a `:grid` container node. Grid layout for photo grids, card grids, etc.
+
+  ## Props
+
+    * `:columns` — integer, number of columns (default: 2)
+    * `:gap` — spacing between cells (accepts spacing tokens)
+    * `:row_gap` — vertical gap between rows (falls back to :gap)
+    * `:padding`, `:padding_top`, `:padding_right`, `:padding_bottom`, `:padding_left`
+    * `:background` — background color
+    * `:corner_radius` — rounded corners
+    * `:fill_width` — boolean, stretch to fill parent width
+    * `:on_tap`, `:on_long_press` — gesture handlers
+    * `:accessibility_id` — test identifier
+
+  ## Examples
+
+      Dala.Ui.Widgets.grid(columns: 2, gap: :space_sm, padding: :space_md, [
+        Dala.Ui.Widgets.text(text: "Cell 1"),
+        Dala.Ui.Widgets.text(text: "Cell 2")
+      ])
+  """
+  @spec grid(keyword() | map(), list()) :: map()
+  def grid(props, children \\ [])
+  def grid(props, children) when is_list(props), do: grid(Map.new(props), children)
+
+  def grid(%{} = props, children) when is_list(children) do
+    allowed =
+      [
+        :columns,
+        :gap,
+        :row_gap,
+        :padding,
+        :padding_top,
+        :padding_right,
+        :padding_bottom,
+        :padding_left,
+        :background,
+        :corner_radius,
+        :fill_width,
+        :on_tap,
+        :on_long_press,
+        :accessibility_id,
+        :accessibility_label,
+        :accessibility_hint,
+        :accessibility_role,
+        :accessibility_value,
+        :accessibility_hidden
+      ]
+
+    %{
+      type: :grid,
       props: Map.take(props, allowed),
       children: children
     }

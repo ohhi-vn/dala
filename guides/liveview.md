@@ -28,7 +28,7 @@ After running, wire up the screen in your app:
 
 ```elixir
 # In Dala.App.on_start/0
-Dala.Screen.Screen.start_root(MyApp.dalaScreen)
+Dala.Screen.start_root(MyApp.dalaScreen)
 ```
 
 Make sure Phoenix is running on the port set in `dala.exs` (default: 4000).

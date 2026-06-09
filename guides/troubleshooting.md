@@ -45,11 +45,11 @@ behaviour, distribution quirks, and platform-specific edge cases.
 
 Common issues encountered during development and how to resolve them.
 
-## Screen never renders — `Dala.Screen.Screen.start_root` silent failure
+## Screen never renders — `Dala.Screen.start_root` silent failure
 
 **Symptom:** App sits on "Starting BEAM…" splash forever. No crash, no progress.
 
-**Cause:** `Dala.Screen.Screen.start_root/1` returns `{:error, reason}` or crashes inside `init/1`.
+**Cause:** `Dala.Screen.start_root/1` returns `{:error, reason}` or crashes inside `init/1`.
 If you don't pattern-match the return value, the screen never renders and the failure is silent.
 (Agents.md rule 2)
 
@@ -57,7 +57,7 @@ If you don't pattern-match the return value, the screen never renders and the fa
 
 ```elixir
 # lib/my_app/application.ex
-{:ok, _pid} = Dala.Screen.Screen.start_root(MyApp.HomeScreen)
+{:ok, _pid} = Dala.Screen.start_root(MyApp.HomeScreen)
 ```
 
 If it crashes, the `= ` forces a loud failure. Check device logs:

@@ -71,6 +71,9 @@ defmodule Dala.Platform.Native do
   @doc "Get device model string"
   def device_model, do: :erlang.nif_error(:nif_not_loaded)
 
+  @doc "Check if the OS accessibility setting \"Reduce Motion\" is enabled"
+  def prefers_reduced_motion, do: :erlang.nif_error(:nif_not_loaded)
+
   @doc "Get current locale identifier (e.g. \"en_US\", \"fr_FR\")"
   def device_locale, do: :erlang.nif_error(:nif_not_loaded)
 

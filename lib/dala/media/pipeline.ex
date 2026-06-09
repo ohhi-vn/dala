@@ -30,7 +30,6 @@ defmodule Dala.Media.Pipeline do
 
   use GenServer
 
-
   @type pipeline_ref :: pid()
   @type config :: %{
           url: String.t(),

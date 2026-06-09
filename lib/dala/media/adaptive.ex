@@ -35,7 +35,6 @@ defmodule Dala.Media.Adaptive do
 
   use GenServer
 
-
   @type adapter_ref :: pid()
 
   @default_min_bitrate 200_000

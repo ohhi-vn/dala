@@ -652,4 +652,150 @@ defmodule Dala.Ui.WidgetsTest do
       assert node.props.id == :chart
     end
   end
+
+  # ── Text variant presets ────────────────────────────────────────────────
+
+  describe "text variant presets" do
+    test "applies display variant defaults" do
+      node = W.text(text: "Hello", variant: :display)
+      assert node.props.text_size == :"4xl"
+      assert node.props.font_weight == "bold"
+    end
+
+    test "applies heading variant defaults" do
+      node = W.text(text: "Hello", variant: :heading)
+      assert node.props.text_size == :"2xl"
+      assert node.props.font_weight == "semibold"
+    end
+
+    test "applies title variant defaults" do
+      node = W.text(text: "Hello", variant: :title)
+      assert node.props.text_size == :xl
+      assert node.props.font_weight == "medium"
+    end
+
+    test "applies body variant defaults" do
+      node = W.text(text: "Hello", variant: :body)
+      assert node.props.text_size == :base
+      assert node.props.font_weight == "regular"
+    end
+
+    test "applies caption variant defaults" do
+      node = W.text(text: "Hello", variant: :caption)
+      assert node.props.text_size == :sm
+      assert node.props.text_color == :muted
+    end
+
+    test "applies label variant defaults" do
+      node = W.text(text: "Hello", variant: :label)
+      assert node.props.text_size == :xs
+      assert node.props.font_weight == "medium"
+      assert node.props.text_color == :muted
+    end
+
+    test "applies overline variant defaults" do
+      node = W.text(text: "Hello", variant: :overline)
+      assert node.props.text_size == :xs
+      assert node.props.font_weight == "medium"
+    end
+
+    test "explicit props override variant defaults" do
+      node = W.text(text: "Hello", variant: :caption, text_size: :xl, text_color: :primary)
+      assert node.props.text_size == :xl
+      assert node.props.text_color == :primary
+    end
+
+    test "text without variant has no variant defaults applied" do
+      node = W.text(text: "Hello")
+      refute Map.has_key?(node.props, :text_size)
+      refute Map.has_key?(node.props, :font_weight)
+    end
+
+    test "selectable prop is preserved" do
+      node = W.text(text: "Copy me", selectable: true)
+      assert node.props.selectable == true
+    end
+  end
+
+  # ── New component constructors ──────────────────────────────────────────
+
+  describe "new component constructors" do
+    test "skeleton/1 returns correct node" do
+      node = W.skeleton(width: 200, height: 16)
+      assert node.type == :skeleton
+      assert node.props.width == 200
+      assert node.props.height == 16
+    end
+
+    test "empty_state/1 returns correct node" do
+      node = W.empty_state(icon: "inbox", title: "Empty")
+      assert node.type == :empty_state
+      assert node.props.icon == "inbox"
+      assert node.props.title == "Empty"
+    end
+
+    test "avatar/1 returns correct node" do
+      node = W.avatar(fallback: "JS", size: 48)
+      assert node.type == :avatar
+      assert node.props.fallback == "JS"
+      assert node.props.size == 48
+    end
+
+    test "stepper/1 returns correct node" do
+      node = W.stepper(steps: ["A", "B"], current: 0)
+      assert node.type == :stepper
+      assert node.props.steps == ["A", "B"]
+      assert node.props.current == 0
+    end
+
+    test "grid/2 returns correct node" do
+      node = W.grid([columns: 2], [])
+      assert node.type == :grid
+      assert node.props.columns == 2
+    end
+  end
+
+  # ── Accessibility props ─────────────────────────────────────────────────
+
+  describe "accessibility props on components" do
+    test "text accepts accessibility_label" do
+      node = W.text(text: "Hello", accessibility_label: "Greeting")
+      assert node.props.accessibility_label == "Greeting"
+    end
+
+    test "button accepts accessibility_id" do
+      node = W.button(text: "Submit", accessibility_id: :submit_btn)
+      assert node.props.accessibility_id == :submit_btn
+    end
+
+    test "icon accepts accessibility_role" do
+      node = W.icon(name: "trash", accessibility_role: :button)
+      assert node.props.accessibility_role == :button
+    end
+
+    test "skeleton accepts accessibility_label" do
+      node = W.skeleton(width: 100, accessibility_label: "Loading")
+      assert node.props.accessibility_label == "Loading"
+    end
+
+    test "empty_state accepts accessibility_label" do
+      node = W.empty_state(icon: "inbox", title: "Empty", accessibility_label: "No items")
+      assert node.props.accessibility_label == "No items"
+    end
+
+    test "avatar accepts accessibility_hint" do
+      node = W.avatar(fallback: "JS", accessibility_hint: "User profile")
+      assert node.props.accessibility_hint == "User profile"
+    end
+
+    test "stepper accepts accessibility_value" do
+      node = W.stepper(steps: ["A", "B"], current: 0, accessibility_value: "Step 1 of 2")
+      assert node.props.accessibility_value == "Step 1 of 2"
+    end
+
+    test "grid accepts accessibility_hidden" do
+      node = W.grid([columns: 2, accessibility_hidden: true], [])
+      assert node.props.accessibility_hidden == true
+    end
+  end
 end

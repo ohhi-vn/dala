@@ -26,7 +26,9 @@ defmodule Dala.Designer.Codegen do
     :on_action,
     :on_remove,
     :on_leading,
-    :on_page_change
+    :on_page_change,
+    :on_error,
+    :on_load
   ]
 
   # Components where the first prop is a string/binary content prop — rendered as
@@ -273,12 +275,6 @@ defmodule Dala.Designer.Codegen do
       end)
 
     {positional, keyword_props}
-  end
-
-  defp render_dsl_keyword_props([], false, nil), do: ""
-
-  defp render_dsl_keyword_props([], true, positional) when is_binary(positional) do
-    inspect(positional)
   end
 
   defp render_dsl_keyword_props(keyword_props, is_positional_arg, positional, type) do

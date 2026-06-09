@@ -91,7 +91,7 @@ Start it explicitly after `ensure_all_started/1`:
 ```elixir
 {:ok, _} = Application.ensure_all_started(:lv_test)
 {:ok, _} = Dala.Ui.NativeView.Registry.start_link()
-Dala.Screen.Screen.start_root(LvTest.dalaScreen)
+Dala.Screen.start_root(LvTest.dalaScreen)
 ```
 
 ---

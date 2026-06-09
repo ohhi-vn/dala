@@ -17,7 +17,6 @@ defmodule Dala.Media.Clock do
 
   use GenServer
 
-
   @type clock_ref :: pid()
   @type timestamp_us :: integer()
 

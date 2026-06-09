@@ -67,7 +67,7 @@ defmodule MyApp do
   end
 
   def on_start do
-    {:ok, _pid} = Dala.Screen.Screen.start_root(MyApp.HomeScreen)
+    {:ok, _pid} = Dala.Screen.start_root(MyApp.HomeScreen)
     # ⚠️ Use secure cookies - never hardcode in production!
     cookie = Dala.Connectivity.Dist.cookie_from_env("MY_APP_DIST_COOKIE", "my_app")
     Dala.Connectivity.Dist.ensure_started(node: :"my_app@127.0.0.1", cookie: cookie)

@@ -64,6 +64,8 @@ defmodule Dala.Ui.Component do
           :italic,
           :line_height,
           :letter_spacing,
+          :variant,
+          :selectable,
           :padding,
           :padding_top,
           :padding_right,
@@ -75,7 +77,12 @@ defmodule Dala.Ui.Component do
           :on_tap,
           :on_long_press,
           :on_double_tap,
-          :accessibility_id
+          :accessibility_id,
+          :accessibility_label,
+          :accessibility_hint,
+          :accessibility_role,
+          :accessibility_value,
+          :accessibility_hidden
         ],
         defaults: %{text: ""},
         doc: "Display text",
@@ -107,7 +114,12 @@ defmodule Dala.Ui.Component do
           :accessibility_id,
           :variant,
           :icon,
-          :elevation
+          :elevation,
+          :accessibility_label,
+          :accessibility_hint,
+          :accessibility_role,
+          :accessibility_value,
+          :accessibility_hidden
         ],
         defaults: %{text: ""},
         doc: "Tappable button",
@@ -128,7 +140,12 @@ defmodule Dala.Ui.Component do
           :background,
           :on_tap,
           :on_long_press,
-          :accessibility_id
+          :accessibility_id,
+          :accessibility_label,
+          :accessibility_hint,
+          :accessibility_role,
+          :accessibility_value,
+          :accessibility_hidden
         ],
         defaults: %{name: ""},
         doc: "Platform-native icon (SF Symbols on iOS, Material on Android)",
@@ -151,6 +168,29 @@ defmodule Dala.Ui.Component do
         examples: [
           ~s[divider()],
           ~s[divider thickness: 2, color: :primary]
+        ]
+      },
+      empty_state: %__MODULE__{
+        name: :empty_state,
+        type: :empty_state,
+        category: :leaf,
+        props: [
+          :icon,
+          :title,
+          :message,
+          :action_label,
+          :on_action,
+          :accessibility_id,
+          :accessibility_label,
+          :accessibility_hint,
+          :accessibility_role,
+          :accessibility_value,
+          :accessibility_hidden
+        ],
+        defaults: %{},
+        doc: "Empty state placeholder with icon, message, and optional action",
+        examples: [
+          ~s[empty_state(icon: "inbox", title: "Nothing here", message: "Items appear here", action_label: "Get started", on_action: :start)]
         ]
       },
       spacer: %__MODULE__{
@@ -194,7 +234,12 @@ defmodule Dala.Ui.Component do
           :background,
           :padding,
           :corner_radius,
-          :accessibility_id
+          :accessibility_id,
+          :accessibility_label,
+          :accessibility_hint,
+          :accessibility_role,
+          :accessibility_value,
+          :accessibility_hidden
         ],
         defaults: %{text: ""},
         doc: "Text input field",
@@ -216,7 +261,12 @@ defmodule Dala.Ui.Component do
           :text_size,
           :track_color,
           :thumb_color,
-          :accessibility_id
+          :accessibility_id,
+          :accessibility_label,
+          :accessibility_hint,
+          :accessibility_role,
+          :accessibility_value,
+          :accessibility_hidden
         ],
         defaults: %{value: false},
         doc: "On/off toggle switch",
@@ -236,7 +286,12 @@ defmodule Dala.Ui.Component do
           :on_change,
           :disabled,
           :text_color,
-          :accessibility_id
+          :accessibility_id,
+          :accessibility_label,
+          :accessibility_hint,
+          :accessibility_role,
+          :accessibility_value,
+          :accessibility_hidden
         ],
         defaults: %{value: 0.5, min_value: 0, max_value: 1.0, step: 0.01},
         doc: "Slider for numeric input",
@@ -256,12 +311,40 @@ defmodule Dala.Ui.Component do
           :text_color,
           :track_color,
           :thumb_color,
-          :accessibility_id
+          :accessibility_id,
+          :accessibility_label,
+          :accessibility_hint,
+          :accessibility_role,
+          :accessibility_value,
+          :accessibility_hidden
         ],
         defaults: %{value: false},
         doc: "On/off switch",
         examples: [
           ~s(switch value: true, on_toggle: :toggled)
+        ]
+      },
+      stepper: %__MODULE__{
+        name: :stepper,
+        type: :stepper,
+        category: :leaf,
+        props: [
+          :steps,
+          :current,
+          :color,
+          :connector_color,
+          :completed_icon,
+          :accessibility_id,
+          :accessibility_label,
+          :accessibility_hint,
+          :accessibility_role,
+          :accessibility_value,
+          :accessibility_hidden
+        ],
+        defaults: %{steps: [], current: 0, completed_icon: "check"},
+        doc: "Multi-step indicator for forms and onboarding",
+        examples: [
+          ~s(stepper steps: ["Account", "Profile", "Done"], current: @step)
         ]
       },
       image: %__MODULE__{
@@ -279,13 +362,44 @@ defmodule Dala.Ui.Component do
           :placeholder_color,
           :on_error,
           :on_load,
-          :accessibility_id
+          :accessibility_id,
+          :accessibility_label,
+          :accessibility_hint,
+          :accessibility_role,
+          :accessibility_value,
+          :accessibility_hidden
         ],
         defaults: %{source: ""},
         doc: "Image display",
         examples: [
           ~s(image "https://example.com/photo.jpg"),
           ~s(image "logo.png", width: 100, height: 100, resize_mode: :contain)
+        ]
+      },
+      avatar: %__MODULE__{
+        name: :avatar,
+        type: :avatar,
+        category: :leaf,
+        props: [
+          :src,
+          :fallback,
+          :size,
+          :shape,
+          :background,
+          :text_color,
+          :on_tap,
+          :accessibility_id,
+          :accessibility_label,
+          :accessibility_hint,
+          :accessibility_role,
+          :accessibility_value,
+          :accessibility_hidden
+        ],
+        defaults: %{size: 40, shape: :circle},
+        doc: "Profile image with fallback initials",
+        examples: [
+          ~s(avatar src: @user.photo_url, fallback: "JS", size: 48, shape: :circle),
+          ~s(avatar fallback: "AB", background: :primary, text_color: :on_primary, size: 40)
         ]
       },
       video: %__MODULE__{
@@ -301,7 +415,12 @@ defmodule Dala.Ui.Component do
           :controls,
           :width,
           :height,
-          :accessibility_id
+          :accessibility_id,
+          :accessibility_label,
+          :accessibility_hint,
+          :accessibility_role,
+          :accessibility_value,
+          :accessibility_hidden
         ],
         defaults: %{source: ""},
         doc: "Video player",
@@ -317,12 +436,41 @@ defmodule Dala.Ui.Component do
           :size,
           :color,
           :animating,
-          :accessibility_id
+          :accessibility_id,
+          :accessibility_label,
+          :accessibility_hint,
+          :accessibility_role,
+          :accessibility_value,
+          :accessibility_hidden
         ],
         defaults: %{},
         doc: "Loading spinner",
         examples: [
           ~s(activity_indicator size: :large, color: :primary)
+        ]
+      },
+      skeleton: %__MODULE__{
+        name: :skeleton,
+        type: :skeleton,
+        category: :leaf,
+        props: [
+          :width,
+          :height,
+          :corner_radius,
+          :color,
+          :animate,
+          :accessibility_id,
+          :accessibility_label,
+          :accessibility_hint,
+          :accessibility_role,
+          :accessibility_value,
+          :accessibility_hidden
+        ],
+        defaults: %{animate: true},
+        doc: "Animated shimmer placeholder for loading content",
+        examples: [
+          ~s(skeleton width: 200, height: 16, corner_radius: :radius_sm),
+          ~s(skeleton width: :fill, height: 120, corner_radius: :radius_md)
         ]
       },
       progress_bar: %__MODULE__{
@@ -335,7 +483,12 @@ defmodule Dala.Ui.Component do
           :color,
           :background,
           :height,
-          :accessibility_id
+          :accessibility_id,
+          :accessibility_label,
+          :accessibility_hint,
+          :accessibility_role,
+          :accessibility_value,
+          :accessibility_hidden
         ],
         defaults: %{progress: 0.0},
         doc: "Progress bar",
@@ -351,7 +504,12 @@ defmodule Dala.Ui.Component do
           :bar_style,
           :hidden,
           :background,
-          :accessibility_id
+          :accessibility_id,
+          :accessibility_label,
+          :accessibility_hint,
+          :accessibility_role,
+          :accessibility_value,
+          :accessibility_hidden
         ],
         defaults: %{},
         doc: "Status bar configuration",
@@ -367,7 +525,12 @@ defmodule Dala.Ui.Component do
           :on_refresh,
           :refreshing,
           :tint_color,
-          :accessibility_id
+          :accessibility_id,
+          :accessibility_label,
+          :accessibility_hint,
+          :accessibility_role,
+          :accessibility_value,
+          :accessibility_hidden
         ],
         defaults: %{refreshing: false},
         doc: "Pull-to-refresh control",
@@ -387,7 +550,12 @@ defmodule Dala.Ui.Component do
           :width,
           :height,
           :allow,
-          :accessibility_id
+          :accessibility_id,
+          :accessibility_label,
+          :accessibility_hint,
+          :accessibility_role,
+          :accessibility_value,
+          :accessibility_hidden
         ],
         defaults: %{source: ""},
         doc: "Inline web view",
@@ -404,7 +572,12 @@ defmodule Dala.Ui.Component do
           :facing,
           :width,
           :height,
-          :accessibility_id
+          :accessibility_id,
+          :accessibility_label,
+          :accessibility_hint,
+          :accessibility_role,
+          :accessibility_value,
+          :accessibility_hidden
         ],
         defaults: %{facing: :back},
         doc: "Camera preview",
@@ -437,7 +610,12 @@ defmodule Dala.Ui.Component do
           :on_tab_select,
           :text_color,
           :background,
-          :accessibility_id
+          :accessibility_id,
+          :accessibility_label,
+          :accessibility_hint,
+          :accessibility_role,
+          :accessibility_value,
+          :accessibility_hidden
         ],
         defaults: %{tabs: []},
         doc: "Tab bar for switching between screens",
@@ -458,7 +636,12 @@ defmodule Dala.Ui.Component do
           :refreshing,
           :empty_text,
           :separator,
-          :accessibility_id
+          :accessibility_id,
+          :accessibility_label,
+          :accessibility_hint,
+          :accessibility_role,
+          :accessibility_value,
+          :accessibility_hidden
         ],
         defaults: %{items: []},
         doc: "Data-driven list (FlatList equivalent)",
@@ -477,7 +660,12 @@ defmodule Dala.Ui.Component do
         props: [
           :on_tap,
           :on_long_press,
-          :accessibility_id
+          :accessibility_id,
+          :accessibility_label,
+          :accessibility_hint,
+          :accessibility_role,
+          :accessibility_value,
+          :accessibility_hidden
         ],
         defaults: %{},
         doc: "List item container",
@@ -496,7 +684,12 @@ defmodule Dala.Ui.Component do
           :disabled,
           :text_color,
           :text_size,
-          :accessibility_id
+          :accessibility_id,
+          :accessibility_label,
+          :accessibility_hint,
+          :accessibility_role,
+          :accessibility_value,
+          :accessibility_hidden
         ],
         defaults: %{value: false},
         doc: "Checkbox input",
@@ -516,7 +709,12 @@ defmodule Dala.Ui.Component do
           :disabled,
           :text_color,
           :text_size,
-          :accessibility_id
+          :accessibility_id,
+          :accessibility_label,
+          :accessibility_hint,
+          :accessibility_role,
+          :accessibility_value,
+          :accessibility_hidden
         ],
         defaults: %{selected: false},
         doc: "Radio button",
@@ -541,7 +739,12 @@ defmodule Dala.Ui.Component do
           :text_size,
           :background,
           :corner_radius,
-          :accessibility_id
+          :accessibility_id,
+          :accessibility_label,
+          :accessibility_hint,
+          :accessibility_role,
+          :accessibility_value,
+          :accessibility_hidden
         ],
         defaults: %{},
         doc: "Chip/tag component",
@@ -561,7 +764,12 @@ defmodule Dala.Ui.Component do
           :visible,
           :text_color,
           :background,
-          :accessibility_id
+          :accessibility_id,
+          :accessibility_label,
+          :accessibility_hint,
+          :accessibility_role,
+          :accessibility_value,
+          :accessibility_hidden
         ],
         defaults: %{visible: false},
         doc: "Snackbar/toast notification",
@@ -582,7 +790,12 @@ defmodule Dala.Ui.Component do
           :text_color,
           :elevation,
           :corner_radius,
-          :accessibility_id
+          :accessibility_id,
+          :accessibility_label,
+          :accessibility_hint,
+          :accessibility_role,
+          :accessibility_value,
+          :accessibility_hidden
         ],
         defaults: %{},
         doc: "Floating action button",
@@ -604,7 +817,12 @@ defmodule Dala.Ui.Component do
           :background,
           :size,
           :disabled,
-          :accessibility_id
+          :accessibility_id,
+          :accessibility_label,
+          :accessibility_hint,
+          :accessibility_role,
+          :accessibility_value,
+          :accessibility_hidden
         ],
         defaults: %{},
         doc: "Icon-only button",
@@ -622,7 +840,12 @@ defmodule Dala.Ui.Component do
           :on_select,
           :text_color,
           :background,
-          :accessibility_id
+          :accessibility_id,
+          :accessibility_label,
+          :accessibility_hint,
+          :accessibility_role,
+          :accessibility_value,
+          :accessibility_hidden
         ],
         defaults: %{segments: []},
         doc: "Segmented button control",
@@ -642,7 +865,12 @@ defmodule Dala.Ui.Component do
           :text_color,
           :background,
           :elevation,
-          :accessibility_id
+          :accessibility_id,
+          :accessibility_label,
+          :accessibility_hint,
+          :accessibility_role,
+          :accessibility_value,
+          :accessibility_hidden
         ],
         defaults: %{title: ""},
         doc: "Top app bar",
@@ -660,7 +888,12 @@ defmodule Dala.Ui.Component do
           :on_select,
           :text_color,
           :background,
-          :accessibility_id
+          :accessibility_id,
+          :accessibility_label,
+          :accessibility_hint,
+          :accessibility_role,
+          :accessibility_value,
+          :accessibility_hidden
         ],
         defaults: %{items: []},
         doc: "Bottom navigation bar",
@@ -680,7 +913,12 @@ defmodule Dala.Ui.Component do
           :on_select,
           :header,
           :background,
-          :accessibility_id
+          :accessibility_id,
+          :accessibility_label,
+          :accessibility_hint,
+          :accessibility_role,
+          :accessibility_value,
+          :accessibility_hidden
         ],
         defaults: %{visible: false, items: []},
         doc: "Navigation drawer",
@@ -698,7 +936,12 @@ defmodule Dala.Ui.Component do
           :on_select,
           :text_color,
           :background,
-          :accessibility_id
+          :accessibility_id,
+          :accessibility_label,
+          :accessibility_hint,
+          :accessibility_role,
+          :accessibility_value,
+          :accessibility_hidden
         ],
         defaults: %{items: []},
         doc: "Navigation rail (side navigation)",
@@ -716,7 +959,12 @@ defmodule Dala.Ui.Component do
           :on_select,
           :text_color,
           :background,
-          :accessibility_id
+          :accessibility_id,
+          :accessibility_label,
+          :accessibility_hint,
+          :accessibility_role,
+          :accessibility_value,
+          :accessibility_hidden
         ],
         defaults: %{visible: false, items: []},
         doc: "Dropdown menu",
@@ -736,7 +984,12 @@ defmodule Dala.Ui.Component do
           :min_date,
           :max_date,
           :title,
-          :accessibility_id
+          :accessibility_id,
+          :accessibility_label,
+          :accessibility_hint,
+          :accessibility_role,
+          :accessibility_value,
+          :accessibility_hidden
         ],
         defaults: %{visible: false},
         doc: "Date picker",
@@ -754,7 +1007,12 @@ defmodule Dala.Ui.Component do
           :on_dismiss,
           :selected_time,
           :title,
-          :accessibility_id
+          :accessibility_id,
+          :accessibility_label,
+          :accessibility_hint,
+          :accessibility_role,
+          :accessibility_value,
+          :accessibility_hidden
         ],
         defaults: %{visible: false},
         doc: "Time picker",
@@ -778,7 +1036,12 @@ defmodule Dala.Ui.Component do
           :text_color,
           :background,
           :corner_radius,
-          :accessibility_id
+          :accessibility_id,
+          :accessibility_label,
+          :accessibility_hint,
+          :accessibility_role,
+          :accessibility_value,
+          :accessibility_hidden
         ],
         defaults: %{value: ""},
         doc: "Search bar",
@@ -799,7 +1062,12 @@ defmodule Dala.Ui.Component do
           :autoplay,
           :autoplay_interval,
           :peek,
-          :accessibility_id
+          :accessibility_id,
+          :accessibility_label,
+          :accessibility_hint,
+          :accessibility_role,
+          :accessibility_value,
+          :accessibility_hidden
         ],
         defaults: %{items: []},
         doc: "Carousel/slideshow component",
@@ -831,7 +1099,12 @@ defmodule Dala.Ui.Component do
           :scrollable,
           :on_tap,
           :on_long_press,
-          :accessibility_id
+          :accessibility_id,
+          :accessibility_label,
+          :accessibility_hint,
+          :accessibility_role,
+          :accessibility_value,
+          :accessibility_hidden
         ],
         defaults: %{},
         doc: "Vertical layout container",
@@ -861,7 +1134,12 @@ defmodule Dala.Ui.Component do
           :scrollable,
           :on_tap,
           :on_long_press,
-          :accessibility_id
+          :accessibility_id,
+          :accessibility_label,
+          :accessibility_hint,
+          :accessibility_role,
+          :accessibility_value,
+          :accessibility_hidden
         ],
         defaults: %{},
         doc: "Horizontal layout container",
@@ -894,7 +1172,12 @@ defmodule Dala.Ui.Component do
           :max_height,
           :on_tap,
           :on_long_press,
-          :accessibility_id
+          :accessibility_id,
+          :accessibility_label,
+          :accessibility_hint,
+          :accessibility_role,
+          :accessibility_value,
+          :accessibility_hidden
         ],
         defaults: %{},
         doc: "Box with absolute positioning for overlapping children",
@@ -919,13 +1202,58 @@ defmodule Dala.Ui.Component do
           :direction,
           :shows_indicator,
           :on_scroll,
-          :accessibility_id
+          :accessibility_id,
+          :accessibility_label,
+          :accessibility_hint,
+          :accessibility_role,
+          :accessibility_value,
+          :accessibility_hidden
         ],
         defaults: %{direction: :vertical},
         doc: "Scrollable container",
         children_key: :children,
         examples: [
-          ~s(scroll padding: :space_md do\n  text "Long content..."\nend)
+          ~s(scroll padding: :space_md do
+  text "Long content..."
+end)
+        ]
+      },
+      grid: %__MODULE__{
+        name: :grid,
+        type: :grid,
+        category: :container,
+        props: [
+          :columns,
+          :gap,
+          :row_gap,
+          :padding,
+          :padding_top,
+          :padding_right,
+          :padding_bottom,
+          :padding_left,
+          :background,
+          :corner_radius,
+          :fill_width,
+          :on_tap,
+          :on_long_press,
+          :accessibility_id,
+          :accessibility_label,
+          :accessibility_hint,
+          :accessibility_role,
+          :accessibility_value,
+          :accessibility_hidden
+        ],
+        defaults: %{columns: 2},
+        doc: "Grid layout container (LazyVerticalGrid / LazyVGrid equivalent)",
+        children_key: :children,
+        examples: [
+          ~s(grid columns: 2, gap: :space_sm do
+  for item <- @items do
+    card do
+      text item.title
+    end
+  end
+end)
         ]
       },
       modal: %__MODULE__{
@@ -940,7 +1268,12 @@ defmodule Dala.Ui.Component do
           :presentation_style,
           :animation,
           :drag_indicator,
-          :accessibility_id
+          :accessibility_id,
+          :accessibility_label,
+          :accessibility_hint,
+          :accessibility_role,
+          :accessibility_value,
+          :accessibility_hidden
         ],
         defaults: %{visible: false},
         doc: "Modal overlay container",
@@ -958,7 +1291,12 @@ defmodule Dala.Ui.Component do
           :on_long_press,
           :on_double_tap,
           :disabled,
-          :accessibility_id
+          :accessibility_id,
+          :accessibility_label,
+          :accessibility_hint,
+          :accessibility_role,
+          :accessibility_value,
+          :accessibility_hidden
         ],
         defaults: %{},
         doc: "Pressable wrapper container",
@@ -974,7 +1312,12 @@ defmodule Dala.Ui.Component do
         props: [
           :edges,
           :background,
-          :accessibility_id
+          :accessibility_id,
+          :accessibility_label,
+          :accessibility_hint,
+          :accessibility_role,
+          :accessibility_value,
+          :accessibility_hidden
         ],
         defaults: %{edges: [:top, :bottom]},
         doc: "Safe area inset container",
@@ -996,7 +1339,12 @@ defmodule Dala.Ui.Component do
           :on_tap,
           :on_long_press,
           :fill_width,
-          :accessibility_id
+          :accessibility_id,
+          :accessibility_label,
+          :accessibility_hint,
+          :accessibility_role,
+          :accessibility_value,
+          :accessibility_hidden
         ],
         defaults: %{variant: :elevated, elevation: 1.0},
         doc: "Card container with elevation/shadow",
@@ -1016,7 +1364,12 @@ defmodule Dala.Ui.Component do
           :text_size,
           :position,
           :visible,
-          :accessibility_id
+          :accessibility_id,
+          :accessibility_label,
+          :accessibility_hint,
+          :accessibility_role,
+          :accessibility_value,
+          :accessibility_hidden
         ],
         defaults: %{count: 0, position: :top_end},
         doc: "Badge/notification dot container",
@@ -1036,7 +1389,12 @@ defmodule Dala.Ui.Component do
           :height,
           :corner_radius,
           :background,
-          :accessibility_id
+          :accessibility_id,
+          :accessibility_label,
+          :accessibility_hint,
+          :accessibility_role,
+          :accessibility_value,
+          :accessibility_hidden
         ],
         defaults: %{visible: false, drag_indicator: true},
         doc: "Bottom sheet container",
@@ -1054,7 +1412,12 @@ defmodule Dala.Ui.Component do
           :position,
           :visible,
           :delay,
-          :accessibility_id
+          :accessibility_id,
+          :accessibility_label,
+          :accessibility_hint,
+          :accessibility_role,
+          :accessibility_value,
+          :accessibility_hidden
         ],
         defaults: %{visible: false, position: :bottom, delay: 500},
         doc: "Tooltip container",

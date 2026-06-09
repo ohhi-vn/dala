@@ -316,13 +316,14 @@ defmodule Dala.Designer.CodegenEdgeCaseTest do
     test "generates attributes block when provided" do
       tree = %{type: :text, props: %{text: "Hi"}, children: []}
 
-      code = Dala.Designer.Codegen.generate_dsl("MyApp.Screen", tree,
-        attributes: [
-          {:count, :integer, 0},
-          {:name, :string, nil},
-          {:active, :boolean, true}
-        ]
-      )
+      code =
+        Dala.Designer.Codegen.generate_dsl("MyApp.Screen", tree,
+          attributes: [
+            {:count, :integer, 0},
+            {:name, :string, nil},
+            {:active, :boolean, true}
+          ]
+        )
 
       assert code =~ "attributes do"
       assert code =~ "attribute :count, :integer, default: 0"
@@ -374,6 +375,108 @@ defmodule Dala.Designer.CodegenEdgeCaseTest do
       code2 = Dala.Designer.Codegen.generate_dsl("MyApp.Settings.DarkMode", tree)
       assert code2 =~ "screen name: :dark_mode"
     end
+
+    test "generates DSL for skeleton component" do
+      tree = %{
+        type: :skeleton,
+        props: %{width: 200, height: 16, corner_radius: :radius_sm},
+        children: []
+      }
+
+      code = Dala.Designer.Codegen.generate_dsl("MyApp.LoadingScreen", tree)
+      assert code =~ "skeleton"
+      assert code =~ "width: 200"
+      assert code =~ "height: 16"
+    end
+
+    test "generates DSL for empty_state component" do
+      tree = %{
+        type: :empty_state,
+        props: %{
+          icon: "inbox",
+          title: "Nothing here",
+          message: "Items appear here",
+          action_label: "Get started",
+          on_action: :start
+        },
+        children: []
+      }
+
+      code = Dala.Designer.Codegen.generate_dsl("MyApp.EmptyScreen", tree)
+      assert code =~ "empty_state"
+      assert code =~ "icon: \"inbox\""
+      assert code =~ "title: \"Nothing here\""
+      assert code =~ "handle_event(:start"
+    end
+
+    test "generates DSL for avatar component" do
+      tree = %{
+        type: :avatar,
+        props: %{src: "https://example.com/photo.jpg", fallback: "JS", size: 48, shape: :circle},
+        children: []
+      }
+
+      code = Dala.Designer.Codegen.generate_dsl("MyApp.ProfileScreen", tree)
+      assert code =~ "avatar"
+      assert code =~ "fallback: \"JS\""
+      assert code =~ "size: 48"
+    end
+
+    test "generates DSL for stepper component" do
+      tree = %{
+        type: :stepper,
+        props: %{steps: ["Account", "Profile", "Done"], current: 1},
+        children: []
+      }
+
+      code = Dala.Designer.Codegen.generate_dsl("MyApp.OnboardingScreen", tree)
+      assert code =~ "stepper"
+      assert code =~ "current: 1"
+    end
+
+    test "generates DSL for grid container" do
+      tree = %{
+        type: :grid,
+        props: %{columns: 2, gap: :space_sm},
+        children: [
+          %{type: :text, props: %{text: "Cell 1"}, children: []},
+          %{type: :text, props: %{text: "Cell 2"}, children: []}
+        ]
+      }
+
+      code = Dala.Designer.Codegen.generate_dsl("MyApp.GridScreen", tree)
+      assert code =~ "grid"
+      assert code =~ "columns: 2"
+      assert code =~ ~s(text "Cell 1")
+      assert code =~ ~s(text "Cell 2")
+    end
+
+    test "generates DSL for mixed new and old components" do
+      tree = %{
+        type: :column,
+        props: %{padding: :space_md, gap: :space_sm},
+        children: [
+          %{type: :avatar, props: %{fallback: "JS", size: 40}, children: []},
+          %{type: :skeleton, props: %{width: :fill, height: 20}, children: []},
+          %{type: :empty_state, props: %{title: "No data"}, children: []},
+          %{
+            type: :grid,
+            props: %{columns: 2},
+            children: [
+              %{type: :text, props: %{text: "A"}, children: []},
+              %{type: :text, props: %{text: "B"}, children: []}
+            ]
+          }
+        ]
+      }
+
+      code = Dala.Designer.Codegen.generate_dsl("MyApp.MixedScreen", tree)
+      assert code =~ "avatar"
+      assert code =~ "skeleton"
+      assert code =~ "empty_state"
+      assert code =~ "grid"
+      assert code =~ "column"
+    end
   end
 
   describe "extract_handlers/1 edge cases" do
@@ -419,8 +522,21 @@ defmodule Dala.Designer.CodegenEdgeCaseTest do
         type: :column,
         props: %{},
         children: [
-          %{type: :button, props: %{on_tap: :tapped, on_long_press: :long_pressed, on_double_tap: :double_tapped}, children: []},
-          %{type: :text_field, props: %{on_change: :changed, on_focus: :focused, on_blur: :blurred, on_submit: :submitted}, children: []},
+          %{
+            type: :button,
+            props: %{on_tap: :tapped, on_long_press: :long_pressed, on_double_tap: :double_tapped},
+            children: []
+          },
+          %{
+            type: :text_field,
+            props: %{
+              on_change: :changed,
+              on_focus: :focused,
+              on_blur: :blurred,
+              on_submit: :submitted
+            },
+            children: []
+          },
           %{type: :slider, props: %{on_change: :slid}, children: []},
           %{type: :scroll, props: %{on_scroll: :scrolled}, children: []},
           %{type: :list, props: %{on_end_reached: :more}, children: []},
@@ -487,6 +603,221 @@ defmodule Dala.Designer.CodegenEdgeCaseTest do
 
       handlers = Dala.Designer.Codegen.extract_handlers(tree)
       assert handlers == [:alpha, :mango, :zebra]
+    end
+  end
+
+  describe "generate_dsl_with_docs/3" do
+    test "generates handler docs with component types" do
+      tree = %{
+        type: :column,
+        props: %{},
+        children: [
+          %{type: :button, props: %{text: "Go", on_tap: :go}, children: []},
+          %{type: :text_field, props: {:on_change, :changed}, children: []}
+        ]
+      }
+
+      code = Dala.Designer.Codegen.generate_dsl_with_docs("MyApp.Screen", tree)
+      assert code =~ "@doc"
+      assert code =~ "`button`"
+    end
+
+    test "uses pre-computed component_map when provided" do
+      tree = %{
+        type: :button,
+        props: %{text: "Go", on_tap: :go},
+        children: []
+      }
+
+      component_map = %{go: [:button, :icon_button]}
+
+      code =
+        Dala.Designer.Codegen.generate_dsl_with_docs("MyApp.Screen", tree,
+          component_map: component_map
+        )
+
+      assert code =~ "`button`"
+      assert code =~ "`icon_button`"
+    end
+
+    test "empty component map produces no doc" do
+      tree = %{
+        type: :button,
+        props: %{text: "Go", on_tap: :go},
+        children: []
+      }
+
+      code =
+        Dala.Designer.Codegen.generate_dsl_with_docs("MyApp.Screen", tree, component_map: %{})
+
+      refute code =~ "@doc"
+    end
+  end
+
+  describe "build_component_map/1" do
+    test "maps handlers to component types" do
+      tree = %{
+        type: :column,
+        props: %{},
+        children: [
+          %{type: :button, props: %{on_tap: :go}, children: []},
+          %{type: :icon_button, props: %{on_tap: :go}, children: []}
+        ]
+      }
+
+      map = Dala.Designer.Codegen.build_component_map(tree)
+      assert :button in map[:go]
+      assert :icon_button in map[:go]
+    end
+
+    test "returns empty map for tree with no handlers" do
+      tree = %{
+        type: :column,
+        props: %{},
+        children: [
+          %{type: :text, props: %{text: "Hello"}, children: []}
+        ]
+      }
+
+      assert Dala.Designer.Codegen.build_component_map(tree) == %{}
+    end
+  end
+
+  describe "complex prop value rendering" do
+    test "renders list props" do
+      tree = %{
+        type: :stepper,
+        props: %{steps: ["Step 1", "Step 2", "Step 3"], current: 0},
+        children: []
+      }
+
+      code = Dala.Designer.Codegen.generate_dsl("MyApp.Screen", tree)
+      assert code =~ "steps:"
+      assert code =~ "current: 0"
+    end
+
+    test "renders map props" do
+      tree = %{
+        type: :tab_bar,
+        props: %{tabs: [%{id: "home", label: "Home"}]},
+        children: []
+      }
+
+      code = Dala.Designer.Codegen.generate_dsl("MyApp.Screen", tree)
+      assert code =~ "tabs:"
+    end
+
+    test "renders float props" do
+      tree = %{
+        type: :card,
+        props: %{elevation: 2.5},
+        children: []
+      }
+
+      code = Dala.Designer.Codegen.generate_dsl("MyApp.Screen", tree)
+      assert code =~ "elevation: 2.5"
+    end
+
+    test "renders zero integer prop" do
+      tree = %{
+        type: :stepper,
+        props: %{steps: ["A", "B"], current: 0},
+        children: []
+      }
+
+      code = Dala.Designer.Codegen.generate_dsl("MyApp.Screen", tree)
+      assert code =~ "current: 0"
+    end
+  end
+
+  describe "all event handler props" do
+    test "extracts on_select from date_picker" do
+      tree = %{
+        type: :date_picker,
+        props: %{on_select: :date_chosen},
+        children: []
+      }
+
+      handlers = Dala.Designer.Codegen.extract_handlers(tree)
+      assert :date_chosen in handlers
+    end
+
+    test "extracts on_select from time_picker" do
+      tree = %{
+        type: :time_picker,
+        props: %{on_select: :time_chosen},
+        children: []
+      }
+
+      handlers = Dala.Designer.Codegen.extract_handlers(tree)
+      assert :time_chosen in handlers
+    end
+
+    test "extracts on_select from menu" do
+      tree = %{
+        type: :menu,
+        props: %{on_select: :menu_item_chosen},
+        children: []
+      }
+
+      handlers = Dala.Designer.Codegen.extract_handlers(tree)
+      assert :menu_item_chosen in handlers
+    end
+
+    test "extracts on_action from snackbar" do
+      tree = %{
+        type: :snackbar,
+        props: %{message: "Deleted", on_action: :undo},
+        children: []
+      }
+
+      handlers = Dala.Designer.Codegen.extract_handlers(tree)
+      assert :undo in handlers
+    end
+
+    test "extracts on_remove from chip" do
+      tree = %{
+        type: :chip,
+        props: %{label: "Tag", on_remove: :remove_tag},
+        children: []
+      }
+
+      handlers = Dala.Designer.Codegen.extract_handlers(tree)
+      assert :remove_tag in handlers
+    end
+
+    test "extracts on_leading from app_bar" do
+      tree = %{
+        type: :app_bar,
+        props: %{title: "My App", on_leading: :back},
+        children: []
+      }
+
+      handlers = Dala.Designer.Codegen.extract_handlers(tree)
+      assert :back in handlers
+    end
+
+    test "extracts on_page_change from carousel" do
+      tree = %{
+        type: :carousel,
+        props: %{on_page_change: :page_changed},
+        children: []
+      }
+
+      handlers = Dala.Designer.Codegen.extract_handlers(tree)
+      assert :page_changed in handlers
+    end
+
+    test "extracts on_error and on_load from image" do
+      tree = %{
+        type: :image,
+        props: %{src: "photo.jpg", on_error: :img_error, on_load: :img_loaded},
+        children: []
+      }
+
+      handlers = Dala.Designer.Codegen.extract_handlers(tree)
+      assert :img_error in handlers
+      assert :img_loaded in handlers
     end
   end
 

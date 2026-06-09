@@ -60,17 +60,17 @@ defmodule Dala.ML.Preprocess do
   `size` is a tuple `{height, width}`.
   """
   @spec resize(Nx.Tensor.t(), {pos_integer(), pos_integer()}) :: Nx.Tensor.t()
-  # Dialyzer flags Nx.slice/3 arg types in the for comprehension because
-  # comprehension variables are typed as dynamic(). The code is correct at runtime.
-  @dialyzer {:nowarn_function, resize: 2}
   def resize(tensor, {h, w}) do
     case Nx.shape(tensor) do
       {^h, ^w, 3} ->
         tensor
 
       {orig_h, orig_w, 3} ->
-        # Simple nearest-neighbor resize via indexing
-        # Real implementation would use Dala.Native for GPU resize
+        # Simple nearest-neighbor resize via indexing.
+        # Real implementation would use Dala.Native for GPU resize.
+        #
+        # Build index tensors for gather: for each output position (r, c),
+        # compute the nearest source position via floor(r * orig_h / h).
         row_indices =
           Nx.iota({h}, axis: 0)
           |> Nx.divide(h)
@@ -87,19 +87,32 @@ defmodule Dala.ML.Preprocess do
           |> Nx.as_type(:s64)
           |> Nx.clip(0, orig_w - 1)
 
-        # Gather pixels using advanced indexing
-        # Use Enum.to_list to ensure proper list types for Nx.slice
-        row_range = Enum.to_list(0..(h - 1))
-        col_range = Enum.to_list(0..(w - 1))
-        for r <- row_range, into: [] do
-          for c <- col_range, into: [] do
-            ri = Nx.to_number(Nx.slice(row_indices, [r], 1))
-            ci = Nx.to_number(Nx.slice(col_indices, [c], 1))
-            Nx.slice(tensor, [ri, ci, 0], [1, 1, 3])
-          end
-        end
-        |> Enum.reduce(fn slice, acc -> Nx.concatenate([acc, slice], axis: 0) end)
-        |> Nx.reshape({h, w, 3})
+        # Gather rows: for each row r, take that row from the source tensor
+        # producing a {1, orig_w, 3} slice, then concatenate along axis 0.
+        # Nx.take/2 accepts a dynamic index tensor, avoiding the Nx.slice
+        # type issue with dynamic start indices in for comprehensions.
+        row_indices_list = Nx.to_flat_list(row_indices)
+        col_indices_list = Nx.to_flat_list(col_indices)
+
+        # Reorder source tensor columns first, then rows
+        # Step 1: gather columns — for each source row, pick the right columns
+        tensor_reordered =
+          Enum.map(col_indices_list, fn ci ->
+            Nx.take(tensor, Nx.tensor(ci), axis: 1)
+          end)
+          |> then(fn slices ->
+            # Each slice is {orig_h, 1, 3}, concatenate along axis 1 → {orig_h, w, 3}
+            Nx.concatenate(slices, axis: 1)
+          end)
+
+        # Step 2: gather rows — pick the right rows from the column-reordered tensor
+        Enum.map(row_indices_list, fn ri ->
+          Nx.take(tensor_reordered, Nx.tensor(ri), axis: 0)
+        end)
+        |> then(fn slices ->
+          # Each slice is {1, w, 3}, concatenate along axis 0 → {h, w, 3}
+          Nx.concatenate(slices, axis: 0)
+        end)
 
       _ ->
         raise ArgumentError,

@@ -757,4 +757,111 @@ defmodule Dala.Designer.RenderTest do
       assert html =~ "dala-native-view"
     end
   end
+
+  describe "v0.8 new components" do
+    test "renders skeleton component" do
+      ui_tree = %{
+        type: :skeleton,
+        props: %{width: 200, height: 16, corner_radius: :radius_sm},
+        children: []
+      }
+
+      html = Dala.Designer.preview(ui_tree)
+      assert html =~ "dala-skeleton"
+      assert html =~ "width: 200px"
+      assert html =~ "height: 16px"
+    end
+
+    test "renders skeleton with fill width" do
+      ui_tree = %{
+        type: :skeleton,
+        props: %{width: :fill, height: 120},
+        children: []
+      }
+
+      html = Dala.Designer.preview(ui_tree)
+      assert html =~ "dala-skeleton"
+      assert html =~ "width: 100%"
+    end
+
+    test "renders empty_state component" do
+      ui_tree = %{
+        type: :empty_state,
+        props: %{icon: "inbox", title: "Nothing here", message: "Items appear here", action_label: "Get started"},
+        children: []
+      }
+
+      html = Dala.Designer.preview(ui_tree)
+      assert html =~ "dala-empty-state"
+      assert html =~ "Nothing here"
+      assert html =~ "Items appear here"
+      assert html =~ "Get started"
+    end
+
+    test "renders avatar component" do
+      ui_tree = %{
+        type: :avatar,
+        props: %{src: "https://example.com/photo.jpg", fallback: "JS", size: 48, shape: :circle},
+        children: []
+      }
+
+      html = Dala.Designer.preview(ui_tree)
+      assert html =~ "dala-avatar"
+      assert html =~ "48px"
+    end
+
+    test "renders avatar with fallback" do
+      ui_tree = %{
+        type: :avatar,
+        props: %{fallback: "AB", size: 40},
+        children: []
+      }
+
+      html = Dala.Designer.preview(ui_tree)
+      assert html =~ "dala-avatar"
+      assert html =~ "AB"
+    end
+
+    test "renders stepper component" do
+      ui_tree = %{
+        type: :stepper,
+        props: %{steps: ["Account", "Profile", "Done"], current: 1},
+        children: []
+      }
+
+      html = Dala.Designer.preview(ui_tree)
+      assert html =~ "dala-stepper"
+      assert html =~ "Account"
+      assert html =~ "Profile"
+      assert html =~ "Done"
+    end
+
+    test "renders grid container" do
+      ui_tree = %{
+        type: :grid,
+        props: %{columns: 2, gap: :space_sm, padding: :space_md},
+        children: [
+          %{type: :text, props: %{text: "Cell 1"}, children: []},
+          %{type: :text, props: %{text: "Cell 2"}, children: []}
+        ]
+      }
+
+      html = Dala.Designer.preview(ui_tree)
+      assert html =~ "dala-grid"
+      assert html =~ "grid-template-columns: repeat(2, 1fr)"
+      assert html =~ "Cell 1"
+      assert html =~ "Cell 2"
+    end
+
+    test "renders grid with 3 columns" do
+      ui_tree = %{
+        type: :grid,
+        props: %{columns: 3},
+        children: []
+      }
+
+      html = Dala.Designer.preview(ui_tree)
+      assert html =~ "repeat(3, 1fr)"
+    end
+  end
 end

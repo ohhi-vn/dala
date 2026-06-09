@@ -173,4 +173,11 @@ defmodule Dala do
 
   defdelegate assign(socket, key, value), to: Dala.Socket
   defdelegate assign(socket, kw), to: Dala.Socket
+
+  @doc """
+  Verify the DSL definitions of a screen module.
+
+      Dala.verify_dsl(MyApp.HomeScreen)
+  """
+  defdelegate verify_dsl(module), to: Dala.Spark.Dsl, as: :verify
 end

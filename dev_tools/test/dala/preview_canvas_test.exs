@@ -463,4 +463,111 @@ defmodule Dala.Designer.CanvasTest do
       assert call_private(:truncate, [123, 10]) == ""
     end
   end
+
+  describe "v0.8 new component defaults and canvas ops" do
+    test "skeleton has default props" do
+      props = call_private(:default_props, [:skeleton])
+      assert is_map(props)
+    end
+
+    test "empty_state has default props" do
+      props = call_private(:default_props, [:empty_state])
+      assert is_map(props)
+    end
+
+    test "avatar has default props" do
+      props = call_private(:default_props, [:avatar])
+      assert is_map(props)
+    end
+
+    test "stepper has default props" do
+      props = call_private(:default_props, [:stepper])
+      assert is_map(props)
+    end
+
+    test "grid has default props" do
+      props = call_private(:default_props, [:grid])
+      assert is_map(props)
+    end
+
+    test "grid is a container type" do
+      assert call_private(:container_type?, [:grid]) == true
+    end
+
+    test "skeleton is not a container type" do
+      assert call_private(:container_type?, [:skeleton]) == false
+    end
+
+    test "empty_state is not a container type" do
+      assert call_private(:container_type?, [:empty_state]) == false
+    end
+
+    test "avatar is not a container type" do
+      assert call_private(:container_type?, [:avatar]) == false
+    end
+
+    test "stepper is not a container type" do
+      assert call_private(:container_type?, [:stepper]) == false
+    end
+
+    test "make_node creates skeleton with counter" do
+      node = call_private(:make_node, [:skeleton, 99])
+      assert node.type == :skeleton
+      assert node.id == "node_99"
+    end
+
+    test "make_node creates grid with counter" do
+      node = call_private(:make_node, [:grid, 55])
+      assert node.type == :grid
+      assert node.id == "node_55"
+      assert node.children == []
+    end
+
+    test "add skeleton to tree and find it" do
+      root = call_private(:empty_root, [])
+      sk = call_private(:make_node, [:skeleton, 10])
+      root = call_private(:add_node_to_tree, [root, root.id, sk])
+      found = call_private(:find_node, [root, sk.id])
+      assert found != nil
+      assert found.type == :skeleton
+    end
+
+    test "add grid with children to tree" do
+      root = call_private(:empty_root, [])
+      grid = call_private(:make_node, [:grid, 20])
+      root = call_private(:add_node_to_tree, [root, root.id, grid])
+      text = call_private(:make_node, [:text, 21])
+      root = call_private(:add_node_to_tree, [root, grid.id, text])
+      [grid_child] = root.children
+      assert grid_child.type == :grid
+      assert length(grid_child.children) == 1
+      assert hd(grid_child.children).type == :text
+    end
+
+    test "remove skeleton from tree" do
+      root = call_private(:empty_root, [])
+      sk = call_private(:make_node, [:skeleton, 30])
+      root = call_private(:add_node_to_tree, [root, root.id, sk])
+      assert length(root.children) == 1
+      root = call_private(:remove_node_from_tree, [root, sk.id])
+      assert root.children == []
+    end
+
+    test "update avatar props in tree" do
+      root = call_private(:empty_root, [])
+      av = call_private(:make_node, [:avatar, 40])
+      root = call_private(:add_node_to_tree, [root, root.id, av])
+      updated = call_private(:update_node_in_tree, [root, av.id, fn n -> %{n | props: Map.put(n.props, :size, 64)} end])
+      [child] = updated.children
+      assert child.props.size == 64
+    end
+
+    test "format_type formats new components" do
+      assert call_private(:format_type, [:skeleton]) == "Skeleton"
+      assert call_private(:format_type, [:empty_state]) == "EmptyState"
+      assert call_private(:format_type, [:avatar]) == "Avatar"
+      assert call_private(:format_type, [:stepper]) == "Stepper"
+      assert call_private(:format_type, [:grid]) == "Grid"
+    end
+  end
 end

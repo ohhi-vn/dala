@@ -66,6 +66,36 @@ defmodule Dala.Spark.Transformers.Render do
     quote do: unquote(nodes)
   end
 
+  defp build_node_ast(%{type: :conditional} = entity) do
+    props_ast = build_conditional_props_ast(entity)
+    then_ast = build_children_ast(Map.get(entity, :then_children, []))
+    else_ast = build_children_ast(Map.get(entity, :else_children, []))
+
+    quote do
+      %{
+        type: :conditional,
+        props: unquote(props_ast),
+        children: [],
+        then_children: unquote(then_ast),
+        else_children: unquote(else_ast)
+      }
+    end
+  end
+
+  defp build_node_ast(%{type: :list_render} = entity) do
+    props_ast = build_list_render_props_ast(entity)
+    for_args = Map.get(entity, :for_args)
+
+    quote do
+      %{
+        type: :list_render,
+        props: unquote(props_ast),
+        children: [],
+        for_args: unquote(Macro.escape(for_args))
+      }
+    end
+  end
+
   defp build_node_ast(entity) do
     type = struct_to_type(entity.__struct__)
     props_ast = build_props_ast(entity)
@@ -110,6 +140,18 @@ defmodule Dala.Spark.Transformers.Render do
         {key, val_ast}
       end)
 
+    {:%{}, [], pairs}
+  end
+
+  defp build_conditional_props_ast(entity) do
+    props = Map.get(entity, :props, %{})
+    pairs = Enum.map(props, fn {key, value} -> {key, build_value_ast(value, key)} end)
+    {:%{}, [], pairs}
+  end
+
+  defp build_list_render_props_ast(entity) do
+    props = Map.get(entity, :props, %{})
+    pairs = Enum.map(props, fn {key, value} -> {key, build_value_ast(value, key)} end)
     {:%{}, [], pairs}
   end
 

@@ -13,6 +13,9 @@ defmodule Dala.Theme do
   defdelegate color_map(theme), to: Dala.Theme.Theme
   defdelegate spacing_map(theme), to: Dala.Theme.Theme
   defdelegate radius_map(theme), to: Dala.Theme.Theme
+  defdelegate resolve(token), to: Dala.Theme.Theme
+  defdelegate set_accent(color), to: Dala.Theme.Theme
+  defdelegate prefers_reduced_motion(), to: Dala.Theme.Theme
 end
 
 defmodule Dala.Theme.Theme do
@@ -92,6 +95,12 @@ defmodule Dala.Theme.Theme do
       :radius_lg   → theme.radius_lg   (default 16)
       :radius_pill → theme.radius_pill (default 100)
 
+  ### Line-height tokens (scaled by `type_scale`)
+
+      :line_height_tight   → 1.25
+      :line_height_normal  → 1.5
+      :line_height_relaxed → 1.75
+
   ### Scale factors
 
       type_scale:  1.0  # multiply all text sizes by this
@@ -124,7 +133,12 @@ defmodule Dala.Theme.Theme do
     radius_sm: 6,
     radius_md: 10,
     radius_lg: 16,
-    radius_pill: 100
+    radius_pill: 100,
+
+    # ── Line-height multipliers ──────────────────────────────────────────────
+    line_height_tight: 1.25,
+    line_height_normal: 1.5,
+    line_height_relaxed: 1.75
   ]
 
   @type t :: %__MODULE__{}
@@ -235,5 +249,73 @@ defmodule Dala.Theme.Theme do
       radius_lg: t.radius_lg,
       radius_pill: t.radius_pill
     }
+  end
+
+  @doc false
+  @spec line_height_map(t()) :: %{atom() => float()}
+  def line_height_map(%__MODULE__{} = _t) do
+    %{
+      line_height_tight: 1.25,
+      line_height_normal: 1.5,
+      line_height_relaxed: 1.75
+    }
+  end
+
+  @doc """
+  Resolve a design token to its current value.
+
+  Color tokens return ARGB integers, spacing/radius tokens return integers.
+
+      Dala.Theme.resolve(:primary)     #=> 0xFF3B82F6
+      Dala.Theme.resolve(:space_md)    #=> 16
+      Dala.Theme.resolve(:radius_pill) #=> 100
+  """
+  @spec resolve(atom()) :: non_neg_integer()
+  def resolve(token) when is_atom(token) do
+    theme = current()
+    color = Map.get(color_map(theme), token)
+
+    if color,
+      do: color,
+      else: Map.get(spacing_map(theme), token) || Map.get(radius_map(theme), token)
+  end
+
+  @doc """
+  Override the accent (primary) color of the current theme.
+
+  Accepts any color value — raw ARGB integer or named color token.
+  `:on_primary` is automatically chosen for WCAG contrast (white for dark
+  colors, near-black for light colors).
+
+      Dala.Theme.set_accent(:violet_500)
+      Dala.Theme.set_accent(0xFF8B5CF6)
+  """
+  @spec set_accent(atom() | non_neg_integer()) :: :ok
+  def set_accent(color) when is_atom(color) or is_integer(color) do
+    theme = current()
+    on_primary = if light_color?(color), do: 0xFF0F0F0F, else: 0xFFFFFFFF
+    set(struct(theme, primary: color, on_primary: on_primary))
+  end
+
+  defp light_color?(color) when is_integer(color) do
+    r = Bitwise.bsr(Bitwise.band(color, 0x00FF0000), 16)
+    g = Bitwise.bsr(Bitwise.band(color, 0x0000FF00), 8)
+    b = Bitwise.band(color, 0x000000FF)
+    r + g + b > 382
+  end
+
+  defp light_color?(_atom), do: false
+
+  @doc """
+  Returns `true` if the OS accessibility setting "Reduce Motion" is enabled.
+
+  Reads from the platform NIF. Falls back to `false` when running on the
+  host BEAM (no NIF loaded) or on platforms that don't expose the setting.
+  """
+  @spec prefers_reduced_motion() :: boolean()
+  def prefers_reduced_motion do
+    Dala.Platform.Native.prefers_reduced_motion()
+  rescue
+    _ -> false
   end
 end

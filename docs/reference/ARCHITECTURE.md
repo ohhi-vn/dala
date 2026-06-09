@@ -48,13 +48,12 @@ USB (once)
 
 WiFi / dist (ongoing)
   └─ mix dala.deploy            → compile + push BEAMs via dist
-  └─ mix dala.watch             → auto-push on file save via dist
-  └─ dala_dev dashboard         → live logs, deploy buttons, device status
+  └─ mix dala.push              → hot-push BEAMs via dist (no native rebuild)
 ```
 
 ## dala_dev server role
 
-The dala_dev server (`mix dala.server`) is the Mac-side hub:
+The dala_dev server is the Mac-side hub:
 - Discovers connected devices (adb + xcrun simctl)
 - Streams logs from all connected devices
 - Holds the latest compiled BEAMs and distributes them to devices via dist

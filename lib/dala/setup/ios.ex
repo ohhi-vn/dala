@@ -15,9 +15,9 @@ defmodule Dala.Setup.Ios do
 
   From Elixir code:
 
-      Dala.Setup.IOS.setup_bluetooth()
-      Dala.Setup.IOS.setup_bluetooth("/path/to/ios/directory")
-      Dala.Setup.IOS.check("/path/to/ios/directory")
+      Dala.Setup.Ios.setup_bluetooth()
+      Dala.Setup.Ios.setup_bluetooth("/path/to/ios/directory")
+      Dala.Setup.Ios.check("/path/to/ios/directory")
 
   ## What it does
 

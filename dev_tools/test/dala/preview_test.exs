@@ -358,6 +358,135 @@ defmodule Dala.DesignerTest do
       assert html =~ "&lt;b&gt;bold&lt;/b&gt;"
     end
   end
+
+  describe "v0.8 component rendering" do
+    test "renders skeleton with dimensions" do
+      ui_tree = %{
+        type: :skeleton,
+        props: %{width: 200, height: 16},
+        children: []
+      }
+
+      html = Dala.Designer.preview(ui_tree)
+      assert html =~ "dala-skeleton"
+      assert html =~ "width: 200"
+      assert html =~ "height: 16"
+    end
+
+    test "renders empty_state with icon and action" do
+      ui_tree = %{
+        type: :empty_state,
+        props: %{icon: "inbox", title: "Empty", message: "No items", action_label: "Add"},
+        children: []
+      }
+
+      html = Dala.Designer.preview(ui_tree)
+      assert html =~ "Empty"
+      assert html =~ "No items"
+      assert html =~ "Add"
+    end
+
+    test "renders avatar with size" do
+      ui_tree = %{
+        type: :avatar,
+        props: %{fallback: "AB", size: 48},
+        children: []
+      }
+
+      html = Dala.Designer.preview(ui_tree)
+      assert html =~ "avatar"
+      assert html =~ "48"
+    end
+
+    test "renders stepper with steps" do
+      ui_tree = %{
+        type: :stepper,
+        props: %{steps: ["One", "Two", "Three"], current: 1},
+        children: []
+      }
+
+      html = Dala.Designer.preview(ui_tree)
+      assert html =~ "stepper"
+      assert html =~ "One"
+      assert html =~ "Two"
+      assert html =~ "Three"
+    end
+
+    test "renders grid with CSS grid layout" do
+      ui_tree = %{
+        type: :grid,
+        props: %{columns: 3, gap: :space_md},
+        children: [
+          %{type: :text, props: %{text: "A"}, children: []},
+          %{type: :text, props: %{text: "B"}, children: []},
+          %{type: :text, props: %{text: "C"}, children: []}
+        ]
+      }
+
+      html = Dala.Designer.preview(ui_tree)
+      assert html =~ "dala-grid"
+      assert html =~ "gap: 16px"
+      assert html =~ "A"
+      assert html =~ "B"
+      assert html =~ "C"
+    end
+  end
+
+  describe "accessibility data attributes" do
+    test "renders accessibility_label as data attribute" do
+      ui_tree = %{
+        type: :button,
+        props: %{text: "Submit", accessibility_label: "Submit form"},
+        children: []
+      }
+
+      html = Dala.Designer.preview(ui_tree)
+      assert html =~ "accessibility_label"
+    end
+
+    test "renders accessibility_hidden as data attribute" do
+      ui_tree = %{
+        type: :text,
+        props: %{text: "Hidden", accessibility_hidden: true},
+        children: []
+      }
+
+      html = Dala.Designer.preview(ui_tree)
+      assert html =~ "accessibility_hidden"
+    end
+  end
+
+  describe "preview with all component types" do
+    test "renders a comprehensive tree with all v0.8 components" do
+      ui_tree = %{
+        type: :column,
+        props: %{padding: :space_md, gap: :space_sm},
+        children: [
+          %{type: :avatar, props: %{fallback: "JS", size: 40}, children: []},
+          %{type: :skeleton, props: %{width: :fill, height: 20}, children: []},
+          %{type: :stepper, props: %{steps: ["A", "B"], current: 0}, children: []},
+          %{
+            type: :grid,
+            props: %{columns: 2},
+            children: [
+              %{type: :text, props: %{text: "X"}, children: []},
+              %{type: :text, props: %{text: "Y"}, children: []}
+            ]
+          },
+          %{type: :empty_state, props: %{title: "Done"}, children: []}
+        ]
+      }
+
+      html = Dala.Designer.preview(ui_tree)
+      # All components should render without error
+      assert html =~ "Dala UI Preview"
+      assert html =~ "avatar"
+      assert html =~ "skeleton"
+      assert html =~ "stepper"
+      assert html =~ "grid"
+      assert html =~ "empty-state"
+    end
+  end
 end
 
 defmodule Dala.Designer.CodegenTest do

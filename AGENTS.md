@@ -274,15 +274,70 @@ These are the things we've burned ourselves on. Following them isn't optional.
       switch, image, video, activity_indicator, progress_bar, status_bar, refresh_control,
       webview, camera_preview, native_view, tab_bar, list, checkbox, radio, chip,
       snackbar, fab, icon_button, segmented_button, app_bar, nav_bar, nav_drawer,
-      nav_rail, menu, date_picker, time_picker, search_bar, carousel
+      nav_rail, menu, date_picker, time_picker, search_bar, carousel, skeleton,
+      empty_state, avatar, stepper
+    - **Container components**: column, row, box, scroll, modal, pressable, safe_area,
+      card, badge, bottom_sheet, tooltip, grid
     - **Container props as function calls**: `column do padding(:space_md); gap(:space_sm); ... end`
     - **Leaf props as keyword args**: `text "Hello", text_size: :xl`
+    - **Conditional rendering**: `if @loading do ... else ... end` and `unless @show do ... end`
+      inside screen blocks, desugared to `:conditional` nodes at compile time
+    - **List rendering**: `for item <- @items do ... end` inside screen blocks,
+      desugared to `:list_render` nodes at compile time
+    - **Text variants**: `text "Hello", variant: :heading` — presets for
+      `:display`, `:heading`, `:title`, `:body`, `:caption`, `:label`, `:overline`
+    - **Text selectable**: `text @api_key, selectable: true` — allows user to copy text
 
     The extension module (`Dala.Spark.Dsl`) is both a Spark extension and a DSL
     module (`use Spark.Dsl, default_extensions: [extensions: __MODULE__]`).
     This means `use Dala.Spark.Dsl` sets up the full Spark DSL on the user module.
 
     See `guides/spark_dsl.md` for full documentation.
+
+    ## New components (v0.8)
+    - `:skeleton` — animated shimmer placeholder for loading states
+    - `:empty_state` — icon + message + optional CTA for empty screens
+    - `:avatar` — profile image with fallback initials
+    - `:stepper` — multi-step indicator for forms/onboarding
+    - `:grid` — grid layout container (LazyVerticalGrid / LazyVGrid)
+
+    ## Accessibility props (v0.8)
+    All components now accept `:accessibility_label`, `:accessibility_hint`,
+    `:accessibility_role`, `:accessibility_value`, and `:accessibility_hidden`
+    in addition to the existing `:accessibility_id` test identifier.
+
+    ## Theme API additions (v0.8)
+    - `Dala.Theme.resolve/1` — resolve a token to its current value
+    - `Dala.Theme.set_accent/1` — override primary/on_primary with auto-contrast
+    - `Dala.Theme.prefers_reduced_motion/0` — OS reduced-motion accessibility setting
+    - `Dala.Theme.Adaptive.Custom.new/1` — custom adaptive theme with dark/light pair
+    - Line-height tokens: `:line_height_tight`, `:line_height_normal`, `:line_height_relaxed`
+    - Text variant presets: `:display`, `:heading`, `:title`, `:body`, `:caption`, `:label`, `:overline`
+
+    ## Expanded icon set (v0.8)
+    Logical icon names expanded from 28 to 104, covering bookmark, download,
+    camera, notification, wifi, bluetooth, battery, play/pause, undo/redo, save,
+    folder, file, zoom, fullscreen, expand/collapse, and many more.
+
+    ## DSL verification (v0.8)
+    `Dala.Spark.DslVerifier` provides comprehensive compile-time and runtime
+    verification of DSL definitions. Warnings are emitted during `mix compile`
+    for:
+    - Unknown component types
+    - Invalid prop names (with typo suggestions via Jaro-Windows distance)
+    - Non-atom event handler values
+    - Leaf components with children
+    - Invalid attribute types
+    - Invalid text variant values
+
+    Run `mix dala.verify --dsl` for a full project scan, or
+    `mix dala.verify --components` to list all available components.
+    Use `mix dala.verify --dsl --strict` in CI to fail on warnings.
+
+    Programmatic API: `Dala.Spark.Dsl.verify(module)` or `Dala.verify_dsl(module)`.
+    Compile-time hook: `Dala.Spark.DslCompileHook` (auto-registered via `@before_compile`).
+    Key files: `lib/dala/spark/dsl_verifier.ex`, `lib/dala/spark/dsl_compile_hook.ex`,
+    `lib/mix/tasks/dala.verify.ex`.
 
 ## 17. **Dala.App screens/1 helper.**
     Use `screens/1` in your app's `navigation/1` to register screen modules:
@@ -355,7 +410,7 @@ These are the things we've burned ourselves on. Following them isn't optional.
     
     **Permissions:** Request via `Dala.Permissions.request(socket, :bluetooth)` / `:wifi`.
     
-    **Setup modules:** `Dala.Setup.IOS`, `Dala.Setup.Android` for programmatic setup.
+    **Setup modules:** `Dala.Setup.Ios`, `Dala.Setup.Android` for programmatic setup.
     **Setup scripts:** `scripts/ios_setup.sh`, `scripts/android_setup.sh`.
     **Full docs:** `docs/bluetooth_wifi_implementation.md`.
 
