@@ -77,11 +77,11 @@ defmodule Dala.Screen.Manager do
 
   @impl true
   def handle_cast({:monitor, pid}, %{monitors: monitors} = state) do
-    unless Map.has_key?(monitors, pid) do
+    if Map.has_key?(monitors, pid) do
+      {:noreply, state}
+    else
       ref = Process.monitor(pid)
       {:noreply, %{state | monitors: Map.put(monitors, pid, ref)}}
-    else
-      {:noreply, state}
     end
   end
 

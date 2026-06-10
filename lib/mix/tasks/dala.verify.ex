@@ -108,7 +108,9 @@ defmodule Mix.Tasks.Dala.Verify do
     Mix.shell().info("\n#{Dala.Spark.DslVerifier.format_report(warnings)}")
 
     if opts[:strict] and (length(errors) > 0 or length(warns) > 0) do
-      Mix.raise("DSL verification failed with #{length(errors)} error(s) and #{length(warns)} warning(s)")
+      Mix.raise(
+        "DSL verification failed with #{length(errors)} error(s) and #{length(warns)} warning(s)"
+      )
     end
 
     if length(errors) > 0 do
@@ -132,6 +134,7 @@ defmodule Mix.Tasks.Dala.Verify do
     """)
 
     Mix.shell().info("  Container components:")
+
     components
     |> Enum.filter(fn {_, c} -> c.category == :container end)
     |> Enum.sort_by(fn {name, _} -> name end)
@@ -142,6 +145,7 @@ defmodule Mix.Tasks.Dala.Verify do
     end)
 
     Mix.shell().info("\n  Leaf components:")
+
     components
     |> Enum.filter(fn {_, c} -> c.category == :leaf end)
     |> Enum.sort_by(fn {name, _} -> name end)

@@ -1,6 +1,5 @@
 defmodule Dala.DiffTest do
   use ExUnit.Case, async: true
-  import Bitwise
   doctest Dala.Diff
 
   describe "diff/2" do
@@ -901,7 +900,7 @@ defmodule Dala.DiffTest do
       # Reordering should not produce patches if content is identical
       patches = Dala.Ui.Diff.diff(old, new)
       # The diff may produce patches for reordering; at minimum it shouldn't crash
-      assert is_list(patches)
+      assert patches == [] or is_list(patches)
     end
 
     test "handles deeply nested trees" do

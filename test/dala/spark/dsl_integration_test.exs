@@ -347,7 +347,11 @@ defmodule Dala.Spark.DslIntegrationTest do
       entity = %{type: :nonexistent_component, props: %{}, children: [], line: 10}
       warnings = Dala.Spark.DslVerifier.verify_from_raw(TestCorrectScreen, [entity], [], [])
       assert length(warnings) > 0
-      assert Enum.any?(warnings, &(&1.type == :error && String.contains?(&1.message, "Unknown component")))
+
+      assert Enum.any?(
+               warnings,
+               &(&1.type == :error && String.contains?(&1.message, "Unknown component"))
+             )
     end
 
     test "verify returns warnings for invalid prop" do
@@ -360,7 +364,11 @@ defmodule Dala.Spark.DslIntegrationTest do
 
       warnings = Dala.Spark.DslVerifier.verify_from_raw(TestCorrectScreen, [entity], [], [])
       assert length(warnings) > 0
-      assert Enum.any?(warnings, &(&1.type == :warning && String.contains?(&1.message, "Unknown prop")))
+
+      assert Enum.any?(
+               warnings,
+               &(&1.type == :warning && String.contains?(&1.message, "Unknown prop"))
+             )
     end
 
     test "verify returns error for non-atom event handler" do
@@ -373,7 +381,11 @@ defmodule Dala.Spark.DslIntegrationTest do
 
       warnings = Dala.Spark.DslVerifier.verify_from_raw(TestCorrectScreen, [entity], [], [])
       assert length(warnings) > 0
-      assert Enum.any?(warnings, &(&1.type == :error && String.contains?(&1.message, "must be an atom")))
+
+      assert Enum.any?(
+               warnings,
+               &(&1.type == :error && String.contains?(&1.message, "must be an atom"))
+             )
     end
 
     test "verify returns error for leaf with children" do
@@ -386,14 +398,22 @@ defmodule Dala.Spark.DslIntegrationTest do
 
       warnings = Dala.Spark.DslVerifier.verify_from_raw(TestCorrectScreen, [entity], [], [])
       assert length(warnings) > 0
-      assert Enum.any?(warnings, &(&1.type == :error && String.contains?(&1.message, "does not accept children")))
+
+      assert Enum.any?(
+               warnings,
+               &(&1.type == :error && String.contains?(&1.message, "does not accept children"))
+             )
     end
 
     test "verify returns error for invalid attribute type" do
       attr = %{name: :count, type: :invalid_type, line: 1}
       warnings = Dala.Spark.DslVerifier.verify_from_raw(TestCorrectScreen, [], [attr], [])
       assert length(warnings) > 0
-      assert Enum.any?(warnings, &(&1.type == :error && String.contains?(&1.message, "invalid type")))
+
+      assert Enum.any?(
+               warnings,
+               &(&1.type == :error && String.contains?(&1.message, "invalid type"))
+             )
     end
 
     test "verify returns warning for invalid variant" do
@@ -406,7 +426,11 @@ defmodule Dala.Spark.DslIntegrationTest do
 
       warnings = Dala.Spark.DslVerifier.verify_from_raw(TestCorrectScreen, [entity], [], [])
       assert length(warnings) > 0
-      assert Enum.any?(warnings, &(&1.type == :warning && String.contains?(&1.message, "Invalid variant")))
+
+      assert Enum.any?(
+               warnings,
+               &(&1.type == :warning && String.contains?(&1.message, "Invalid variant"))
+             )
     end
 
     test "verify suggests closest match for typos" do

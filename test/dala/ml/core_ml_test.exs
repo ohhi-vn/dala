@@ -10,7 +10,7 @@ defmodule Dala.ML.CoreML.Test do
 
   describe "module loading" do
     test "CoreML module is available" do
-      assert Code.ensure_loaded?(Dala.ML.CoreML)
+      assert Code.ensure_loaded?(Dala.ML.CoreML) == true
     end
   end
 
@@ -34,9 +34,8 @@ defmodule Dala.ML.CoreML.Test do
     end
 
     test "accepts valid binary arguments" do
-      # Should not raise — returns {:error, _} or :not_supported
       result = Dala.ML.CoreML.load_model("valid_path.mlmodel", "valid_id")
-      assert is_tuple(result) or result == :not_supported
+      assert match?({:error, _}, result) or result == :not_supported
     end
   end
 
@@ -54,9 +53,9 @@ defmodule Dala.ML.CoreML.Test do
   end
 
   describe "loaded?/1" do
-    test "returns boolean for any identifier" do
+    test "returns false for any identifier on non-iOS" do
       result = Dala.ML.CoreML.loaded?("non_existent_model")
-      assert is_boolean(result)
+      assert result == false
     end
 
     test "returns false for unloaded model" do
@@ -74,12 +73,12 @@ defmodule Dala.ML.CoreML.Test do
   describe "loaded_models/0" do
     test "returns a list" do
       result = Dala.ML.CoreML.loaded_models()
-      assert is_list(result)
+      assert result == []
     end
 
     test "list contains only strings" do
       result = Dala.ML.CoreML.loaded_models()
-      Enum.each(result, fn id -> assert is_binary(id) end)
+      assert Enum.all?(result, &is_binary/1)
     end
   end
 
@@ -103,7 +102,7 @@ defmodule Dala.ML.CoreML.Test do
 
     test "accepts valid arguments" do
       result = Dala.ML.CoreML.predict("model_id", %{"input" => [1.0, 2.0]})
-      assert is_tuple(result) or result == :not_supported
+      assert match?({:error, _}, result) or result == :not_supported
     end
   end
 

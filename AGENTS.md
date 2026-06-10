@@ -564,7 +564,7 @@ Dala supports machine learning via three paths:
   - Model management: compile, save/load, serialize, summary, quantize, benchmark, clone
   - Layer freeze/unfreeze for fine-tuning workflows
   - Glorot/Xavier weight initialization
-  - Autodiff gradients (with numerical fallback)
+  - Autodiff gradients via Burn Autodiff<CubeCL> (exact, not numerical)
   - Profile step for timing forward/backward/optimizer phases
   - Gradient accumulation for effective larger batch sizes
   - Nesterov momentum for SGD optimizer
@@ -574,7 +574,7 @@ Dala supports machine learning via three paths:
   - `ExBurn.Serving.Server` — `Nx.Serving` behaviour for batched concurrent inference
   - `ExBurn.Application` — OTP application callback for NIF loading
   - Access via `Dala.ML.Burn`, `Dala.ML.Burn.Training`, `Dala.ML.Burn.Serving`
-  - **Status**: v0.4.2 — Full Nx backend, defn compiler, training loop, serving, model management, NifHelper, Application
+  - **Status**: v0.5.0 — Full Nx backend, defn compiler, training loop, serving, model management, NifHelper, Application. Uses Burn 0.21 with real Autodiff<CubeCL> gradients (not numerical).
 
 **Not supported on iOS:** Emily (macOS-only), NxIREE, EXLA/XLA, Torchx.
 
@@ -652,7 +652,7 @@ Summary: `dala/ML_INTEGRATION_SUMMARY.md`
     - `Dala.Designer.Codegen.extract_handlers/1` — Extract event handler atoms from UI tree
     - Auto-generates `handle_event/3` stubs for all event handlers found in the tree
 
-## 24. **GPU compute via EXCubeCL (v0.5.0).**
+## 24. **GPU compute via EXCubeCL (v0.7.0).**
     Dala integrates EXCubeCL for GPU compute workloads (image processing, AI inference, realtime effects).
     
     **Key modules:**
@@ -660,21 +660,22 @@ Summary: `dala/ML_INTEGRATION_SUMMARY.md`
     - `Dala.Gpu.Compute.Buffer` — Typed buffer struct wrapper
     - `Dala.Gpu.Compute.Kernel` — Kernel execution + custom kernel registry
     - `Dala.Gpu.Compute.Pipeline` — Multi-stage GPU pipelines (delegates to `ExCubecl.pipeline/0`)
-    - `ExCubecl.Command` — Typed struct for pipeline commands (new in v0.5.0)
-    - `Dala.Gpu.Compute.device_count/0` — Number of available GPU devices (new in v0.5.0)
-    - `Dala.Gpu.Compute.kernels/0` — List of available kernel names (new in v0.5.0)
-    - `Dala.Gpu.Compute.supported_dtypes/0` — List of supported dtype atoms (new in v0.5.0)
-    - `Dala.Gpu.Compute.available?/0` — Check if NIF is loaded and functional (new in v0.5.0)
+    - `ExCubecl.Command` — Typed struct for pipeline commands
+    - `Dala.Gpu.Compute.device_count/0` — Number of available GPU devices
+    - `Dala.Gpu.Compute.kernels/0` — List of available kernel names
+    - `Dala.Gpu.Compute.supported_dtypes/0` — List of supported dtype atoms
+    - `Dala.Gpu.Compute.available?/0` — Check if NIF is loaded and functional
     - `Dala.ML.Gpu.Inference` — GPU-accelerated ML inference with VideoFrame support
     - `Dala.Media.Gpu.Processor` — GPU-accelerated video/image processing
     
-    **EXCubeCL 0.5.0 Media Modules (via `Dala.Media.Gpu.Processor`):**
+    **EXCubeCL 0.7.0 Media Modules (via `Dala.Media.Gpu.Processor`):**
     - `ExCubecl.Media` — Media I/O: open, streams, read_frame, close
     - `ExCubecl.Video` — Video ops: overlay, mix, scale, crop, convert
     - `ExCubecl.Audio` — Audio ops: mix, overlay, resample, channel conversion
     - `ExCubecl.Filter` — GPU filters: apply, chain (gaussian_blur, sharpen, denoise, etc.)
     - `ExCubecl.Transcode` — Encoding/muxing: start, write_frame, write_samples, finish
     - `ExCubecl.VideoFrame` / `ExCubecl.AudioSamples` — GPU-resident media types
+    - `ExCubecl.MediaPipeline` — GenServer behaviour for real-time media pipelines
     
     **Key patterns:**
     - GPU compute is dirty-CPU scheduled (won't block BEAM)
@@ -685,9 +686,10 @@ Summary: `dala/ML_INTEGRATION_SUMMARY.md`
     - Pipelines batch multiple kernels into a single submission
     - EXCubeCL uses string kernel names (`"elementwise_add"`), Dala translates atoms at the boundary
     - EXCubeCL `read/1` returns `{:ok, binary()}` — already unwrapped by `Dala.Gpu.Compute.read/1`
-    - EXCubeCL v0.5.0 uses `Jason.encode!/1` for kernel parameter JSON encoding (added `jason` dep)
-    - EXCubeCL v0.5.0 all functions return `{:ok, result}` tuples (safer API)
-    - EXCubeCL v0.5.0 adds `:u8` (8-bit unsigned integer) dtype support
+    - EXCubeCL uses `Jason.encode!/1` for kernel parameter JSON encoding
+    - All EXCubeCL functions return `{:ok, result}` tuples
+    - Supports `:u8` (8-bit unsigned integer) dtype
+    - 24 CPU-side kernels implemented: elementwise ops, activations, video/audio filters
     
     **Integration points:**
     - `Dala.Gpu` delegates to `Dala.Gpu.Compute` via `compute_buffer/3`, `compute_run/4`, etc.

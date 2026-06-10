@@ -4,9 +4,9 @@ Dala integrates [ExBurn](https://github.com/ohhi-vn/ex_burn), a bridge between N
 
 ## Status
 
-**v0.4.0** — Full Nx backend, defn compiler, training loop, serving, model management. Key improvements:
+**v0.5.0** — Full Nx backend, defn compiler, training loop, serving, model management. Uses Burn 0.21 with real Autodiff<CubeCL> gradients (not numerical). Key improvements:
 
-- **Autodiff gradients**: Burn Autodiff backward pass for exact gradient computation (with numerical fallback)
+- **Autodiff gradients**: Burn Autodiff<CubeCL> backward pass for exact gradient computation (no numerical fallback needed)
 - **GPU forward pass**: `Nx.Defn.jit_apply` + `ExBurn.Defn.Compiler` for GPU-accelerated inference
 - **Glorot/Xavier initialization**: Proper weight initialization for all model parameters
 - **Model summary**: Keras/PyTorch-style layer-by-layer summary
@@ -16,8 +16,7 @@ Dala integrates [ExBurn](https://github.com/ohhi-vn/ex_burn), a bridge between N
 - **Nesterov momentum**: For SGD optimizer
 - **Accuracy tracking**: Classification accuracy during training
 - **Profile step**: Detailed timing for forward/backward/optimizer phases
-- **New callbacks**: Warmup, ReduceLROnPlateau, History
-- **Improved numerical gradients**: `:numerical_batch` method (~2x faster)
+- **Callbacks**: Logging, EarlyStopping, Checkpoint, Warmup, ReduceLROnPlateau, History, Screen (LiveView)
 
 ## Architecture
 
@@ -531,7 +530,7 @@ Burn's Autodiff backend is memory-intensive. On iOS/Android with limited RAM:
 - **Inference** is the primary use case for mobile deployment
 - Minimum recommended: 4GB RAM, A12+ chip (iOS) / Snapdragon 700+ (Android)
 
-The training loop in ExBurn uses **autodiff gradients** (Burn Autodiff backward pass) with numerical fallback. The autodiff path provides exact gradient computation and is significantly faster than numerical methods.
+The training loop in ExBurn uses **autodiff gradients** via Burn Autodiff<CubeCL> (exact, no numerical fallback). This provides exact gradient computation and is significantly faster than numerical methods.
 
 ## Comparison with Other Dala ML Backends
 
@@ -557,7 +556,7 @@ raise ExBurn.Error,
 ## Troubleshooting
 
 ### `available?()` returns `false`
-- Ensure `ex_burn` is in your deps: `{:ex_burn, "~> 0.4"}`
+- Ensure `ex_burn` is in your deps: `{:ex_burn, "~> 0.5"}`
 - Run `mix deps.get && mix compile`
 - The Rust NIF will be compiled automatically via Rustler
 
@@ -567,8 +566,7 @@ raise ExBurn.Error,
 - On desktop, GPU may not be available — falls back to CPU
 
 ### Training is slow
-- Training uses autodiff gradients by default (fast, exact)
-- If autodiff falls back to numerical gradients, performance will be slower
+- Training uses autodiff gradients (Burn Autodiff<CubeCL>) — exact and fast
 - For faster training, use EMLX or cloud training and deploy to device
 - Reduce batch size and model size for mobile
 - Use `profile_step/3` to identify bottlenecks (forward/backward/optimizer timing)

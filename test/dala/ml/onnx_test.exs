@@ -10,14 +10,14 @@ defmodule Dala.ML.ONNX.Test do
 
   describe "module loading" do
     test "ONNX module is available" do
-      assert Code.ensure_loaded?(Dala.ML.ONNX)
+      assert Code.ensure_loaded?(Dala.ML.ONNX) == true
     end
   end
 
   describe "available?/0" do
-    test "returns boolean" do
+    test "returns false when NIF is not loaded" do
       result = Dala.ML.ONNX.available?()
-      assert is_boolean(result)
+      assert result == false or result == :not_supported
     end
   end
 
@@ -119,16 +119,16 @@ defmodule Dala.ML.ONNX.Test do
   end
 
   describe "runtime_available?/0" do
-    test "returns boolean or not_supported" do
+    test "returns false or not_supported" do
       result = Dala.ML.ONNX.runtime_available?()
-      assert is_boolean(result) or result == :not_supported
+      assert result == false or result == :not_supported
     end
   end
 
   describe "session_count/0" do
-    test "returns integer or not_supported" do
+    test "returns 0 when NIF is not loaded" do
       result = Dala.ML.ONNX.session_count()
-      assert is_integer(result) or result == :not_supported
+      assert result == 0 or result == :not_supported
     end
 
     test "session count increases after create" do

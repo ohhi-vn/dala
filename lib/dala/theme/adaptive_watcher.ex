@@ -31,6 +31,8 @@ defmodule Dala.Theme.AdaptiveWatcher do
 
   # ── Public API ───────────────────────────────────────────────────────────
 
+  @doc "Starts the adaptive theme watcher."
+  @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end

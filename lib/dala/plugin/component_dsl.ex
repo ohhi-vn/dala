@@ -138,6 +138,7 @@ defmodule Dala.Plugin.ComponentDSL do
 
   # Internal storage for component being built
   @doc false
+  @spec add_prop(module(), String.t(), atom(), keyword()) :: Dala.Plugin.Component.t()
   def add_prop(module, name, type, opts) do
     key = {:__dala_component__, module}
 
@@ -167,6 +168,7 @@ defmodule Dala.Plugin.ComponentDSL do
   end
 
   @doc false
+  @spec add_event(module(), String.t(), keyword()) :: Dala.Plugin.Component.t()
   def add_event(module, name, opts) do
     key = {:__dala_component__, module}
 
@@ -193,6 +195,7 @@ defmodule Dala.Plugin.ComponentDSL do
   end
 
   @doc false
+  @spec add_native(module(), String.t(), String.t()) :: Dala.Plugin.Component.t()
   def add_native(module, platform, class_name) do
     key = {:__dala_component__, module}
 
@@ -219,6 +222,7 @@ defmodule Dala.Plugin.ComponentDSL do
   end
 
   @doc false
+  @spec add_capability(module(), atom()) :: Dala.Plugin.Component.t()
   def add_capability(module, capability) do
     key = {:__dala_component__, module}
 
@@ -245,6 +249,7 @@ defmodule Dala.Plugin.ComponentDSL do
   end
 
   @doc false
+  @spec get_component(module()) :: Dala.Plugin.Component.t()
   def get_component(module) do
     case Process.get({:__dala_component__, module}) do
       nil ->
@@ -259,6 +264,7 @@ defmodule Dala.Plugin.ComponentDSL do
   end
 
   @doc false
+  @spec put_component(module(), Dala.Plugin.Component.t()) :: Dala.Plugin.Component.t()
   def put_component(module, component) do
     key = {:__dala_component__, module}
     Process.put(key, component)

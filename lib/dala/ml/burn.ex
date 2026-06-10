@@ -1,4 +1,6 @@
 defmodule Dala.ML.Burn do
+  require Logger
+
   @moduledoc """
   Dala integration for the [Burn](https://burn.dev) deep learning framework.
 
@@ -218,7 +220,6 @@ defmodule Dala.ML.Burn do
     device = Keyword.get(opts, :device, default_device())
 
     if device == :gpu do
-      require Logger
       Logger.info("ExBurn configured with GPU acceleration")
     end
 

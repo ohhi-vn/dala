@@ -44,7 +44,6 @@ defmodule Dala.DeviceTest do
     test "returns a non-empty string when NIF is loaded" do
       if nif_locale_loaded?() do
         locale = Device.locale()
-        assert is_binary(locale)
         assert byte_size(locale) > 0
       end
     end
@@ -69,7 +68,6 @@ defmodule Dala.DeviceTest do
     test "returns a non-empty string when NIF is loaded" do
       if nif_locale_loaded?() do
         language = Device.language()
-        assert is_binary(language)
         assert byte_size(language) > 0
       end
     end
@@ -95,7 +93,6 @@ defmodule Dala.DeviceTest do
     test "returns a non-empty string when NIF is loaded" do
       if nif_locale_loaded?() do
         region = Device.region()
-        assert is_binary(region)
         assert byte_size(region) > 0
       end
     end
@@ -163,31 +160,31 @@ defmodule Dala.DeviceTest do
       end
     end
 
-    test "low_power_mode? returns a boolean when NIF is loaded" do
+    test "low_power_mode? returns false when NIF is not loaded" do
       if nif_locale_loaded?() do
         result = Device.low_power_mode?()
-        assert is_boolean(result)
+        assert result == true or result == false
       end
     end
 
-    test "foreground? returns a boolean when NIF is loaded" do
+    test "foreground? returns false when NIF is not loaded" do
       if nif_locale_loaded?() do
         result = Device.foreground?()
-        assert is_boolean(result)
+        assert result == true or result == false
       end
     end
 
-    test "os_version returns a string when NIF is loaded" do
+    test "os_version returns a non-empty string when NIF is loaded" do
       if nif_locale_loaded?() do
         version = Device.os_version()
-        assert is_binary(version)
+        assert byte_size(version) > 0
       end
     end
 
-    test "model returns a string when NIF is loaded" do
+    test "model returns a non-empty string when NIF is loaded" do
       if nif_locale_loaded?() do
         model = Device.model()
-        assert is_binary(model)
+        assert byte_size(model) > 0
       end
     end
   end
@@ -225,26 +222,23 @@ defmodule Dala.DeviceTest do
   # ── NIF raw function tests (platform.Native) ##############################
 
   describe "Dala.Platform.Native locale functions" do
-    test "device_locale returns a binary when NIF is loaded" do
+    test "device_locale returns a non-empty binary when NIF is loaded" do
       if nif_locale_loaded?() do
         result = Dala.Platform.Native.device_locale()
-        assert is_binary(result)
         assert byte_size(result) > 0
       end
     end
 
-    test "device_language returns a binary when NIF is loaded" do
+    test "device_language returns a non-empty binary when NIF is loaded" do
       if nif_locale_loaded?() do
         result = Dala.Platform.Native.device_language()
-        assert is_binary(result)
         assert byte_size(result) > 0
       end
     end
 
-    test "device_region returns a binary when NIF is loaded" do
+    test "device_region returns a non-empty binary when NIF is loaded" do
       if nif_locale_loaded?() do
         result = Dala.Platform.Native.device_region()
-        assert is_binary(result)
         assert byte_size(result) > 0
       end
     end

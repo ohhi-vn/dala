@@ -11,8 +11,8 @@ defmodule Dala.ML.Test do
     end
 
     test "can be called multiple times safely" do
-      Dala.ML.setup()
-      Dala.ML.setup()
+      assert Dala.ML.setup() == :ok
+      assert Dala.ML.setup() == :ok
     end
 
     test "configures Nx backend" do
@@ -20,27 +20,11 @@ defmodule Dala.ML.Test do
       assert Code.ensure_loaded?(Nx)
       # Backend should be set (either EMLX or BinaryBackend)
       backend = Nx.default_backend()
-      assert backend != nil or is_tuple(backend) or is_atom(backend)
+      assert is_tuple(backend) or is_atom(backend)
     end
   end
 
   describe "platform detection" do
-    test "ios?/0 returns boolean" do
-      assert is_boolean(Dala.ML.ios?())
-    end
-
-    test "ios_device?/0 returns boolean" do
-      assert is_boolean(Dala.ML.ios_device?())
-    end
-
-    test "ios_simulator?/0 returns boolean" do
-      assert is_boolean(Dala.ML.ios_simulator?())
-    end
-
-    test "android?/0 returns boolean" do
-      assert is_boolean(Dala.ML.android?())
-    end
-
     test "platform detectors are mutually consistent" do
       # If ios? is true, exactly one of device/simulator should be true (on iOS)
       # If ios? is false, both should be false
@@ -57,7 +41,7 @@ defmodule Dala.ML.Test do
   describe "status/0" do
     test "returns map with required keys" do
       status = Dala.ML.status()
-      assert is_map(status)
+      assert %{} = status
       assert Map.has_key?(status, :platform)
       assert Map.has_key?(status, :backend)
       assert Map.has_key?(status, :emlx_available)
@@ -73,20 +57,20 @@ defmodule Dala.ML.Test do
 
     test "backend is set" do
       status = Dala.ML.status()
-      assert is_atom(status.backend) or is_tuple(status.backend)
+      assert status.backend == {EMLX.Backend, device: :gpu} or status.backend == Nx.BinaryBackend
     end
 
     test "availability flags are boolean" do
       status = Dala.ML.status()
-      assert is_boolean(status.emlx_available)
-      assert is_boolean(status.coreml_available)
-      assert is_boolean(status.onnx_available)
+      assert status.emlx_available == true or status.emlx_available == false
+      assert status.coreml_available == true or status.coreml_available == false
+      assert status.onnx_available == true or status.onnx_available == false
     end
 
     test "libraries is a map with expected keys" do
       status = Dala.ML.status()
       libs = status.libraries
-      assert is_map(libs)
+      assert %{} = libs
       assert Map.has_key?(libs, :nx)
       assert Map.has_key?(libs, :scholar)
       assert Map.has_key?(libs, :nx_signal)
@@ -101,11 +85,6 @@ defmodule Dala.ML.Test do
   end
 
   describe "available_backends/0" do
-    test "returns a list" do
-      backends = Dala.ML.available_backends()
-      assert is_list(backends)
-    end
-
     test "always includes :nx" do
       backends = Dala.ML.available_backends()
       assert :nx in backends
@@ -114,14 +93,14 @@ defmodule Dala.ML.Test do
     test "contains only known backend atoms" do
       known = [:nx, :emlx, :coreml, :onnx, :gpu_compute, :burn]
       backends = Dala.ML.available_backends()
-      Enum.each(backends, fn b -> assert b in known end)
+      assert Enum.all?(backends, &(&1 in known))
     end
   end
 
   describe "verify/0" do
     test "returns status map" do
       result = Dala.ML.verify()
-      assert Map.has_key?(result, :status)
+      assert %{} = result
       assert result.status in [:ok, :error]
     end
 

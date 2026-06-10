@@ -345,6 +345,7 @@ defmodule Dala.Plugin.Protocol do
   end
 
   @doc false
+  @spec guess_type(term()) :: atom()
   def guess_type(value) when is_binary(value), do: :string
   def guess_type(value) when is_boolean(value), do: :bool
   def guess_type(value) when is_integer(value), do: :integer
@@ -353,6 +354,7 @@ defmodule Dala.Plugin.Protocol do
   def guess_type(value) when is_map(value), do: :map
 
   @doc false
+  @spec decode_value(byte(), binary()) :: {term(), binary()}
   def decode_value(0x01, <<len::16, value::binary-size(len), rest::binary>>),
     do: {value, rest}
 

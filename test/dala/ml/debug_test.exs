@@ -186,14 +186,14 @@ defmodule Dala.ML.Debug.Test do
       assert Map.has_key?(info, :memory_mb)
     end
 
-    test "otp_version is a string" do
+    test "otp_version is a non-empty string" do
       info = Dala.ML.Debug.environment_info()
-      assert is_binary(info.otp_version)
+      assert byte_size(info.otp_version) > 0
     end
 
-    test "elixir_version is a string" do
+    test "elixir_version is a non-empty string" do
       info = Dala.ML.Debug.environment_info()
-      assert is_binary(info.elixir_version)
+      assert byte_size(info.elixir_version) > 0
     end
 
     test "memory_mb is a float" do
@@ -204,8 +204,9 @@ defmodule Dala.ML.Debug.Test do
 
     test "platform is a valid status map" do
       info = Dala.ML.Debug.environment_info()
-      assert is_map(info.platform)
+      assert %{} = info.platform
       assert Map.has_key?(info.platform, :platform)
+      assert info.platform.platform in [:ios_device, :ios_simulator, :android, :other]
     end
   end
 end

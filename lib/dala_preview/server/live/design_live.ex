@@ -176,16 +176,10 @@ defmodule DalaPreview.Server.DesignLive do
     end
   end
 
-  defp default_props(component) when component in [:column, :row, :text, :button] do
-    case component do
-      :column -> %{"gap" => "space_md"}
-      :row -> %{"gap" => "space_md"}
-      :text -> %{"text" => "Sample"}
-      :button -> %{"text" => "Button"}
-    end
-  end
-
-  defp default_props(_component), do: %{}
+  defp default_props(:column), do: %{"gap" => "space_md"}
+  defp default_props(:row), do: %{"gap" => "space_md"}
+  defp default_props(:text), do: %{"text" => "Sample"}
+  defp default_props(:button), do: %{"text" => "Button"}
 
   defp generate_code(design, format) do
     nodes = Map.get(design, :nodes, [])

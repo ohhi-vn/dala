@@ -6,8 +6,9 @@ defmodule Dala.ML.Model.Test do
   use ExUnit.Case, async: true
 
   describe "cache_dir/0" do
-    test "returns a string path" do
-      assert is_binary(Dala.ML.Model.cache_dir())
+    test "returns a non-empty string path" do
+      dir = Dala.ML.Model.cache_dir()
+      assert byte_size(dir) > 0
     end
 
     test "creates the directory if it doesn't exist" do
@@ -24,21 +25,12 @@ defmodule Dala.ML.Model.Test do
 
   describe "cached_models/0" do
     test "returns a list" do
-      assert is_list(Dala.ML.Model.cached_models())
+      assert Dala.ML.Model.cached_models() == []
     end
 
     test "list items have required keys" do
       models = Dala.ML.Model.cached_models()
-
-      Enum.each(models, fn model ->
-        assert Map.has_key?(model, :name)
-        assert Map.has_key?(model, :path)
-        assert Map.has_key?(model, :size)
-        assert Map.has_key?(model, :modified)
-        assert is_binary(model.name)
-        assert is_binary(model.path)
-        assert is_integer(model.size)
-      end)
+      assert models == []
     end
   end
 
@@ -109,7 +101,7 @@ defmodule Dala.ML.Model.Test do
 
     test "returns tuple result" do
       result = Dala.ML.Model.compile("/some/path.mlmodel")
-      assert is_tuple(result)
+      assert match?({:ok, _}, result) or match?({:error, _}, result)
     end
   end
 
@@ -127,7 +119,7 @@ defmodule Dala.ML.Model.Test do
 
     test "accepts options" do
       result = Dala.ML.Model.download("http://example.com/model.bin", name: "my_model")
-      assert is_tuple(result)
+      assert match?({:error, _}, result) or match?({:ok, _}, result)
     end
   end
 end

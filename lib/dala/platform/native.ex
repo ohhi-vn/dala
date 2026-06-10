@@ -1,10 +1,8 @@
 defmodule Dala.Platform.Native do
-  @moduledoc """
-  Native implementation using Rustler NIFs.
-
-  This module replaces the old dala_nif.erl with Rust-based NIFs that work
-  on both iOS and Android platforms.
-  """
+  @moduledoc false
+  # Rustler NIF declarations — actual implementations are in native/dala_nif/src/lib.rs.
+  # These stubs return :nif_not_loaded until the Rust crate is compiled and linked.
+  # Do not add @spec here — the real signatures are defined in Rust.
 
   use Rustler,
     otp_app: :dala,

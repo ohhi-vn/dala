@@ -1,6 +1,6 @@
 # GPU Compute Guide
 
-Dala integrates [EXCubeCL](https://hexdocs.pm/ex_cubecl/readme.html) for GPU compute workloads via CubeCL Rust NIFs. This enables:
+Dala integrates [EXCubeCL](https://hexdocs.pm/ex_cubecl/readme.html) v0.7.0 for GPU compute workloads via CubeCL Rust NIFs. This enables:
 
 - **Realtime image/video processing** — blur, sharpen, beauty filters, color grading
 - **AI inference on GPU** — custom model kernels, preprocessing, postprocessing
@@ -41,7 +41,7 @@ For ML training and inference, see the [ExBurn Integration Guide](./ex_burn.md).
 ```elixir
 # Check GPU availability
 Dala.Gpu.Compute.device_info()
-# %{name: "ExCubecl CPU (Rust NIF)", gpu: false, version: "0.2.0"}
+# %{name: "CubeCL GPU (CPU fallback — v0.7.0)", gpu: false, backend: :cpu_fallback}
 
 # Create buffers
 a = Dala.Gpu.Compute.buffer([1.0, 2.0, 3.0], {3}, :f32)
@@ -53,9 +53,9 @@ Dala.Gpu.Compute.add(a, b, c)
 
 # Read results
 Dala.Gpu.Compute.read(c)
-# [5.0, 7.0, 9.0]
+# <<5.0, 7.0, 9.0>>
 
-# Cleanup
+# Cleanup (buffers auto-freed by Rust ResourceArc, but explicit free is a no-op)
 Dala.Gpu.Compute.free_many([a, b, c])
 ```
 

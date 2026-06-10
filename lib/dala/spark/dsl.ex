@@ -189,7 +189,12 @@ defmodule Dala.Spark.Dsl do
       # Store entities as module attribute for compile-time verification
       Module.put_attribute(__MODULE__, :__dala_dsl__, true)
       Module.put_attribute(__MODULE__, :__dala_dsl_entities__, unquote(Macro.escape(entities)))
-      Module.put_attribute(__MODULE__, :__dala_dsl_screen_name, unquote(Macro.escape(validated_opts))[:name])
+
+      Module.put_attribute(
+        __MODULE__,
+        :__dala_dsl_screen_name,
+        unquote(Macro.escape(validated_opts))[:name]
+      )
 
       # Persist DSL info for runtime access (used by Dala.Spark.Dsl.verify/1)
       @persist {:dala_dsl_entities, unquote(Macro.escape(entities))}
@@ -232,7 +237,11 @@ defmodule Dala.Spark.Dsl do
       )
 
       # Store attributes as module attribute for compile-time verification
-      Module.put_attribute(__MODULE__, :__dala_dsl_attributes__, unquote(Macro.escape(attributes)))
+      Module.put_attribute(
+        __MODULE__,
+        :__dala_dsl_attributes__,
+        unquote(Macro.escape(attributes))
+      )
 
       # Persist DSL info for runtime access (used by Dala.Spark.Dsl.verify/1)
       @persist {:dala_dsl_attributes, unquote(Macro.escape(attributes))}
@@ -506,10 +515,22 @@ defmodule Dala.Spark.Dsl do
       @persist {:module, __MODULE__}
       @persist {:file, __ENV__.file}
       @persist {:extensions, [Dala.Spark.Dsl]}
-      Module.register_attribute(__MODULE__, :__dala_dsl_entities__, accumulate: false, persist: true)
-      Module.register_attribute(__MODULE__, :__dala_dsl_attributes__, accumulate: false, persist: true)
+      Module.register_attribute(__MODULE__, :__dala_dsl_entities__,
+        accumulate: false,
+        persist: true
+      )
+
+      Module.register_attribute(__MODULE__, :__dala_dsl_attributes__,
+        accumulate: false,
+        persist: true
+      )
+
       Module.register_attribute(__MODULE__, :__dala_dsl__, accumulate: false, persist: true)
-      Module.register_attribute(__MODULE__, :__dala_dsl_screen_name, accumulate: false, persist: true)
+
+      Module.register_attribute(__MODULE__, :__dala_dsl_screen_name,
+        accumulate: false,
+        persist: true
+      )
 
       @doc false
       def __spark_dsl__ do

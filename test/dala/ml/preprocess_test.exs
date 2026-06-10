@@ -72,7 +72,6 @@ defmodule Dala.ML.Preprocess.Test do
       tensor = Nx.tensor([1.0, 2.0, 3.0])
       binary = Dala.ML.Preprocess.to_f32_binary(tensor)
 
-      assert is_binary(binary)
       # 3 f32 values = 12 bytes
       assert byte_size(binary) == 12
     end
@@ -106,22 +105,12 @@ defmodule Dala.ML.Preprocess.Test do
       result = Dala.ML.Preprocess.load_image("/non/existent/image.png")
       assert match?({:error, _}, result)
     end
-
-    test "returns tuple result" do
-      result = Dala.ML.Preprocess.load_image("/non/existent/image.png")
-      assert is_tuple(result)
-    end
   end
 
   describe "load_audio/1" do
     test "returns error for non-existent file" do
       result = Dala.ML.Preprocess.load_audio("/non/existent/audio.wav")
       assert match?({:error, _}, result)
-    end
-
-    test "returns tuple result" do
-      result = Dala.ML.Preprocess.load_audio("/non/existent/audio.wav")
-      assert is_tuple(result)
     end
   end
 
@@ -149,7 +138,7 @@ defmodule Dala.ML.Preprocess.Test do
         |> Dala.ML.Preprocess.normalize(:imagenet)
         |> Dala.ML.Preprocess.to_f32_binary()
 
-      assert is_binary(result)
+      assert byte_size(result) > 0
     end
   end
 end

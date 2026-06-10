@@ -4,7 +4,7 @@ defmodule Dala.MixProject do
   def project do
     [
       app: :dala,
-      version: "0.8.0",
+      version: "0.8.1",
       elixir: "~> 1.18",
       erlang: ">= 27.0",
       start_permanent: Mix.env() == :prod,
@@ -220,11 +220,11 @@ defmodule Dala.MixProject do
       {:axon, "~> 0.8"},
 
       # GPU compute runtime (CubeCL via Rust NIFs)
-      {:ex_cubecl, "~> 0.5"},
+      {:ex_cubecl, "~> 0.7"},
       # {:ex_cubecl, path: "../ex_cubecl"}
 
       # Burn deep learning framework (Nx backend via Rust NIF)
-      {:ex_burn, "~> 0.4"},
+      {:ex_burn, "~> 0.5"},
       # {:ex_burn, path: "../ex_burn"}
 
       # JSON encoding (required by ex_cubecl v0.5+ for kernel params)

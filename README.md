@@ -75,7 +75,7 @@ Add to `mix.exs`:
 
 ```elixir
 def deps do
-  [{:dala, "~> 0.1.0"}]
+  [{:dala, "~> 0.8"}]
 end
 ```
 

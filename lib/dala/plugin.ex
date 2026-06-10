@@ -900,6 +900,7 @@ defmodule Dala.Plugin do
   @doc """
   Auto-registers all plugins found in loaded applications.
   """
+  @spec auto_register() :: :ok
   def auto_register do
     apps = Application.loaded_applications() |> Enum.map(fn {app, _, _} -> app end)
 

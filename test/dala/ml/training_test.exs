@@ -16,7 +16,8 @@ defmodule Dala.ML.Training.Test do
       assert File.exists?(path)
 
       {:ok, loaded} = Dala.ML.Training.load_params(path)
-      assert is_map(loaded)
+      assert %{} = loaded
+      assert Map.has_key?(loaded, :weight)
 
       # Clean up
       File.rm(path)
@@ -85,10 +86,7 @@ defmodule Dala.ML.Training.Test do
           epochs: 1
         )
 
-      case result do
-        {:ok, updated_params} -> assert is_map(updated_params)
-        {:error, _} -> :ok
-      end
+      assert match?({:ok, _}, result) or match?({:error, _}, result)
     end
 
     test "accepts progress callback option" do
@@ -113,7 +111,7 @@ defmodule Dala.ML.Training.Test do
           progress: fn _epoch, _loss -> :atomics.add(progress_called, 1, 1) end
         )
 
-      assert is_tuple(result)
+      assert match?({:ok, _}, result) or match?({:error, _}, result)
     end
 
     test "accepts custom optimizer option" do
@@ -136,7 +134,7 @@ defmodule Dala.ML.Training.Test do
           optimizer: &Polaris.Optimizers.sgd(&1, lr: 0.01)
         )
 
-      assert is_tuple(result)
+      assert match?({:ok, _}, result) or match?({:error, _}, result)
     end
   end
 

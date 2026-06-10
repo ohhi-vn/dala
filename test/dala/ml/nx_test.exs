@@ -19,8 +19,12 @@ defmodule Dala.Ml.Nx.Test do
   end
 
   describe "emlx_available?/0" do
-    test "returns boolean" do
-      assert is_boolean(Dala.Ml.Nx.emlx_available?())
+    test "returns true when EMLX is loaded" do
+      if Code.ensure_loaded?(EMLX) do
+        assert Dala.Ml.Nx.emlx_available?() == true
+      else
+        assert Dala.Ml.Nx.emlx_available?() == false
+      end
     end
   end
 
@@ -87,10 +91,6 @@ defmodule Dala.Ml.Nx.Test do
   end
 
   describe "axon_available?/0" do
-    test "returns boolean" do
-      assert is_boolean(Dala.Ml.Nx.axon_available?())
-    end
-
     test "returns true when Axon is loaded" do
       if Code.ensure_loaded?(Axon) do
         assert Dala.Ml.Nx.axon_available?() == true

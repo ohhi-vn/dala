@@ -168,6 +168,7 @@ defmodule Dala.Connectivity.Dist do
   end
 
   @doc false
+  @spec release_mode?() :: boolean()
   def release_mode?, do: System.get_env("DALA_RELEASE") == "1"
 
   @doc false

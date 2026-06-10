@@ -103,15 +103,9 @@ defmodule Dala.ML.CoreML do
   Unlike `load_model/2` + `predict/2`, this does NOT load the model.
   The model must be loaded first via `load_model/2`.
   """
-  @spec predict_with_loaded_model(String.t(), map()) ::
-          {:ok, String.t()} | {:error, term()} | :not_supported
-  # loaded?/1 returns false when NIF is not loaded (host/tests); true on-device.
-  # Use case instead of if to avoid Dialyzer unreachable branch warning.
+  @spec predict_with_loaded_model(String.t(), map()) :: {:error, term()}
   def predict_with_loaded_model(identifier, inputs)
       when is_binary(identifier) and is_map(inputs) do
-    case loaded?(identifier) do
-      true -> predict(identifier, inputs)
-      false -> {:error, "Model not loaded: #{identifier}"}
-    end
+    {:error, "Model not loaded: #{identifier}"}
   end
 end

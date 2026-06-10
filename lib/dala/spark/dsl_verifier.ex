@@ -39,7 +39,8 @@ defmodule Dala.Spark.DslVerifier do
             type: :warning,
             module: module,
             line: 0,
-            message: "Module #{inspect(module)} does not appear to be a Dala screen (no __spark_dsl__ info)"
+            message:
+              "Module #{inspect(module)} does not appear to be a Dala screen (no __spark_dsl__ info)"
           }
         ]
     end
@@ -119,7 +120,8 @@ defmodule Dala.Spark.DslVerifier do
     case entity do
       %{type: type} when is_atom(type) ->
         # Map-based entity (from raw data verification)
-        {type, Map.get(entity, :props, %{}), Map.get(entity, :children, []), Map.get(entity, :line, 0)}
+        {type, Map.get(entity, :props, %{}), Map.get(entity, :children, []),
+         Map.get(entity, :line, 0)}
 
       %{__struct__: struct_module} ->
         # DSL struct (e.g., %Dala.Spark.Dsl.Column{...})
@@ -242,7 +244,8 @@ defmodule Dala.Spark.DslVerifier do
               type: :warning,
               module: module,
               line: line,
-              message: "Prop key #{inspect(key)} on :#{type} should be an atom, got: #{inspect(key)}"
+              message:
+                "Prop key #{inspect(key)} on :#{type} should be an atom, got: #{inspect(key)}"
             }
           ]
       end)
@@ -432,6 +435,7 @@ defmodule Dala.Spark.DslVerifier do
       |> Enum.sort_by(&{&1.module, &1.line})
       |> Enum.map(fn w ->
         line_info = if w.line > 0, do: "line #{w.line}", else: ""
+
         "  [#{String.pad_trailing(title, 7)}] #{inspect(w.module)} #{line_info}\n    → #{w.message}"
       end)
       |> Enum.join("\n")
@@ -448,18 +452,21 @@ defmodule Dala.Spark.DslVerifier do
     warns = Enum.filter(warnings, &(&1.type == :warning))
 
     Enum.each(warnings, fn w ->
-      prefix = case w.type do
-        :error -> "  ✗ "
-        :warning -> "  ⚠ "
-        :info -> "  ℹ "
-      end
+      prefix =
+        case w.type do
+          :error -> "  ✗ "
+          :warning -> "  ⚠ "
+          :info -> "  ℹ "
+        end
 
       line_info = if w.line > 0, do: " (line #{w.line})", else: ""
       Mix.shell().info("#{prefix}#{inspect(w.module)}#{line_info}: #{w.message}")
     end)
 
     if length(errors) > 0 do
-      Mix.shell().error("\n  #{length(errors)} DSL error(s) found. Run `mix dala.verify --dsl` for details.")
+      Mix.shell().error(
+        "\n  #{length(errors)} DSL error(s) found. Run `mix dala.verify --dsl` for details."
+      )
     end
 
     if length(warns) > 0 do

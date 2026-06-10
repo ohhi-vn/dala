@@ -125,13 +125,14 @@ defmodule Dala.MediaTest do
   end
 
   describe "filter" do
-    test "returns shader sources for all filter types" do
-      assert is_binary(Filter.shader_source(:blur))
-      assert is_binary(Filter.shader_source(:sharpen))
-      assert is_binary(Filter.shader_source(:lut))
-      assert is_binary(Filter.shader_source(:beauty))
-      assert is_binary(Filter.shader_source(:denoise))
-      assert is_binary(Filter.shader_source(:edge_detect))
+    test "returns non-empty shader sources for all filter types" do
+      blur = Filter.shader_source(:blur)
+      assert byte_size(blur) > 0
+      assert byte_size(Filter.shader_source(:sharpen)) > 0
+      assert byte_size(Filter.shader_source(:lut)) > 0
+      assert byte_size(Filter.shader_source(:beauty)) > 0
+      assert byte_size(Filter.shader_source(:denoise)) > 0
+      assert byte_size(Filter.shader_source(:edge_detect)) > 0
     end
 
     test "blur shader contains kernel function" do
@@ -148,13 +149,14 @@ defmodule Dala.MediaTest do
     end
 
     test "encodes params correctly" do
-      assert is_binary(Filter.apply_filter(nil, :blur, %{radius: 5.0}))
+      result = Filter.apply_filter(nil, :blur, %{radius: 5.0})
+      assert byte_size(result) > 0
     end
   end
 
   describe "animation" do
     test "starts animation system" do
-      {:ok, anim} = Animation.start_link([])
+      assert {:ok, _anim} = Animation.start_link([])
     end
 
     test "creates animation" do

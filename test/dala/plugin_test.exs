@@ -130,7 +130,7 @@ defmodule Dala.PluginTest do
 
     test "components/0 returns all component schemas" do
       components = TestPlugin.components()
-      assert is_map(components)
+      assert %{} = components
       assert map_size(components) == 2
     end
 
@@ -139,7 +139,7 @@ defmodule Dala.PluginTest do
       assert spec.plugin == TestPlugin
       assert spec.schema_version == "1.0.0"
       assert spec.protocol_version == 3
-      assert is_map(spec.field_map)
+      assert %{} = spec.field_map
       assert Map.has_key?(spec.field_map, "video")
       assert Map.has_key?(spec.field_map, "map")
     end
@@ -149,9 +149,9 @@ defmodule Dala.PluginTest do
       assert manifest["schema_version"] == "1.0.0"
       assert manifest["protocol_version"] == 3
       assert manifest["native_api_version"] == "2.0.0"
-      assert is_map(manifest["components"])
-      assert is_list(manifest["capabilities"])
-      assert is_map(manifest["capabilities_by_component"])
+      assert %{} = manifest["components"]
+      assert length(manifest["capabilities"]) > 0
+      assert %{} = manifest["capabilities_by_component"]
       assert Map.has_key?(manifest["components"], "video")
     end
   end
@@ -289,7 +289,7 @@ defmodule Dala.PluginTest do
       spec = Protocol.generate(plugin)
 
       assert spec.plugin == ProtocolTestPlugin
-      assert is_map(spec.field_map["slider"])
+      assert %{} = spec.field_map["slider"]
 
       field_by_name = spec.field_map["slider"]
       assert field_by_name["value"].number == 1
@@ -375,9 +375,9 @@ defmodule Dala.PluginTest do
       assert manifest["schema_version"] == "2.0.0"
       assert manifest["protocol_version"] == 5
       assert manifest["native_api_version"] == "3.0.0"
-      assert is_map(manifest["components"])
-      assert is_map(manifest["capabilities_by_component"])
-      assert is_list(manifest["capabilities"])
+      assert %{} = manifest["components"]
+      assert %{} = manifest["capabilities_by_component"]
+      assert length(manifest["capabilities"]) > 0
 
       assert manifest["components"]["chart"] == %{
                "ios" => "DalaChartView",

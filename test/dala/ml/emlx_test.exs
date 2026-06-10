@@ -8,18 +8,10 @@ defmodule Dala.ML.EMLXTest do
   """
 
   describe "available?/0" do
-    test "returns boolean" do
-      assert is_boolean(Dala.ML.EMLX.available?())
-    end
-
     test "returns true when EMLX hex is loaded" do
       result = Dala.ML.EMLX.available?()
-
-      if Code.ensure_loaded?(EMLX) and Code.ensure_loaded?(EMLX.Backend) do
-        assert result == true
-      else
-        assert result == false
-      end
+      expected = Code.ensure_loaded?(EMLX) and Code.ensure_loaded?(EMLX.Backend)
+      assert result == expected
     end
   end
 
@@ -29,33 +21,25 @@ defmodule Dala.ML.EMLXTest do
     end
 
     test "can be called multiple times without error" do
-      Dala.ML.EMLX.setup()
-      Dala.ML.EMLX.setup()
-      Dala.ML.EMLX.setup()
+      assert Dala.ML.EMLX.setup() == :ok
+      assert Dala.ML.EMLX.setup() == :ok
+      assert Dala.ML.EMLX.setup() == :ok
     end
 
     test "sets Nx backend after setup" do
       Dala.ML.EMLX.setup()
       backend = Nx.default_backend()
-      assert is_atom(backend) or is_tuple(backend)
+      assert backend == {EMLX.Backend, device: :gpu} or backend == Nx.BinaryBackend
     end
 
     test "configures EMLX jit_enabled application env" do
       Dala.ML.EMLX.setup()
       jit = Application.get_env(:emlx, :jit_enabled)
-      assert is_boolean(jit)
+      assert jit == true or jit == false
     end
   end
 
   describe "platform detection" do
-    test "ios_device?/0 returns boolean" do
-      assert is_boolean(Dala.ML.EMLX.ios_device?())
-    end
-
-    test "ios_simulator?/0 returns boolean" do
-      assert is_boolean(Dala.ML.EMLX.ios_simulator?())
-    end
-
     test "ios_device? and ios_simulator? are mutually exclusive" do
       device = Dala.ML.EMLX.ios_device?()
       simulator = Dala.ML.EMLX.ios_simulator?()
@@ -67,19 +51,17 @@ defmodule Dala.ML.EMLXTest do
   describe "platform_config/0" do
     test "returns config map with required keys" do
       config = Dala.ML.EMLX.platform_config()
-      assert is_map(config)
+      assert %{} = config
       assert Map.has_key?(config, :jit_enabled)
       assert Map.has_key?(config, :device)
     end
 
-    test "jit_enabled is boolean" do
+    test "jit_enabled is false on non-iOS platforms" do
       config = Dala.ML.EMLX.platform_config()
-      assert is_boolean(config.jit_enabled)
-    end
 
-    test "device is an atom" do
-      config = Dala.ML.EMLX.platform_config()
-      assert is_atom(config.device)
+      if config.device != :ios_simulator do
+        assert config.jit_enabled == false
+      end
     end
 
     test "device is one of known platforms" do
@@ -96,10 +78,6 @@ defmodule Dala.ML.EMLXTest do
   end
 
   describe "default_device/0" do
-    test "returns an atom" do
-      assert is_atom(Dala.ML.EMLX.default_device())
-    end
-
     test "returns :gpu when EMLX is available" do
       if Dala.ML.EMLX.available?() do
         assert Dala.ML.EMLX.default_device() == :gpu
@@ -117,8 +95,8 @@ defmodule Dala.ML.EMLXTest do
     test "setup + status round-trip works" do
       Dala.ML.EMLX.setup()
       status = Dala.ML.status()
-      assert is_map(status)
-      assert is_boolean(status.emlx_available)
+      assert %{} = status
+      assert status.emlx_available == true or status.emlx_available == false
     end
 
     test "setup + verify round-trip works" do
